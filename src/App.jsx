@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Clock,
   Compass,
+  CreditCard,
+  FileCheck,
   Mail,
   MapPin,
   Menu,
@@ -14,7 +16,6 @@ import {
   Mountain,
   Phone,
   Search,
-  Send,
   ShieldCheck,
   Sparkles,
   Star,
@@ -79,9 +80,11 @@ const packages = [
     title: 'Bromo Sunrise Private Trip',
     tag: 'Best Seller',
     image: '/images/package-bromo-jeep.jpg',
+    destination: 'Bromo',
     duration: '1 Hari',
     route: 'Malang/Surabaya - Penanjakan - Kawah Bromo',
     price: 'Mulai 350K/pax',
+    priceAmount: 350000,
     bestFor: 'Couple, family, dan first timer',
     includes: ['Jeep 4x4', 'Sunrise point', 'Driver lokal', 'Dokumentasi basic'],
   },
@@ -89,9 +92,11 @@ const packages = [
     title: 'Bromo + Tumpak Sewu 2D1N',
     tag: 'Recommended',
     image: '/images/destination-tumpak-sewu.jpg',
+    destination: 'Tumpak Sewu',
     duration: '2D1N',
     route: 'Bromo Sunrise - Tumpak Sewu - Panorama Spot',
     price: 'Mulai 875K/pax',
+    priceAmount: 875000,
     bestFor: 'Adventure trip dan konten visual',
     includes: ['Transport nyaman', 'Guide lokal', 'Penginapan pilihan', 'Itinerary rapi'],
   },
@@ -99,9 +104,11 @@ const packages = [
     title: 'Jogja Heritage & Culinary',
     tag: 'Culture Trip',
     image: '/images/destination-jogja.jpg',
+    destination: 'Jogja',
     duration: '2D1N',
     route: 'Candi - City Tour - Kuliner Lokal',
     price: 'Mulai 650K/pax',
+    priceAmount: 650000,
     bestFor: 'Keluarga, komunitas, dan private group',
     includes: ['City tour', 'Candi pilihan', 'Kuliner lokal', 'Planner perjalanan'],
   },
@@ -109,13 +116,51 @@ const packages = [
     title: 'Medan / Lake Toba Escape',
     tag: 'Private Trip',
     image: '/images/destination-medan.jpg',
+    destination: 'Medan',
     duration: '3D2N',
     route: 'Medan - Danau Toba - Kuliner Lokal',
     price: 'Mulai 1.450K/pax',
+    priceAmount: 1450000,
     bestFor: 'Trip santai dan eksplor Sumatera',
     includes: ['Transport', 'Hotel pilihan', 'Local experience', 'Trip assistant'],
   },
 ];
+
+const packageOptions = packages.map((item) => item.title);
+
+const paymentStatusOptions = [
+  {
+    key: 'waiting',
+    label: 'Waiting for Payment',
+    title: 'Menunggu pembayaran',
+    description: 'Booking sudah dibuat. Di implementasi real, buyer diarahkan ke invoice Paper.id.',
+  },
+  {
+    key: 'paid',
+    label: 'Paid',
+    title: 'Pembayaran berhasil',
+    description: 'Webhook Paper.id akan mengubah booking menjadi paid di backend.',
+  },
+  {
+    key: 'expired',
+    label: 'Expired',
+    title: 'Link pembayaran expired',
+    description: 'Buyer perlu membuat invoice baru atau menghubungi admin untuk lanjut.',
+  },
+  {
+    key: 'failed',
+    label: 'Failed',
+    title: 'Pembayaran gagal',
+    description: 'Buyer bisa mencoba metode lain atau meminta bantuan tim.',
+  },
+];
+
+const paxCountMap = {
+  '1 Orang': 1,
+  '2 Orang': 2,
+  '3-5 Orang': 3,
+  '6+ Orang': 6,
+};
 
 const trustItems = [
   { title: 'Google Reviews', value: '5.0 / 5.0', icon: Star },
@@ -225,6 +270,18 @@ function SectionHeader({ eyebrow, title, children, light = false }) {
   );
 }
 
+function formatRupiah(value) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function createBookingCode() {
+  return `TJ-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
 function SelectBox({ id, label, value, options, icon: Icon, openSelect, setOpenSelect, onChange, variant = 'compact' }) {
   const isOpen = openSelect === id;
   const isCompact = variant === 'compact';
@@ -281,6 +338,7 @@ function SelectBox({ id, label, value, options, icon: Icon, openSelect, setOpenS
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openSelect, setOpenSelect] = useState(null);
+  const initialPackage = packages[0];
   const [searchValues, setSearchValues] = useState({
     destination: 'Bromo',
     date: 'Pilih tanggal',
@@ -288,11 +346,70 @@ function App() {
     pax: '1 Orang',
   });
   const [bookingValues, setBookingValues] = useState({
+    fullName: '',
+    whatsapp: '',
     date: '25 Juni 2026',
+    packageTitle: initialPackage.title,
     tripType: 'Private Trip',
-    destination: 'Bromo',
+    destination: initialPackage.destination,
     pax: '2 Orang',
+    pickupPoint: '',
+    notes: '',
   });
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [bookingCode, setBookingCode] = useState(createBookingCode);
+  const [paymentStatus, setPaymentStatus] = useState('waiting');
+  const [hasStartedPayment, setHasStartedPayment] = useState(false);
+
+  const selectedPackage = packages.find((item) => item.title === bookingValues.packageTitle) ?? initialPackage;
+  const totalPayment = selectedPackage.priceAmount * (paxCountMap[bookingValues.pax] ?? 1);
+  const activePaymentStatus =
+    paymentStatusOptions.find((item) => item.key === paymentStatus) ?? paymentStatusOptions[0];
+
+  function openCheckout(packageItem = selectedPackage) {
+    setBookingValues((current) => ({
+      ...current,
+      packageTitle: packageItem.title,
+      destination: packageItem.destination,
+    }));
+    setPaymentStatus('waiting');
+    setHasStartedPayment(false);
+    setIsCheckoutOpen(true);
+    window.setTimeout(() => {
+      document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  }
+
+  function openCheckoutFromSearch() {
+    const packageItem = packages.find((item) => item.destination === searchValues.destination) ?? initialPackage;
+    setBookingValues((current) => ({
+      ...current,
+      date: searchValues.date === 'Pilih tanggal' ? current.date : searchValues.date,
+      tripType: searchValues.tripType,
+      pax: searchValues.pax,
+    }));
+    openCheckout(packageItem);
+  }
+
+  function updateBookingValue(key, value) {
+    setBookingValues((current) => {
+      const next = { ...current, [key]: value };
+      if (key === 'packageTitle') {
+        const nextPackage = packages.find((item) => item.title === value);
+        if (nextPackage) {
+          next.destination = nextPackage.destination;
+        }
+      }
+      return next;
+    });
+  }
+
+  function resetBookingPrototype() {
+    setBookingCode(createBookingCode());
+    setPaymentStatus('waiting');
+    setHasStartedPayment(false);
+    setIsCheckoutOpen(false);
+  }
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#fffaf3] text-forest">
@@ -479,7 +596,11 @@ function App() {
                   onChange={(option) => setSearchValues((current) => ({ ...current, [key]: option }))}
                 />
               ))}
-              <button className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-forest px-5 py-4 font-extrabold text-white hover:bg-ocean ${buttonLift}`}>
+              <button
+                type="button"
+                className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-forest px-5 py-4 font-extrabold text-white hover:bg-ocean ${buttonLift}`}
+                onClick={openCheckoutFromSearch}
+              >
                 <Search size={18} /> Search
               </button>
             </div>
@@ -573,14 +694,23 @@ function App() {
                       </li>
                     ))}
                   </ul>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-6 inline-flex items-center gap-2 font-extrabold text-clay"
-                  >
-                    Tanya Paket Ini <ChevronRight size={17} className="transition group-hover:translate-x-1" />
-                  </a>
+                  <div className="mt-6 flex flex-col gap-3">
+                    <button
+                      type="button"
+                      className={`inline-flex items-center justify-center gap-2 rounded-2xl bg-forest px-5 py-3 font-extrabold text-white hover:bg-ocean ${buttonLift}`}
+                      onClick={() => openCheckout(item)}
+                    >
+                      Book This Package <CreditCard size={17} />
+                    </button>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center gap-2 font-extrabold text-clay"
+                    >
+                      Tanya Paket Ini <ChevronRight size={17} className="transition group-hover:translate-x-1" />
+                    </a>
+                  </div>
                 </div>
               </article>
             ))}
@@ -684,65 +814,209 @@ function App() {
       </section>
 
       <section id="booking" className="bg-white px-5 py-16 sm:px-8 lg:px-10">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <p className="mb-3 text-sm font-bold uppercase tracking-[0.24em] text-clay">Booking</p>
-            <h2 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">
-              Konsultasi Trip via WhatsApp.
-            </h2>
-            <p className="mt-6 text-lg leading-8 text-forest/72">
-              Isi kebutuhan perjalanan secara singkat. Tim Tinggal Jalan akan bantu rekomendasikan paket dan jadwal
-              yang paling sesuai.
-            </p>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className={`mt-8 inline-flex max-w-full items-center gap-4 rounded-2xl border border-forest/10 bg-sand p-4 shadow-soft hover:border-[#25D366]/40 ${buttonLift}`}
-            >
-              <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-[#25D366] text-white">
-                <MessageCircle size={28} />
+        <div className="mx-auto max-w-7xl">
+          <SectionHeader eyebrow="Booking & Payment Prototype" title="Book dulu, lalu bayar full via Paper.id">
+            Flow ini masih frontend-only. Di implementasi real, backend akan membuat booking dan invoice Paper.id.
+          </SectionHeader>
+
+          {!isCheckoutOpen ? (
+            <div className="mb-8 rounded-[28px] border border-dashed border-clay/35 bg-sand/70 p-6 text-center shadow-soft">
+              <p className="mx-auto max-w-2xl text-base font-semibold leading-7 text-forest/72">
+                Pilih paket dari section Packages atau mulai dari paket best seller untuk melihat contoh checkout,
+                payment link, dan status pembayaran.
+              </p>
+              <button
+                type="button"
+                className={`mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-forest px-6 py-4 font-extrabold text-white hover:bg-ocean ${buttonLift}`}
+                onClick={() => openCheckout(initialPackage)}
+              >
+                Start Booking Prototype <CreditCard size={18} />
+              </button>
+            </div>
+          ) : null}
+
+          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+            <form className="rounded-[30px] bg-[#fffaf3] p-6 shadow-soft" onSubmit={(event) => event.preventDefault()}>
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-clay">Step 1</p>
+                  <h3 className="mt-1 text-2xl font-extrabold text-forest">Booking details</h3>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-forest/70">
+                  <FileCheck size={16} className="text-clay" /> {bookingCode}
+                </span>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-forest/58">Butuh bantuan?</p>
-                <p className="text-lg font-extrabold">Chat with us on WhatsApp</p>
-              </div>
-            </a>
-          </div>
-          <form className="rounded-[30px] bg-[#fffaf3] p-6 shadow-soft">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                ['Nama lengkap', 'Masukkan nama'],
-                ['WhatsApp', '0812 0000 0000'],
-              ].map(([label, placeholder]) => (
-                <label key={label} className="block">
-                  <span className="mb-2 block text-sm font-bold">{label}</span>
-                  <input className={`h-13 w-full rounded-2xl border border-forest/10 bg-white px-4 py-4 outline-none ${fieldFocus}`} placeholder={placeholder} />
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold">Full name</span>
+                  <input
+                    className={`w-full rounded-2xl border border-forest/10 bg-white px-4 py-4 outline-none ${fieldFocus}`}
+                    placeholder="Masukkan nama"
+                    value={bookingValues.fullName}
+                    onChange={(event) => updateBookingValue('fullName', event.target.value)}
+                  />
                 </label>
-              ))}
-              {[
-                ['date', 'Pilih Tanggal', ['25 Juni 2026', 'Akhir pekan ini', 'Bulan depan']],
-                ['tripType', 'Type Trip', tripTypeOptions],
-                ['destination', 'Destination', destinationOptions],
-                ['pax', 'Pax', paxOptions],
-              ].map(([key, label, options]) => (
+                <label className="block">
+                  <span className="mb-2 block text-sm font-bold">WhatsApp number</span>
+                  <input
+                    className={`w-full rounded-2xl border border-forest/10 bg-white px-4 py-4 outline-none ${fieldFocus}`}
+                    placeholder="0812 0000 0000"
+                    value={bookingValues.whatsapp}
+                    onChange={(event) => updateBookingValue('whatsapp', event.target.value)}
+                  />
+                </label>
+
                 <SelectBox
-                  key={key}
-                  id={`booking-${key}`}
-                  label={label}
-                  value={bookingValues[key]}
-                  options={options}
+                  id="checkout-package"
+                  label="Package"
+                  value={bookingValues.packageTitle}
+                  options={packageOptions}
+                  icon={Compass}
                   openSelect={openSelect}
                   setOpenSelect={setOpenSelect}
-                  onChange={(option) => setBookingValues((current) => ({ ...current, [key]: option }))}
+                  onChange={(option) => updateBookingValue('packageTitle', option)}
                   variant="form"
                 />
-              ))}
-            </div>
-            <button type="button" className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-forest px-6 py-4 font-extrabold text-white hover:bg-ocean ${buttonLift}`}>
-              <Send size={18} /> Kirim Permintaan Booking
-            </button>
-          </form>
+                <SelectBox
+                  id="checkout-date"
+                  label="Trip Date"
+                  value={bookingValues.date}
+                  options={['25 Juni 2026', 'Akhir pekan ini', 'Bulan depan']}
+                  icon={CalendarDays}
+                  openSelect={openSelect}
+                  setOpenSelect={setOpenSelect}
+                  onChange={(option) => updateBookingValue('date', option)}
+                  variant="form"
+                />
+                <SelectBox
+                  id="checkout-destination"
+                  label="Destination"
+                  value={bookingValues.destination}
+                  options={destinationOptions}
+                  icon={MapPin}
+                  openSelect={openSelect}
+                  setOpenSelect={setOpenSelect}
+                  onChange={(option) => updateBookingValue('destination', option)}
+                  variant="form"
+                />
+                <SelectBox
+                  id="checkout-pax"
+                  label="Pax"
+                  value={bookingValues.pax}
+                  options={paxOptions}
+                  icon={Users}
+                  openSelect={openSelect}
+                  setOpenSelect={setOpenSelect}
+                  onChange={(option) => updateBookingValue('pax', option)}
+                  variant="form"
+                />
+                <label className="block sm:col-span-2">
+                  <span className="mb-2 block text-sm font-bold">Pickup point</span>
+                  <input
+                    className={`w-full rounded-2xl border border-forest/10 bg-white px-4 py-4 outline-none ${fieldFocus}`}
+                    placeholder="Hotel, stasiun, bandara, atau alamat penjemputan"
+                    value={bookingValues.pickupPoint}
+                    onChange={(event) => updateBookingValue('pickupPoint', event.target.value)}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-2 block text-sm font-bold">Notes</span>
+                  <textarea
+                    className={`min-h-28 w-full resize-none rounded-2xl border border-forest/10 bg-white px-4 py-4 outline-none ${fieldFocus}`}
+                    placeholder="Contoh: request sunrise spot, jumlah koper, vegetarian meal, atau kebutuhan khusus."
+                    value={bookingValues.notes}
+                    onChange={(event) => updateBookingValue('notes', event.target.value)}
+                  />
+                </label>
+              </div>
+            </form>
+
+            <aside className="rounded-[30px] border border-forest/10 bg-forest p-6 text-white shadow-soft">
+              <div className="overflow-hidden rounded-[24px] bg-white/8">
+                <img src={selectedPackage.image} alt={selectedPackage.title} className="h-48 w-full object-cover" />
+                <div className="p-5">
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-sunset">Step 2</p>
+                  <h3 className="mt-2 text-2xl font-extrabold">Review & full payment</h3>
+                  <div className="mt-5 space-y-3 text-sm font-semibold text-white/74">
+                    <p className="flex items-start justify-between gap-4">
+                      <span>Booking code</span>
+                      <span className="text-right text-white">{bookingCode}</span>
+                    </p>
+                    <p className="flex items-start justify-between gap-4">
+                      <span>Package</span>
+                      <span className="text-right text-white">{selectedPackage.title}</span>
+                    </p>
+                    <p className="flex items-start justify-between gap-4">
+                      <span>Route</span>
+                      <span className="text-right text-white">{selectedPackage.route}</span>
+                    </p>
+                    <p className="flex items-start justify-between gap-4">
+                      <span>Pax</span>
+                      <span className="text-right text-white">{bookingValues.pax}</span>
+                    </p>
+                    <p className="flex items-start justify-between gap-4">
+                      <span>Price per pax</span>
+                      <span className="text-right text-white">{formatRupiah(selectedPackage.priceAmount)}</span>
+                    </p>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl bg-white p-5 text-forest">
+                    <p className="text-sm font-bold uppercase tracking-[0.16em] text-clay">Total Full Payment</p>
+                    <p className="mt-2 text-3xl font-black">{formatRupiah(totalPayment)}</p>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-forest/62">
+                      Prototype total memakai harga per pax dikali jumlah pax minimum dari pilihan peserta.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sunset px-6 py-4 font-extrabold text-forest hover:bg-[#f0aa56] ${buttonLift}`}
+                    onClick={() => {
+                      setHasStartedPayment(true);
+                      setPaymentStatus('waiting');
+                    }}
+                  >
+                    <CreditCard size={18} /> Pay with Paper.id
+                  </button>
+                  <p className="mt-3 text-center text-sm font-semibold leading-6 text-white/58">
+                    Real version: backend creates Paper.id invoice, then redirects buyer to the Paper.id payment page.
+                  </p>
+                </div>
+              </div>
+
+              {hasStartedPayment ? (
+                <div className="mt-5 rounded-[24px] border border-white/10 bg-white/8 p-5">
+                  <p className="text-sm font-bold uppercase tracking-[0.18em] text-sunset">Step 3</p>
+                  <h3 className="mt-2 text-2xl font-extrabold">{activePaymentStatus.title}</h3>
+                  <p className="mt-3 leading-7 text-white/68">{activePaymentStatus.description}</p>
+                  <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                    {paymentStatusOptions.map((status) => (
+                      <button
+                        key={status.key}
+                        type="button"
+                        className={`rounded-2xl border px-4 py-3 text-sm font-extrabold transition ${
+                          paymentStatus === status.key
+                            ? 'border-sunset bg-sunset text-forest'
+                            : 'border-white/12 bg-white/8 text-white/72 hover:border-sunset/50 hover:text-white'
+                        }`}
+                        onClick={() => setPaymentStatus(status.key)}
+                      >
+                        {status.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 px-5 py-3 font-bold text-white/76 transition hover:border-sunset/50 hover:text-white"
+                    onClick={resetBookingPrototype}
+                  >
+                    Reset Prototype
+                  </button>
+                </div>
+              ) : null}
+            </aside>
+          </div>
         </div>
       </section>
 
