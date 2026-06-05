@@ -1,29 +1,32 @@
-# Tinggal Jalan Landing Page Prototype
+# Tinggal Jalan Indonesia Tours Prototype
 
-A modern responsive travel agency landing page prototype for **Tinggal Jalan**. The project is built with Vite, React, Tailwind CSS, and lucide-react.
+A responsive travel package and booking-flow prototype for **Tinggal Jalan Indonesia Tours**. The project is built with Vite, React, Tailwind CSS v4, and lucide-react.
 
-This is a visual prototype only. It does not include backend booking logic, payment, CMS, routing, or real form submission.
+This is a frontend prototype only. It demonstrates the customer journey, route details, pricing logic, booking states, WhatsApp handoff, and regional behavior without backend booking logic, real payment capture, CMS, database, email delivery, or real form submission.
 
 ## Features
 
-- Premium travel agency landing page
+- Brand-aligned Tinggal Jalan mockup with current logo, favicon, and app title
 - Responsive layout for mobile, tablet, and desktop
-- Navbar with desktop dropdowns and mobile menu
-- Hero section with WhatsApp-first CTA
-- Custom styled booking/search dropdowns
-- Popular destination cards for Bromo, Jogja, Tumpak Sewu, and Medan / Lake Toba
-- Package highlight cards with duration, route, price, includes, and CTA
-- Trust proof section
-- About, activities, testimonials, gallery, booking form, CTA footer, and contact footer
-- Floating WhatsApp CTA
-- Local image assets and favicon
+- Region-based language selector for Indonesia, English, and Mandarin
+- Route catalog with localized duration, pickup, private-trip labels, and region-based IDR/USD pricing
+- Klook-style route detail page with gallery, package option, itinerary, pickup/drop-off, inclusions, exclusions, good-to-know notes, policies, and traveler proof preview
+- Step-by-step booking flow: trip setup, customer details, review, and confirmation
+- Booking mockup with voucher discount, pickup point, pax, date, customer email, and notes
+- Mock Midtrans / Stripe payment gateway selection based on traveler region
+- Mock blocked-booking state for Bromo closure demo
+- WhatsApp CTA with prefilled booking summary
+- Email field and confirmation state for prototype order/payment follow-up
+- Basic SEO and Open Graph metadata
+- Local route image assets plus current-logo favicon
 
 ## Tech Stack
 
-- Vite
-- React
-- Tailwind CSS
-- lucide-react
+- Vite 8
+- React 19
+- React Router
+- Tailwind CSS 4 via `@tailwindcss/vite`
+- lucide-react 1
 
 ## Getting Started
 
@@ -60,13 +63,21 @@ npm run preview
 │   ├── favicon.svg
 │   └── images/
 │       ├── credits.md
-│       └── *.jpg
+│       ├── destinations/
+│       └── routes/
 ├── src/
+│   ├── components/
+│   │   ├── checkout/
+│   │   ├── layout/
+│   │   ├── sections/
+│   │   └── ui/
+│   ├── context/
+│   ├── data/
+│   ├── pages/
+│   ├── utils/
 │   ├── App.jsx
 │   ├── index.css
 │   └── main.jsx
-├── tailwind.config.js
-├── postcss.config.js
 └── vite.config.js
 ```
 
@@ -76,13 +87,18 @@ The travel images are stored locally in `public/images`. Image source URLs are d
 
 ## Notes
 
-- Booking and search forms are visual-only.
-- WhatsApp links use the prototype contact number from the provided materials.
-- The code is intentionally simple so it can be converted later into Laravel Blade.
+- Booking, voucher, block-booking, payment gateway, and email follow-up states are mock-only.
+- Routes are frontend-only React routes; configure a production host fallback to `index.html` before deploying.
+- WhatsApp links use the Tinggal Jalan prototype contact number.
+- Booking state is kept in memory for prototype review and resets on browser refresh.
+- Static prototype data lives in `src/data`.
+- Shared helper logic lives in `src/utils`.
+- Route/page screens live in `src/pages`.
+- Local/Indonesia region uses IDR and Midtrans in the prototype. English and Mandarin regions use USD and Stripe.
 
 ## Verification
 
-Last verified with:
+Verify with:
 
 ```bash
 npm run build

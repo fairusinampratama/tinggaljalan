@@ -1,6 +1,20 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Baloo 2', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-brandBlue: #006fc9;
+  --color-brandDark: #111827;
+  --color-brandMuted: #5f6673;
+  --color-brandLight: #fbfdff;
+  --color-brandSoft: #eef7ff;
+  --color-brandLine: #e5edf5;
+
+  --shadow-soft: 0 12px 36px rgba(17, 24, 39, 0.08);
+}
 
 html {
   scroll-behavior: smooth;
@@ -8,8 +22,9 @@ html {
 
 body {
   margin: 0;
-  background: #fffaf3;
-  color: #193b33;
+  background: #ffffff;
+  color: #111827;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
