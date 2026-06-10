@@ -1,3 +1,4 @@
+import { AvailableOnSection } from '../components/sections/AvailableOnSection';
 import { DestinationSection } from '../components/sections/DestinationSection';
 import { FaqSection } from '../components/sections/FaqSection';
 import { Hero } from '../components/sections/Hero';
@@ -33,6 +34,7 @@ export function HomePage() {
       />
       <WhyChooseSection />
       <ReviewsSection />
+      <AvailableOnSection />
       <FaqSection items={generalFaqItems} language={language} />
       <HomeCtaSection whatsappUrl={whatsappUrl} />
     </>

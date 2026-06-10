@@ -19,15 +19,17 @@ export function CheckoutReviewPage() {
     setAppliedVoucher,
     bookingSummary,
     bookingBlock,
+    dateAvailability,
   } = useBooking();
   const contactComplete = booking.name.trim() && booking.whatsapp.trim();
+  const dateUnavailable = bookingBlock.blocked || dateAvailability.status === 'booked';
 
   return (
     <PageShell eyebrow="Booking" title={t.contactTitle}>
       <CheckoutSteps current={1} />
       <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
         <form className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={(event) => event.preventDefault()}>
-          <h2 className="font-display text-3xl font-black">{t.contactDetails}</h2>
+          <h2 className="text-2xl font-extrabold">{t.contactDetails}</h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">{t.contactText}</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Field label={t.fullName}>
@@ -86,13 +88,13 @@ export function CheckoutReviewPage() {
             <Link to="/booking" className={secondaryButtonClass}>
               {t.editTrip}
             </Link>
-            {bookingBlock.blocked || !contactComplete ? (
+            {dateUnavailable || !contactComplete ? (
               <button
                 type="button"
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-extrabold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
                 disabled
               >
-                {bookingBlock.blocked ? t.blockedTitle : t.completeContact}
+                {dateUnavailable ? (dateAvailability.status === 'booked' ? t.booked : t.blockedTitle) : t.completeContact}
               </button>
             ) : (
               <Link to="/checkout/confirmation" className={primaryButtonClass}>
@@ -107,6 +109,7 @@ export function CheckoutReviewPage() {
           selectedRoute={selectedRoute}
           summary={bookingSummary}
           bookingBlock={bookingBlock}
+          dateAvailability={dateAvailability}
           language={language}
         />
       </div>

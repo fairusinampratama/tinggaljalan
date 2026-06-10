@@ -7,7 +7,7 @@ import { cardHoverClass, iconSize, secondaryButtonClass, whatsappButtonClass } f
 import { useBooking } from '../context/BookingContext';
 
 export function CheckoutConfirmationPage() {
-  const { t, language, booking, selectedRoute, bookingSummary, bookingBlock, bookingCode, whatsappUrl } = useBooking();
+  const { t, language, booking, selectedRoute, bookingSummary, bookingBlock, dateAvailability, bookingCode, whatsappUrl } = useBooking();
 
   return (
     <PageShell eyebrow="Booking" title={t.requestSentTitle}>
@@ -17,13 +17,13 @@ export function CheckoutConfirmationPage() {
           <div className="grid h-11 w-11 place-items-center rounded-full bg-brandBlue text-white">
             <CheckCircle className="h-5 w-5" />
           </div>
-          <h2 className="mt-5 font-display text-3xl font-black">{t.waitingConfirmation}</h2>
+          <h2 className="mt-5 text-2xl font-extrabold">{t.waitingConfirmation}</h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
             {t.requestSentText}
           </p>
           <div className={`mt-5 rounded-2xl border border-transparent bg-brandLight p-4 ${cardHoverClass}`}>
             <p className="text-sm font-black text-brandDark">{t.bookingCode}</p>
-            <p className="mt-1 font-display text-3xl font-black text-brandBlue">{bookingCode}</p>
+            <p className="mt-1 text-2xl font-extrabold text-brandBlue">{bookingCode}</p>
             <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
               {t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}. {t.paymentDeferredNote}
             </p>
@@ -43,6 +43,7 @@ export function CheckoutConfirmationPage() {
           selectedRoute={selectedRoute}
           summary={bookingSummary}
           bookingBlock={bookingBlock}
+          dateAvailability={dateAvailability}
           showBlock={false}
           language={language}
         />

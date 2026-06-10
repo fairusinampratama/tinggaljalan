@@ -58,7 +58,21 @@ function getLocale(language) {
   return 'en-US';
 }
 
-export function DateField({ label, value, onChange, language = 'en', className = '' }) {
+const statusStyles = {
+  available: 'text-brandDark hover:bg-brandSoft hover:text-brandBlue',
+  limited: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100',
+  booked: 'cursor-not-allowed bg-brandMuted/10 text-brandMuted/40 line-through',
+  blocked: 'cursor-not-allowed bg-red-50 text-red-400 line-through',
+};
+
+const statusLabels = {
+  available: 'Available',
+  limited: 'Limited',
+  booked: 'Booked',
+  blocked: 'Blocked',
+};
+
+export function DateField({ label, value, onChange, language = 'en', className = '', availabilityByDate = {}, showLegend = false }) {
   const pickerRef = useRef(null);
   const selectedDate = parseIsoDate(value);
   const initialMonth = selectedDate ?? new Date();
@@ -100,6 +114,12 @@ export function DateField({ label, value, onChange, language = 'en', className =
   }
 
   function selectDate(nextDate) {
+    const availability = availabilityByDate[nextDate];
+
+    if (availability?.status === 'booked' || availability?.status === 'blocked') {
+      return;
+    }
+
     onChange(nextDate);
     setIsOpen(false);
   }
@@ -150,17 +170,22 @@ export function DateField({ label, value, onChange, language = 'en', className =
             {monthDays.map((day) => {
               const isSelected = day.iso === value;
               const isToday = day.iso === today;
+              const availability = availabilityByDate[day.iso] ?? { status: 'available' };
+              const isDisabled = availability.status === 'booked' || availability.status === 'blocked';
+              const dayStatusClass = day.inMonth
+                ? statusStyles[availability.status] ?? statusStyles.available
+                : 'text-brandMuted/30 hover:bg-brandLight';
 
               return (
                 <button
                   key={day.iso}
                   type="button"
+                  disabled={isDisabled}
+                  title={availability.reason || statusLabels[availability.status] || statusLabels.available}
                   className={`grid aspect-square min-h-9 place-items-center rounded-xl text-xs font-black transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
                     isSelected
                       ? 'bg-brandBlue text-white shadow-lg shadow-brandBlue/20'
-                      : day.inMonth
-                        ? 'text-brandDark hover:bg-brandSoft hover:text-brandBlue'
-                        : 'text-brandMuted/40 hover:bg-brandLight'
+                      : dayStatusClass
                   } ${isToday && !isSelected ? 'ring-1 ring-brandBlue/30' : ''}`}
                   onClick={() => selectDate(day.iso)}
                 >
@@ -169,6 +194,24 @@ export function DateField({ label, value, onChange, language = 'en', className =
               );
             })}
           </div>
+          {showLegend ? (
+            <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] font-bold text-brandMuted">
+              {Object.entries(statusLabels).map(([status, text]) => (
+                <span key={status} className="inline-flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${
+                    status === 'available'
+                      ? 'bg-brandBlue'
+                      : status === 'limited'
+                        ? 'bg-amber-400'
+                        : status === 'booked'
+                          ? 'bg-brandMuted/35'
+                          : 'bg-red-400'
+                  }`} />
+                  {text}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

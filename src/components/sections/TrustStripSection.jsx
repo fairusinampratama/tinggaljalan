@@ -13,8 +13,8 @@ export function TrustStripSection() {
           <article key={getLocalized(title, language)} className={`flex items-center gap-3 rounded-xl border border-transparent border-b-brandLine bg-white px-3 py-4 ${cardHoverClass}`}>
             <Icon className="h-4 w-4 shrink-0 text-brandBlue" />
             <div>
-              <p className="font-display text-2xl font-black leading-none text-brandDark">{getLocalized(value, language)}</p>
-              <p className="mt-1 text-sm font-bold text-brandMuted">{getLocalized(title, language)}</p>
+              <p className="text-xl font-extrabold leading-none text-brandDark">{getLocalized(value, language)}</p>
+              <p className="mt-1 text-xs font-semibold text-brandMuted">{getLocalized(title, language)}</p>
             </div>
           </article>
         ))}

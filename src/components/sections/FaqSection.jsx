@@ -13,7 +13,7 @@ export function FaqSection({ title = 'FAQ General – Tinggal Jalan Tours', item
   return (
     <section id="faq" className="bg-white px-4 py-12 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-4xl">
-        <h2 className="mb-6 text-center font-display text-3xl font-black leading-none text-brandDark sm:text-4xl">
+        <h2 className="mb-6 text-center font-display text-[1.625rem] font-extrabold leading-tight text-brandDark sm:text-[2rem]">
           {title}
         </h2>
         <div className="grid gap-2.5">
@@ -24,7 +24,7 @@ export function FaqSection({ title = 'FAQ General – Tinggal Jalan Tours', item
             <article key={item.question.en} className={`rounded-xl border border-brandLine bg-brandLight ${cardHoverClass}`}>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left font-display text-base font-black text-brandDark transition hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue sm:text-lg"
+                  className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm font-extrabold text-brandDark transition hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue sm:text-base"
                   aria-expanded={isOpen}
                   onClick={() => setOpenIndex(isOpen ? -1 : index)}
                 >

@@ -2,14 +2,14 @@ import { createContext, useContext, useMemo, useState } from 'react';
 import { initialBooking } from '../data/bookingOptions';
 import { getRouteById, routeArticles } from '../data/routes';
 import { copy } from '../data/translations';
-import { calculateBookingSummary, createBookingCode, getBookingBlock } from '../utils/booking';
+import { calculateBookingSummary, createBookingCode, getBookingBlock, getDateAvailability } from '../utils/booking';
 import { getRegionConfig, normalizeRegion } from '../utils/localization';
 import { createWhatsAppUrl } from '../utils/whatsapp';
 
 const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
-  const [languageState, setLanguageState] = useState('id');
+  const [languageState, setLanguageState] = useState('us');
   const [selectedRouteId, setSelectedRouteId] = useState(routeArticles[0].id);
   const [voucherCode, setVoucherCode] = useState('BROMO10');
   const [appliedVoucher, setAppliedVoucher] = useState('BROMO10');
@@ -19,9 +19,10 @@ export function BookingProvider({ children }) {
   const regionConfig = getRegionConfig(language);
 
   const selectedRoute = getRouteById(selectedRouteId) ?? routeArticles[0];
-  const t = { ...copy[language], regionId: language };
+  const t = { ...(copy[language] ?? copy.zh ?? copy.en), regionId: language };
   const bookingSummary = calculateBookingSummary(selectedRoute, booking.pax, appliedVoucher, booking.travelerType);
   const bookingBlock = getBookingBlock(selectedRoute, booking.date);
+  const dateAvailability = getDateAvailability(selectedRoute, booking.date);
   const whatsappUrl = useMemo(
     () =>
       createWhatsAppUrl({
@@ -32,9 +33,10 @@ export function BookingProvider({ children }) {
         total: bookingSummary.total,
         currency: bookingSummary.currency,
         paymentGateway: bookingSummary.paymentGateway,
+        availability: dateAvailability,
         language,
       }),
-    [booking, bookingCode, bookingSummary.currency, bookingSummary.paymentGateway, bookingSummary.total, bookingSummary.voucher, language, selectedRoute],
+    [booking, bookingCode, bookingSummary.currency, bookingSummary.paymentGateway, bookingSummary.total, bookingSummary.voucher, dateAvailability, language, selectedRoute],
   );
 
   function setLanguage(nextLanguage) {
@@ -65,6 +67,7 @@ export function BookingProvider({ children }) {
     bookingCode,
     bookingSummary,
     bookingBlock,
+    dateAvailability,
     whatsappUrl,
   };
 

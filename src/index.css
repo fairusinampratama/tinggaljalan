@@ -1,10 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Rubik+Dirt&display=swap');
 
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Baloo 2', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+  --font-brand: 'Rushen Distressed Regular', 'Rubik Dirt', 'Outfit', ui-sans-serif, system-ui, sans-serif;
 
   --color-brandBlue: #006fc9;
   --color-brandDark: #111827;
@@ -24,9 +25,70 @@ body {
   margin: 0;
   background: #ffffff;
   color: #111827;
-  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
   box-sizing: border-box;
+}
+
+.adventure-grid {
+  background-image:
+    radial-gradient(circle at 18px 18px, rgba(0, 111, 201, 0.12) 1px, transparent 1.5px),
+    radial-gradient(circle at 82% 12%, rgba(245, 158, 11, 0.16), transparent 24rem),
+    linear-gradient(135deg, rgba(0, 111, 201, 0.06), transparent 55%);
+  background-size: 34px 34px, 100% 100%, 100% 100%;
+}
+
+.route-line {
+  position: absolute;
+  inset: auto 8% -32px auto;
+  width: min(460px, 62vw);
+  height: 128px;
+  border: 2px dashed rgba(255, 255, 255, 0.38);
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.adventure-blob {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 42% 58% 64% 36% / 48% 40% 60% 52%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.75), transparent 32%),
+    linear-gradient(135deg, rgba(0, 111, 201, 0.17), rgba(245, 158, 11, 0.16));
+  filter: blur(0.1px);
+}
+
+.adventure-path {
+  position: absolute;
+  pointer-events: none;
+  width: min(620px, 76vw);
+  height: 160px;
+  border: 2px dashed rgba(0, 111, 201, 0.22);
+  border-left: 0;
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  transform: rotate(-10deg);
+}
+
+.terrain-sweep {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(0, 111, 201, 0.11), rgba(245, 158, 11, 0.08), transparent);
+  transform: rotate(-8deg);
+}
+
+.terrain-sweep-light {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(0, 111, 201, 0.18), transparent);
+}
+
+.font-brand {
+  font-family: var(--font-brand);
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }

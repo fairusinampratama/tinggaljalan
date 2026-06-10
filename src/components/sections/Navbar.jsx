@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Menu, MessageCircle, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { logoUrl } from '../../data/brand';
 import { languages } from '../../data/translations';
-import { iconButtonClass, iconSize, primaryButtonClass } from '../ui/styles';
+import { iconButtonClass } from '../ui/styles';
 
 const navRoutes = ['/', '/#destination', '/routes', '/booking', '/#contact'];
 
-export function Navbar({ language, setLanguage, t, whatsappUrl }) {
+export function Navbar({ language, setLanguage, t }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -40,9 +40,6 @@ export function Navbar({ language, setLanguage, t, whatsappUrl }) {
               </button>
             ))}
           </div>
-          <a href={whatsappUrl} target="_blank" rel="noreferrer" className={`${primaryButtonClass} hidden sm:inline-flex`}>
-            <MessageCircle className={iconSize} /> {t.chat}
-          </a>
           <button
             type="button"
             className={`${iconButtonClass} h-9 w-9 lg:hidden`}

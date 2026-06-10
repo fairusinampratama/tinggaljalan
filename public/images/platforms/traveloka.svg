@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 64" role="img" aria-labelledby="title">
+  <title id="title">Traveloka</title>
+  <rect width="220" height="64" rx="14" fill="#ffffff"/>
+  <path d="M28 37c12-18 26-23 43-19-8 2-15 7-21 14 7-3 15-4 24-1-12 2-23 8-34 17-4-2-8-6-12-11Z" fill="#1f9bde"/>
+  <path d="M36 25c7-8 15-11 25-10-6 3-11 8-15 14-4-1-7-2-10-4Z" fill="#ffc72c"/>
+  <text x="88" y="40" fill="#183b56" font-family="Outfit, Arial, sans-serif" font-size="24" font-weight="700">Traveloka</text>
+</svg>

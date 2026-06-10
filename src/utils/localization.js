@@ -1,4 +1,4 @@
-export const defaultRegion = 'id';
+export const defaultRegion = 'us';
 
 export const regions = {
   id: {

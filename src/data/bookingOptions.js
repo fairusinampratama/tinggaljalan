@@ -8,6 +8,48 @@ export const blockedBookingRules = [
   },
 ];
 
+export const dateAvailabilityRules = [
+  {
+    routeDestination: 'Bromo',
+    date: '2026-06-25',
+    status: 'limited',
+    seatsLeft: 3,
+    reason: 'Only a few jeep seats are left for this sunrise slot.',
+  },
+  {
+    routeDestination: 'Bromo',
+    date: '2026-07-10',
+    status: 'blocked',
+    reason: 'Bromo is temporarily closed due to local regulation or weather conditions.',
+  },
+  {
+    routeDestination: 'Bromo',
+    date: '2026-07-12',
+    status: 'booked',
+    reason: 'All guides and jeeps are already assigned for this date.',
+  },
+  {
+    routeDestination: 'Jogja',
+    date: '2026-06-28',
+    status: 'limited',
+    seatsLeft: 5,
+    reason: 'Limited driver slots for this date.',
+  },
+  {
+    routeDestination: 'Tumpak Sewu',
+    date: '2026-07-05',
+    status: 'booked',
+    reason: 'This waterfall trekking slot is fully booked.',
+  },
+  {
+    routeDestination: 'Medan',
+    date: '2026-07-03',
+    status: 'limited',
+    seatsLeft: 4,
+    reason: 'Limited Lake Toba transfer seats left.',
+  },
+];
+
 export const paxOptions = [
   { label: { id: '1 Orang', cn: '1 人', us: '1 Guest' }, value: 1 },
   { label: { id: '2 Orang', cn: '2 人', us: '2 Guests' }, value: 2 },

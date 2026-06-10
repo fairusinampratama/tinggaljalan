@@ -27,8 +27,15 @@ export function RouteArticlesSection({
   }
 
   return (
-    <section id="articles" className={isCatalog ? 'bg-transparent' : 'bg-white px-4 py-16 sm:px-8 lg:px-10'}>
-      <div className={isCatalog ? '' : 'mx-auto max-w-7xl'}>
+    <section id="articles" className={isCatalog ? 'bg-transparent' : 'relative overflow-hidden bg-white px-4 py-16 sm:px-8 lg:px-10'}>
+      {!isCatalog ? (
+        <>
+          <div className="adventure-path -left-24 top-24 hidden opacity-80 lg:block" />
+          <div className="adventure-blob bottom-10 right-10 h-36 w-36 opacity-55" />
+          <div className="terrain-sweep bottom-24 right-[-5rem] hidden h-20 w-96 opacity-70 lg:block" />
+        </>
+      ) : null}
+      <div className={isCatalog ? '' : 'relative mx-auto max-w-7xl'}>
         {showHeader ? (
           <SectionHeader eyebrow={t.packagesEyebrow} title={t.packagesTitle}>
             {t.packagesText}
@@ -59,10 +66,10 @@ export function RouteArticlesSection({
                   />
                 </div>
                 <div className={isCatalog ? 'p-4' : 'p-5'}>
-                  <span className="rounded-full bg-brandBlue/10 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-brandBlue transition duration-300 group-hover:bg-brandBlue group-hover:text-white group-focus-within:bg-brandBlue group-focus-within:text-white">
+                  <span className="rounded-full bg-brandBlue/10 px-3 py-1 text-xs font-extrabold uppercase tracking-[0.14em] text-brandBlue transition duration-300 group-hover:bg-brandBlue group-hover:text-white group-focus-within:bg-brandBlue group-focus-within:text-white">
                     {getLocalized(isCatalog ? item.badge : item.tag, language)}
                   </span>
-                  <h3 className={`${isCatalog ? 'mt-3 text-2xl' : 'mt-4 text-3xl'} font-display font-black leading-none transition duration-300 group-hover:text-brandBlue group-focus-within:text-brandBlue`}>
+                  <h3 className={`${isCatalog ? 'mt-3 text-xl' : 'mt-4 text-2xl'} font-extrabold leading-tight transition duration-300 group-hover:text-brandBlue group-focus-within:text-brandBlue`}>
                     {getLocalized(item.title, language)}
                   </h3>
                   {isCatalog ? (
@@ -84,7 +91,7 @@ export function RouteArticlesSection({
                       <p className="text-brandBlue">{getLocalized(item.destinationName, language)} / {getLocalized(item.category, language)}</p>
                     </div>
                   ) : (
-                    <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-brandBlue">
+                    <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.12em] text-brandBlue">
                       {getLocalized(item.destinationName, language)} / {getLocalized(item.category, language)}
                     </p>
                   )}
@@ -118,7 +125,7 @@ export function RouteArticlesSection({
           </div>
         ) : (
           <div className="rounded-2xl border border-brandLine bg-brandLight p-8 text-center">
-            <p className="font-display text-2xl font-black text-brandDark">{emptyText}</p>
+            <p className="text-xl font-extrabold text-brandDark">{emptyText}</p>
           </div>
         )}
 

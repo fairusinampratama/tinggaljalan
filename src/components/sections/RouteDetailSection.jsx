@@ -25,7 +25,7 @@ function DetailList({ title, items, language, icon: Icon = CheckCircle }) {
 
   return (
     <section className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft ${cardHoverClass}`}>
-      <h3 className="flex items-center gap-2 font-display text-xl font-black text-brandDark">
+      <h3 className="flex items-center gap-2 text-lg font-extrabold text-brandDark">
         <Icon className="h-4 w-4 text-brandBlue" /> {title}
       </h3>
       <ul className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-brandMuted">
@@ -65,16 +65,16 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <article>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-brandBlue">{t.routeDetailEyebrow}</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brandBlue">{t.routeDetailEyebrow}</p>
               <span className="rounded-full bg-brandBlue/10 px-3 py-1 text-xs font-black text-brandBlue">
                 {getLocalized(selectedArticle.badge, language)}
               </span>
             </div>
 
-            <h1 className="mt-3 max-w-4xl font-display text-4xl font-black leading-none text-brandDark sm:text-6xl">
+            <h1 className="mt-3 max-w-4xl font-display text-3xl font-extrabold leading-tight text-brandDark sm:text-4xl">
               {localizedTitle}
             </h1>
-            <p className="mt-5 max-w-3xl text-base font-semibold leading-8 text-brandMuted">
+            <p className="mt-5 max-w-3xl text-sm font-semibold leading-7 text-brandMuted sm:text-base">
               {getLocalized(selectedArticle.why, language)}
             </p>
 
@@ -99,7 +99,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             </div>
 
             <section className="mt-8 rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
-              <h2 className="font-display text-2xl font-black text-brandDark">{t.routeHighlights}</h2>
+              <h2 className="text-2xl font-extrabold text-brandDark">{t.routeHighlights}</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {localizeList(selectedArticle.highlights, language).map((highlight) => (
                   <div key={highlight} className="rounded-xl bg-brandLight p-4 text-sm font-black leading-6 text-brandDark">
@@ -112,8 +112,8 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             <section className="mt-8 rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-brandBlue">{t.packageOptions}</p>
-                  <h2 className="mt-2 font-display text-2xl font-black text-brandDark">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brandBlue">{t.packageOptions}</p>
+                  <h2 className="mt-2 text-2xl font-extrabold text-brandDark">
                     {getLocalized(packageOption.title, language) || localizedTitle}
                   </h2>
                   <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-brandMuted">
@@ -121,8 +121,8 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                   </p>
                 </div>
                 <div className="rounded-xl bg-brandBlue/10 px-4 py-3 text-right">
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-brandBlue">{t.fromPrice}</p>
-                  <p className="font-display text-2xl font-black text-brandDark">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brandBlue">{t.fromPrice}</p>
+                  <p className="text-2xl font-extrabold text-brandDark">
                     {formatCurrency(packagePrice, priceCurrency)}
                   </p>
                   <p className="text-xs font-black text-brandMuted">{t.perPerson}</p>
@@ -146,7 +146,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
 
             <section className="mt-8 grid gap-5 lg:grid-cols-2">
               <div className="rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
-                <h3 className="flex items-center gap-2 font-display text-xl font-black text-brandDark">
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-brandDark">
                   <ShieldCheck className="h-4 w-4 text-brandBlue" /> {t.cancellationPolicy}
                 </h3>
                 <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
@@ -154,7 +154,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                 </p>
               </div>
               <div className="rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
-                <h3 className="flex items-center gap-2 font-display text-xl font-black text-brandDark">
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-brandDark">
                   <MessageCircle className="h-4 w-4 text-brandBlue" /> {t.confirmationPolicy}
                 </h3>
                 <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
@@ -167,7 +167,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               <section className="mt-8 rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
-                    <h2 className="font-display text-2xl font-black text-brandDark">{t.travelerProof}</h2>
+                    <h2 className="text-2xl font-extrabold text-brandDark">{t.travelerProof}</h2>
                     <p className="mt-2 text-xs font-bold leading-5 text-brandMuted">{t.verifiedNote}</p>
                   </div>
                   <div className="flex gap-1 text-brandBlue">
@@ -195,13 +195,13 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
             <div className="rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-brandBlue">{t.selectedPackage}</p>
-              <h2 className="mt-2 font-display text-2xl font-black text-brandDark">
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brandBlue">{t.selectedPackage}</p>
+              <h2 className="mt-2 text-2xl font-extrabold text-brandDark">
                 {getLocalized(packageOption.title, language) || localizedTitle}
               </h2>
               <div className="mt-5 rounded-xl bg-brandLight p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-brandMuted">{t.fromPrice}</p>
-                <p className="mt-1 font-display text-3xl font-black text-brandDark">
+                <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brandMuted">{t.fromPrice}</p>
+                <p className="mt-1 text-2xl font-extrabold text-brandDark">
                   {formatCurrency(packagePrice, priceCurrency)}
                 </p>
                 <p className="text-sm font-black text-brandMuted">{t.perPerson}</p>
@@ -237,8 +237,8 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-brandLine bg-white/95 p-3 shadow-2xl backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-black uppercase tracking-[0.12em] text-brandBlue">{t.fromPrice}</p>
-            <p className="truncate font-display text-xl font-black text-brandDark">
+            <p className="truncate text-xs font-extrabold uppercase tracking-[0.12em] text-brandBlue">{t.fromPrice}</p>
+            <p className="truncate text-lg font-extrabold text-brandDark">
               {formatCurrency(packagePrice, priceCurrency)} <span className="text-xs text-brandMuted">{t.perPerson}</span>
             </p>
           </div>

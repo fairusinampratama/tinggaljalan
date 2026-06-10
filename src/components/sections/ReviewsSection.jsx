@@ -23,7 +23,7 @@ export function ReviewsSection() {
                 ))}
               </div>
               <p className="min-h-24 text-sm font-semibold leading-7 text-brandMuted">"{getLocalized(review.text, language)}"</p>
-              <p className="mt-5 font-display text-xl font-black text-brandDark">
+              <p className="mt-5 text-lg font-extrabold text-brandDark">
                 {review.name}, {getLocalized(review.origin, language)}
               </p>
             </article>

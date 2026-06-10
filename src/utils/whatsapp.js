@@ -12,6 +12,11 @@ const whatsappCopy = {
   bookingCode: { id: 'Kode Booking', cn: '预订编号', us: 'Booking Code' },
   package: { id: 'Paket', cn: '套餐', us: 'Package' },
   date: { id: 'Tanggal', cn: '日期', us: 'Date' },
+  availability: { id: 'Ketersediaan', cn: '可用性', us: 'Availability' },
+  available: { id: 'Tersedia', cn: '可预订', us: 'Available' },
+  limited: { id: 'Slot terbatas', cn: '名额有限', us: 'Limited seats' },
+  booked: { id: 'Penuh', cn: '已订满', us: 'Fully booked' },
+  blocked: { id: 'Diblokir', cn: '暂停预订', us: 'Blocked' },
   pax: { id: 'Peserta', cn: '人数', us: 'Guests' },
   pickup: { id: 'Titik Jemput', cn: '接送点', us: 'Pickup Point' },
   travelerType: { id: 'Tipe Traveler', cn: '旅客类型', us: 'Traveler Type' },
@@ -31,13 +36,15 @@ const whatsappCopy = {
   international: { id: 'International / USD', cn: '国际旅客 / USD', us: 'International / USD' },
 };
 
-export function createWhatsAppUrl({ route, booking, bookingCode, voucher, total, currency, paymentGateway, language }) {
+export function createWhatsAppUrl({ route, booking, bookingCode, voucher, total, currency, paymentGateway, availability, language }) {
   const region = normalizeRegion(language);
+  const availabilityStatus = availability?.status ?? 'available';
   const message = [
     getLocalized(whatsappCopy.heading, region),
     `${getLocalized(whatsappCopy.bookingCode, region)}: ${bookingCode}`,
     `${getLocalized(whatsappCopy.package, region)}: ${getLocalized(route.title, region)}`,
     `${getLocalized(whatsappCopy.date, region)}: ${formatTravelDate(booking.date, region)}`,
+    `${getLocalized(whatsappCopy.availability, region)}: ${getLocalized(whatsappCopy[availabilityStatus] ?? whatsappCopy.available, region)}`,
     `${getLocalized(whatsappCopy.pax, region)}: ${booking.pax}`,
     `${getLocalized(whatsappCopy.pickup, region)}: ${booking.pickup}`,
     `${getLocalized(whatsappCopy.travelerType, region)}: ${getLocalized(booking.travelerType === 'international' ? whatsappCopy.international : whatsappCopy.local, region)}`,

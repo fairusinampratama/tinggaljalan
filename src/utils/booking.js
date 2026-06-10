@@ -1,4 +1,4 @@
-import { blockedBookingRules, vouchers } from '../data/bookingOptions';
+import { blockedBookingRules, dateAvailabilityRules, vouchers } from '../data/bookingOptions';
 
 export function getBookingCurrency(travelerType = 'local') {
   return travelerType === 'international' ? 'USD' : 'IDR';
@@ -44,12 +44,39 @@ export function createBookingCode(date = new Date()) {
 }
 
 export function getBookingBlock(route, date) {
+  const availability = getDateAvailability(route, date);
   const rule = blockedBookingRules.find(
+    (item) => item.routeDestination === route.destination && item.date === date,
+  );
+  const blocked = availability.status === 'blocked' || Boolean(rule);
+
+  return {
+    blocked,
+    reason: availability.reason || rule?.reason || '',
+  };
+}
+
+export function getDateAvailability(route, date) {
+  const rule = dateAvailabilityRules.find(
     (item) => item.routeDestination === route.destination && item.date === date,
   );
 
   return {
-    blocked: Boolean(rule),
+    status: rule?.status ?? 'available',
+    seatsLeft: rule?.seatsLeft ?? null,
     reason: rule?.reason ?? '',
   };
+}
+
+export function getAvailabilityByDate(route) {
+  return dateAvailabilityRules
+    .filter((item) => item.routeDestination === route.destination)
+    .reduce((items, item) => {
+      items[item.date] = {
+        status: item.status,
+        seatsLeft: item.seatsLeft ?? null,
+        reason: item.reason ?? '',
+      };
+      return items;
+    }, {});
 }

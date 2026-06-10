@@ -280,7 +280,7 @@ export function RoutesPage() {
             <section key={group.id}>
               <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="font-display text-3xl font-black leading-none text-brandDark">{group.title}</h2>
+                  <h2 className="text-2xl font-extrabold leading-tight text-brandDark">{group.title}</h2>
                   <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-brandMuted">{group.text}</p>
                 </div>
                 <p className="text-sm font-black text-brandBlue">{group.routes.length} {t.packageCount}</p>
@@ -298,7 +298,7 @@ export function RoutesPage() {
         </div>
       ) : (
         <div className="rounded-2xl border border-brandLine bg-brandLight p-8 text-center">
-          <p className="font-display text-3xl font-black text-brandDark">{t.emptyPackagesTitle}</p>
+          <p className="text-2xl font-extrabold text-brandDark">{t.emptyPackagesTitle}</p>
           <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-brandMuted">
             {t.emptyPackagesText}
           </p>
