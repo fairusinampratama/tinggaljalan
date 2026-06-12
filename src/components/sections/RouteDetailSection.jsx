@@ -61,7 +61,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
 
   return (
     <>
-      <section id="route-detail" className="scroll-mt-24 bg-brandLight px-4 pb-10 pt-28 sm:px-8 sm:pt-32 lg:px-10">
+      <section id="route-detail" className="scroll-mt-24 bg-brandLight px-4 pb-28 pt-28 sm:px-8 sm:pt-32 lg:px-10 lg:pb-10">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <article>
             <div className="flex flex-wrap items-center gap-2">
