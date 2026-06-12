@@ -67,21 +67,26 @@ export const pickupOptions = [
 
 export const travelerTypeOptions = [
   {
-    label: { id: 'WNI / Local - IDR', cn: '印尼本地旅客 - IDR', us: 'Indonesian / Local - IDR' },
+    label: { id: 'WNI / Local', cn: '印尼本地旅客', us: 'Indonesian / Local' },
     value: 'local',
-    meta: { id: 'Midtrans setelah konfirmasi', cn: '确认后使用 Midtrans', us: 'Midtrans after confirmation' },
+    meta: { id: 'Klasifikasi traveler', cn: '旅客分类', us: 'Traveler classification' },
   },
   {
-    label: { id: 'International - USD', cn: '国际旅客 - USD', us: 'International - USD' },
+    label: { id: 'International', cn: '国际旅客', us: 'International' },
     value: 'international',
-    meta: { id: 'Stripe setelah konfirmasi', cn: '确认后使用 Stripe', us: 'Stripe after confirmation' },
+    meta: { id: 'Klasifikasi traveler', cn: '旅客分类', us: 'Traveler classification' },
   },
 ];
 
 export const paymentGateways = {
-  local: 'Midtrans',
-  international: 'Stripe',
+  IDR: 'Midtrans',
+  USD: 'Stripe',
 };
+
+export const currencyOptions = [
+  { label: { id: 'IDR', cn: 'IDR', us: 'IDR' }, value: 'IDR', meta: { id: 'Midtrans setelah konfirmasi', cn: '确认后使用 Midtrans', us: 'Midtrans after confirmation' } },
+  { label: { id: 'USD', cn: 'USD', us: 'USD' }, value: 'USD', meta: { id: 'Stripe setelah konfirmasi', cn: '确认后使用 Stripe', us: 'Stripe after confirmation' } },
+];
 
 export const vouchers = {
   BROMO10: { label: 'BROMO10', percent: 10, currencies: ['IDR', 'USD'] },
@@ -97,5 +102,7 @@ export const initialBooking = {
   pax: 2,
   pickup: 'Malang Hotel Area',
   travelerType: 'local',
+  currency: 'IDR',
+  addOns: [],
   notes: '',
 };

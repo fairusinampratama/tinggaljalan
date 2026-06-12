@@ -40,10 +40,10 @@ export function Dropdown({ label, value, options, onChange, placeholder = 'Selec
 
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
-      {label ? <span className="mb-2 block text-sm font-extrabold text-brandDark">{label}</span> : null}
+      {label ? <span className="mb-2 block text-sm font-semibold text-brandDark">{label}</span> : null}
       <button
         type="button"
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-left text-sm font-bold outline-none transition duration-200 hover:-translate-y-0.5 hover:border-brandBlue/40 hover:bg-white hover:shadow-lg hover:shadow-brandBlue/10 focus:border-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-left text-sm font-semibold outline-none transition duration-200 hover:-translate-y-0.5 hover:border-brandBlue/40 hover:bg-white hover:shadow-lg hover:shadow-brandBlue/10 focus:border-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
           isOpen ? 'border-brandBlue bg-white shadow-lg shadow-brandBlue/10' : ''
         }`}
         aria-expanded={isOpen}
@@ -73,7 +73,7 @@ export function Dropdown({ label, value, options, onChange, placeholder = 'Selec
                 type="button"
                 role="option"
                 aria-selected={selected}
-                className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
+                className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
                   selected ? 'bg-brandSoft text-brandBlue' : 'text-brandDark hover:bg-brandLight hover:text-brandBlue'
                 }`}
                 onClick={() => {

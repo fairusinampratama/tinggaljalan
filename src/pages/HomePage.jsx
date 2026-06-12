@@ -7,15 +7,18 @@ import { ReviewsSection } from '../components/sections/ReviewsSection';
 import { RouteArticlesSection } from '../components/sections/RouteArticlesSection';
 import { TrustStripSection } from '../components/sections/TrustStripSection';
 import { WhyChooseSection } from '../components/sections/WhyChooseSection';
+import { Seo } from '../components/seo/Seo';
 import { useBooking } from '../context/BookingContext';
 import { generalFaqItems } from '../data/faq';
 import { featuredRoutes } from '../data/routes';
+import { defaultSeo } from '../utils/seo';
 
 export function HomePage() {
   const { language, t, booking, setBooking, setSelectedRouteId, whatsappUrl } = useBooking();
 
   return (
     <>
+      <Seo {...defaultSeo} language={language} />
       <Hero
         t={t}
         language={language}

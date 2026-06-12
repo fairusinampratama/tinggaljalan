@@ -20,6 +20,8 @@ const whatsappCopy = {
   pax: { id: 'Peserta', cn: '人数', us: 'Guests' },
   pickup: { id: 'Titik Jemput', cn: '接送点', us: 'Pickup Point' },
   travelerType: { id: 'Tipe Traveler', cn: '旅客类型', us: 'Traveler Type' },
+  currency: { id: 'Currency', cn: '币种', us: 'Currency' },
+  addOns: { id: 'Add-ons', cn: '加选项目', us: 'Add-ons' },
   estimatedTotal: { id: 'Estimasi Total', cn: '预计总价', us: 'Estimated Total' },
   paymentGateway: { id: 'Payment setelah konfirmasi', cn: '确认后的付款方式', us: 'Payment Gateway After Confirmation' },
   voucher: { id: 'Voucher', cn: '优惠券', us: 'Voucher' },
@@ -32,13 +34,16 @@ const whatsappCopy = {
     cn: '状态：等待 Tinggal Jalan 团队确认可用性。',
     us: 'Status: Waiting for availability confirmation from the Tinggal Jalan team.',
   },
-  local: { id: 'WNI / Local / IDR', cn: '印尼本地旅客 / IDR', us: 'Indonesian / Local / IDR' },
-  international: { id: 'International / USD', cn: '国际旅客 / USD', us: 'International / USD' },
+  local: { id: 'WNI / Local', cn: '印尼本地旅客', us: 'Indonesian / Local' },
+  international: { id: 'International', cn: '国际旅客', us: 'International' },
 };
 
-export function createWhatsAppUrl({ route, booking, bookingCode, voucher, total, currency, paymentGateway, availability, language }) {
+export function createWhatsAppUrl({ route, booking, bookingCode, voucher, total, currency, paymentGateway, addOns = [], availability, language }) {
   const region = normalizeRegion(language);
   const availabilityStatus = availability?.status ?? 'available';
+  const addOnText = addOns.length
+    ? addOns.map((addOn) => `${getLocalized(addOn.title, region)} (${formatCurrency(addOn.total, currency)})`).join(', ')
+    : '-';
   const message = [
     getLocalized(whatsappCopy.heading, region),
     `${getLocalized(whatsappCopy.bookingCode, region)}: ${bookingCode}`,
@@ -48,6 +53,8 @@ export function createWhatsAppUrl({ route, booking, bookingCode, voucher, total,
     `${getLocalized(whatsappCopy.pax, region)}: ${booking.pax}`,
     `${getLocalized(whatsappCopy.pickup, region)}: ${booking.pickup}`,
     `${getLocalized(whatsappCopy.travelerType, region)}: ${getLocalized(booking.travelerType === 'international' ? whatsappCopy.international : whatsappCopy.local, region)}`,
+    `${getLocalized(whatsappCopy.currency, region)}: ${currency}`,
+    `${getLocalized(whatsappCopy.addOns, region)}: ${addOnText}`,
     `${getLocalized(whatsappCopy.estimatedTotal, region)}: ${formatCurrency(total, currency)}`,
     `${getLocalized(whatsappCopy.paymentGateway, region)}: ${paymentGateway}`,
     `${getLocalized(whatsappCopy.voucher, region)}: ${voucher?.label ?? '-'}`,

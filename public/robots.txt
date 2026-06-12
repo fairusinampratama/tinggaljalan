@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /booking
+Disallow: /checkout/
+
+Sitemap: https://tinggaljalan.com/sitemap.xml

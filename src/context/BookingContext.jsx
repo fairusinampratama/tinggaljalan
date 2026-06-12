@@ -20,7 +20,7 @@ export function BookingProvider({ children }) {
 
   const selectedRoute = getRouteById(selectedRouteId) ?? routeArticles[0];
   const t = { ...(copy[language] ?? copy.zh ?? copy.en), regionId: language };
-  const bookingSummary = calculateBookingSummary(selectedRoute, booking.pax, appliedVoucher, booking.travelerType);
+  const bookingSummary = calculateBookingSummary(selectedRoute, booking.pax, appliedVoucher, booking.currency, booking.addOns);
   const bookingBlock = getBookingBlock(selectedRoute, booking.date);
   const dateAvailability = getDateAvailability(selectedRoute, booking.date);
   const whatsappUrl = useMemo(
@@ -33,6 +33,7 @@ export function BookingProvider({ children }) {
         total: bookingSummary.total,
         currency: bookingSummary.currency,
         paymentGateway: bookingSummary.paymentGateway,
+        addOns: bookingSummary.addOns,
         availability: dateAvailability,
         language,
       }),
@@ -47,6 +48,18 @@ export function BookingProvider({ children }) {
     setBooking((current) => ({
       ...current,
       travelerType: nextRegionConfig.travelerType,
+      currency: nextRegionConfig.currency,
+    }));
+  }
+
+  function updateSelectedRouteId(routeId) {
+    const nextRoute = getRouteById(routeId) ?? routeArticles[0];
+    const availableAddOns = new Set((nextRoute.addOns ?? []).map((addOn) => addOn.id));
+
+    setSelectedRouteId(routeId);
+    setBooking((current) => ({
+      ...current,
+      addOns: current.addOns.filter((addOnId) => availableAddOns.has(addOnId)),
     }));
   }
 
@@ -59,7 +72,7 @@ export function BookingProvider({ children }) {
     setBooking,
     selectedRoute,
     selectedRouteId,
-    setSelectedRouteId,
+    setSelectedRouteId: updateSelectedRouteId,
     voucherCode,
     setVoucherCode,
     appliedVoucher,

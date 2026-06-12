@@ -4,6 +4,7 @@ import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { Field } from '../components/ui/Field';
 import { PageShell } from '../components/ui/PageShell';
+import { Seo } from '../components/seo/Seo';
 import { cardHoverClass, primaryButtonClass, secondaryButtonClass } from '../components/ui/styles';
 import { useBooking } from '../context/BookingContext';
 
@@ -25,11 +26,19 @@ export function CheckoutReviewPage() {
   const dateUnavailable = bookingBlock.blocked || dateAvailability.status === 'booked';
 
   return (
-    <PageShell eyebrow="Booking" title={t.contactTitle}>
+    <>
+      <Seo
+        title="Traveler Contact | Tinggal Jalan"
+        description="Complete traveler contact details for a Tinggal Jalan booking request."
+        path="/checkout/review"
+        language={language}
+        noindex
+      />
+      <PageShell eyebrow="Booking" title={t.contactTitle}>
       <CheckoutSteps current={1} />
       <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
         <form className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={(event) => event.preventDefault()}>
-          <h2 className="text-2xl font-extrabold">{t.contactDetails}</h2>
+          <h2 className="text-2xl font-bold">{t.contactDetails}</h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">{t.contactText}</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Field label={t.fullName}>
@@ -59,7 +68,7 @@ export function CheckoutReviewPage() {
             <Field label={t.voucher}>
               <div className="flex gap-2">
                 <input
-                  className="min-w-0 flex-1 rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-black uppercase outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+                  className="min-w-0 flex-1 rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold uppercase outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
                   value={voucherCode}
                   onChange={(event) => setVoucherCode(event.target.value)}
                 />
@@ -91,7 +100,7 @@ export function CheckoutReviewPage() {
             {dateUnavailable || !contactComplete ? (
               <button
                 type="button"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-extrabold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-bold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
                 disabled
               >
                 {dateUnavailable ? (dateAvailability.status === 'booked' ? t.booked : t.blockedTitle) : t.completeContact}
@@ -113,6 +122,7 @@ export function CheckoutReviewPage() {
           language={language}
         />
       </div>
-    </PageShell>
+      </PageShell>
+    </>
   );
 }

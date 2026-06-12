@@ -31,7 +31,7 @@ export function Footer({ t, whatsappUrl }) {
             <p className="mt-4 max-w-lg text-sm font-semibold leading-6 text-white/65">{t.footerText}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {trustBadges.map((item) => (
-                <span key={item} className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-extrabold text-white/75">
+                <span key={item} className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/75">
                   {item}
                 </span>
               ))}
@@ -41,7 +41,7 @@ export function Footer({ t, whatsappUrl }) {
           <nav className="grid grid-cols-2 gap-6" aria-label="Footer navigation">
             {footerColumns.map((column) => (
               <div key={column.title}>
-                <h3 className="text-sm font-extrabold text-white">{column.title}</h3>
+                <h3 className="text-sm font-bold text-white">{column.title}</h3>
                 <ul className="mt-3 grid gap-2 text-sm font-semibold text-white/65">
                   {column.links.map((link) => (
                     <li key={`${column.title}-${link.label}`}>
@@ -61,8 +61,8 @@ export function Footer({ t, whatsappUrl }) {
           </nav>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brandBlue">{t.contactEyebrow}</p>
-            <h2 className="mt-2 text-2xl font-extrabold leading-tight">{t.contactTitleFooter}</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">{t.contactEyebrow}</p>
+            <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
             <div className="mt-5 flex flex-col gap-3">
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>

@@ -6,8 +6,9 @@ import { DateField } from '../components/ui/DateField';
 import { Dropdown } from '../components/ui/Dropdown';
 import { Field } from '../components/ui/Field';
 import { PageShell } from '../components/ui/PageShell';
+import { Seo } from '../components/seo/Seo';
 import { cardHoverClass, primaryButtonClass } from '../components/ui/styles';
-import { paxOptions, travelerTypeOptions } from '../data/bookingOptions';
+import { currencyOptions, paxOptions, travelerTypeOptions } from '../data/bookingOptions';
 import { routeArticles } from '../data/routes';
 import { getAvailabilityByDate, getRoutePrice } from '../utils/booking';
 import { formatCurrency } from '../utils/currency';
@@ -33,14 +34,34 @@ export function BookingPage() {
     label: getLocalized(option.label, language),
     meta: getLocalized(option.meta, language),
   }));
+  const localizedCurrencyOptions = currencyOptions.map((option) => ({
+    ...option,
+    label: getLocalized(option.label, language),
+    meta: getLocalized(option.meta, language),
+  }));
   const availabilityByDate = getAvailabilityByDate(selectedRoute);
   const availabilityLabel = t[dateAvailability.status] ?? dateAvailability.status;
 
+  function toggleAddOn(addOnId) {
+    setBooking((current) => ({
+      ...current,
+      addOns: current.addOns.includes(addOnId)
+        ? current.addOns.filter((item) => item !== addOnId)
+        : [...current.addOns, addOnId],
+    }));
+  }
+
   return (
-    <PageShell eyebrow={t.bookingEyebrow} title={t.tripSetupTitle}>
+    <>
+      <Seo
+        title="Booking Request | Tinggal Jalan"
+        description="Send a Tinggal Jalan tour booking request with route, date, guests, pickup point, currency, and add-ons."
+        path="/booking"
+        language={language}
+        noindex
+      />
+      <PageShell eyebrow={t.bookingEyebrow} title={t.tripSetupTitle}>
       <div className="relative">
-        <div className="adventure-path -right-12 top-2 hidden opacity-60 lg:block" />
-        <div className="terrain-sweep left-4 top-16 hidden h-16 w-72 opacity-70 sm:block" />
         <div className="relative">
           <CheckoutSteps current={0} />
         </div>
@@ -55,7 +76,7 @@ export function BookingPage() {
                 options={routeArticles.map((route) => ({
                   label: getLocalized(route.title, language),
                   value: route.id,
-                  meta: `${localizeDuration(route.duration, language)} - ${formatCurrency(getRoutePrice(route, booking.travelerType), bookingSummary.currency)}${t.perPax}`,
+                  meta: `${localizeDuration(route.duration, language)} - ${formatCurrency(getRoutePrice(route, booking.currency), bookingSummary.currency)}${t.perPax}`,
                 }))}
                 onChange={setSelectedRouteId}
               />
@@ -65,6 +86,13 @@ export function BookingPage() {
                 value={booking.travelerType}
                 options={localizedTravelerTypeOptions}
                 onChange={(travelerType) => setBooking((current) => ({ ...current, travelerType }))}
+              />
+            </Field>
+            <Field label={t.currency}>
+              <Dropdown
+                value={booking.currency}
+                options={localizedCurrencyOptions}
+                onChange={(currency) => setBooking((current) => ({ ...current, currency }))}
               />
             </Field>
             <Field label={t.date}>
@@ -89,6 +117,43 @@ export function BookingPage() {
               />
             </Field>
           </div>
+          {selectedRoute.addOns?.length ? (
+            <div className="mt-5">
+              <p className="mb-3 text-sm font-semibold text-brandDark">{t.addOns}</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {selectedRoute.addOns.map((addOn) => {
+                  const checked = booking.addOns.includes(addOn.id);
+                  const addOnPrice = booking.currency === 'USD' ? addOn.priceUsd : addOn.priceIdr;
+                  const pricingLabel = addOn.pricing === 'perPax' ? t.perPax : t.perBooking;
+
+                  return (
+                    <label
+                      key={addOn.id}
+                      className={`cursor-pointer rounded-xl border p-4 transition ${
+                        checked ? 'border-brandBlue bg-brandSoft' : 'border-brandLine bg-brandLight hover:border-brandBlue/40 hover:bg-white'
+                      }`}
+                    >
+                      <span className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 accent-brandBlue"
+                          checked={checked}
+                          onChange={() => toggleAddOn(addOn.id)}
+                        />
+                        <span>
+                          <span className="block text-sm font-bold text-brandDark">{getLocalized(addOn.title, language)}</span>
+                          <span className="mt-1 block text-xs font-semibold leading-5 text-brandMuted">{getLocalized(addOn.description, language)}</span>
+                          <span className="mt-2 block text-xs font-bold text-brandBlue">
+                            {formatCurrency(addOnPrice, booking.currency)} {pricingLabel}
+                          </span>
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           <div className={`mt-4 rounded-xl border px-4 py-3 text-xs font-bold leading-5 ${
             dateAvailability.status === 'limited'
               ? 'border-amber-200 bg-amber-50 text-amber-700'
@@ -104,7 +169,7 @@ export function BookingPage() {
             {bookingBlock.blocked || dateAvailability.status === 'booked' ? (
               <button
                 type="button"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-extrabold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-bold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
                 disabled
               >
                 {dateAvailability.status === 'booked' ? t.booked : t.blockedTitle}
@@ -127,6 +192,7 @@ export function BookingPage() {
           language={language}
         />
       </div>
-    </PageShell>
+      </PageShell>
+    </>
   );
 }

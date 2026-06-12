@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { MapPin, Search, Sparkles, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { RouteArticlesSection } from '../components/sections/RouteArticlesSection';
+import { Seo } from '../components/seo/Seo';
 import { PageShell } from '../components/ui/PageShell';
 import { getFilteredRoutes, routeArticles, routeDestinations, routeStyleOptions } from '../data/routes';
 import { useBooking } from '../context/BookingContext';
@@ -175,6 +176,13 @@ export function RoutesPage() {
     destinationFilter === allValue
       ? `${filteredRoutes.length} ${t.packagesReady}`
       : `${filteredRoutes.length} ${t.packagesMatchFor} ${getDestinationLabel(destinationFilter, t)}`;
+  const seoTitle = destinationFilter === allValue
+    ? 'Indonesia Tour Packages | Tinggal Jalan'
+    : `${getDestinationLabel(destinationFilter, t)} Tour Packages | Tinggal Jalan`;
+  const seoDescription = destinationFilter === allValue
+    ? 'Compare private Indonesia tour packages for Bromo, Tumpak Sewu, Jogja, and Medan with clear itineraries, pickup options, prices, and traveler reviews.'
+    : `${intro} Compare routes, prices, pickup options, reviews, and availability before sending a booking request to Tinggal Jalan.`;
+  const seoPath = destinationFilter === allValue ? '/routes' : `/routes?destination=${encodeURIComponent(destinationFilter)}`;
 
   function updateQuery(nextValues) {
     const nextParams = new URLSearchParams(searchParams);
@@ -198,11 +206,13 @@ export function RoutesPage() {
   }
 
   return (
-    <PageShell eyebrow="Paket & Rute" title={title}>
+    <>
+      <Seo title={seoTitle} description={seoDescription} path={seoPath} language={language} />
+      <PageShell eyebrow="Paket & Rute" title={title}>
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_320px] lg:items-end">
         <div>
           <p className="max-w-3xl text-base font-semibold leading-7 text-brandMuted">{intro}</p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brandLine bg-brandLight px-4 py-2 text-sm font-extrabold text-brandDark">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brandLine bg-brandLight px-4 py-2 text-sm font-bold text-brandDark">
             <Sparkles className="h-4 w-4 text-brandBlue" />
             {summaryText}
           </div>
@@ -228,7 +238,7 @@ export function RoutesPage() {
               <button
                 key={destination.value}
                 type="button"
-                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-black transition ${
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition ${
                   isActive
                     ? 'border-brandBlue bg-brandBlue text-white shadow-soft'
                     : 'border-brandLine bg-white text-brandDark hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue'
@@ -251,7 +261,7 @@ export function RoutesPage() {
             <button
               key={style.value}
               type="button"
-              className={`min-h-10 rounded-full border px-4 text-sm font-black transition ${
+              className={`min-h-10 rounded-full border px-4 text-sm font-bold transition ${
                 isActive
                   ? 'border-brandDark bg-brandDark text-white'
                   : 'border-brandLine bg-brandLight text-brandDark hover:border-brandBlue hover:bg-white hover:text-brandBlue'
@@ -265,7 +275,7 @@ export function RoutesPage() {
         {hasActiveFilters ? (
           <button
             type="button"
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-brandLine bg-white px-4 text-sm font-black text-brandDark transition hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-brandLine bg-white px-4 text-sm font-bold text-brandDark transition hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue"
             onClick={clearFilters}
           >
             <X className="h-4 w-4" />
@@ -280,10 +290,10 @@ export function RoutesPage() {
             <section key={group.id}>
               <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <h2 className="text-2xl font-extrabold leading-tight text-brandDark">{group.title}</h2>
+                  <h2 className="text-2xl font-bold leading-tight text-brandDark">{group.title}</h2>
                   <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-brandMuted">{group.text}</p>
                 </div>
-                <p className="text-sm font-black text-brandBlue">{group.routes.length} {t.packageCount}</p>
+                <p className="text-sm font-bold text-brandBlue">{group.routes.length} {t.packageCount}</p>
               </div>
               <RouteArticlesSection
                 t={t}
@@ -298,7 +308,7 @@ export function RoutesPage() {
         </div>
       ) : (
         <div className="rounded-2xl border border-brandLine bg-brandLight p-8 text-center">
-          <p className="text-2xl font-extrabold text-brandDark">{t.emptyPackagesTitle}</p>
+          <p className="text-2xl font-bold text-brandDark">{t.emptyPackagesTitle}</p>
           <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-brandMuted">
             {t.emptyPackagesText}
           </p>
@@ -308,6 +318,7 @@ export function RoutesPage() {
       <p className="mt-8 text-center text-xs font-bold text-brandMuted">
         {routeArticles.length} {t.packageCount}. {t.routePriceNote}
       </p>
-    </PageShell>
+      </PageShell>
+    </>
   );
 }

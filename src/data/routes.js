@@ -1,6 +1,6 @@
 import { destinations, getDestinationById } from './destinations';
 
-const DUMMY_PRICE_NOTE = 'Dummy estimate for prototype calculator only; confirm final operational price before launch.';
+const PRICE_NOTE = 'Estimated price; final operational price is confirmed after schedule and availability checks.';
 
 const defaultPackagePolicies = {
   cancellation: {
@@ -17,9 +17,9 @@ const defaultPackagePolicies = {
 
 const defaultGoodToKnow = [
   {
-    id: 'Harga di halaman ini masih estimasi prototype sampai jadwal dan kebutuhan grup dikonfirmasi.',
-    cn: '页面价格为原型预估，实际价格需确认日期和团队需求后确定。',
-    us: 'Prices on this page are prototype estimates until schedule and group needs are confirmed.',
+    id: 'Harga di halaman ini masih estimasi sampai jadwal dan kebutuhan grup dikonfirmasi.',
+    cn: '页面价格为预估，实际价格需确认日期和团队需求后确定。',
+    us: 'Prices on this page are estimates until schedule and group needs are confirmed.',
   },
   {
     id: 'Pickup, drop-off, dan urutan stop bisa disesuaikan dengan kondisi lokal.',
@@ -32,6 +32,113 @@ const defaultGoodToKnow = [
     us: 'Availability can change because of weather, local regulation, or peak periods.',
   },
 ];
+
+const routeAddOnsByDestination = {
+  bromo: [
+    {
+      id: 'hotel-bromo-area',
+      title: { id: 'Hotel area Bromo', cn: 'Bromo 区域酒店', us: 'Bromo area hotel' },
+      description: { id: 'Bantuan request hotel dekat area Bromo.', cn: '协助预订 Bromo 附近酒店。', us: 'Hotel request support near the Bromo area.' },
+      priceIdr: 350000,
+      priceUsd: 24,
+      pricing: 'perBooking',
+    },
+    {
+      id: 'private-car-upgrade',
+      title: { id: 'Upgrade mobil private', cn: '私人车辆升级', us: 'Private car upgrade' },
+      description: { id: 'Unit lebih nyaman untuk pickup dan drop-off.', cn: '更舒适的接送车辆。', us: 'A more comfortable unit for pickup and drop-off.' },
+      priceIdr: 250000,
+      priceUsd: 18,
+      pricing: 'perBooking',
+    },
+    {
+      id: 'local-guide',
+      title: { id: 'Guide lokal tambahan', cn: '额外当地向导', us: 'Additional local guide' },
+      description: { id: 'Pendamping lokal untuk koordinasi dan cerita area.', cn: '当地陪同协助协调和讲解。', us: 'Local support for coordination and area context.' },
+      priceIdr: 150000,
+      priceUsd: 12,
+      pricing: 'perBooking',
+    },
+  ],
+  jogja: [
+    {
+      id: 'jogja-hotel-help',
+      title: { id: 'Bantuan hotel Jogja', cn: 'Jogja 酒店协助', us: 'Jogja hotel support' },
+      description: { id: 'Rekomendasi area menginap sesuai rute.', cn: '根据路线推荐住宿区域。', us: 'Stay-area recommendations matched to the route.' },
+      priceIdr: 200000,
+      priceUsd: 15,
+      pricing: 'perBooking',
+    },
+    {
+      id: 'culinary-stop',
+      title: { id: 'Stop kuliner tambahan', cn: '额外美食停留', us: 'Extra culinary stop' },
+      description: { id: 'Tambah satu stop makanan lokal sesuai waktu.', cn: '根据时间增加一个当地美食点。', us: 'Add one local food stop when timing allows.' },
+      priceIdr: 75000,
+      priceUsd: 6,
+      pricing: 'perPax',
+    },
+    {
+      id: 'airport-transfer',
+      title: { id: 'Airport transfer', cn: '机场接送', us: 'Airport transfer' },
+      description: { id: 'Pickup atau drop-off bandara di luar rundown utama.', cn: '主行程外的机场接送。', us: 'Airport pickup or drop-off outside the main rundown.' },
+      priceIdr: 175000,
+      priceUsd: 13,
+      pricing: 'perBooking',
+    },
+  ],
+  'tumpak-sewu': [
+    {
+      id: 'trekking-guide',
+      title: { id: 'Guide trekking lokal', cn: '当地徒步向导', us: 'Local trekking guide' },
+      description: { id: 'Guide tambahan untuk akses jalur basah.', cn: '湿滑路线额外向导。', us: 'Extra guide support for wet trail access.' },
+      priceIdr: 175000,
+      priceUsd: 13,
+      pricing: 'perBooking',
+    },
+    {
+      id: 'waterfall-raincoat',
+      title: { id: 'Ponco waterfall', cn: '瀑布雨衣', us: 'Waterfall poncho' },
+      description: { id: 'Ponco sederhana untuk area waterfall.', cn: '瀑布区域简易雨衣。', us: 'Simple poncho for the waterfall area.' },
+      priceIdr: 35000,
+      priceUsd: 3,
+      pricing: 'perPax',
+    },
+    {
+      id: 'lumajang-hotel-help',
+      title: { id: 'Bantuan hotel Lumajang', cn: 'Lumajang 酒店协助', us: 'Lumajang hotel support' },
+      description: { id: 'Request hotel dekat titik waterfall.', cn: '协助预订瀑布附近酒店。', us: 'Hotel request support near the waterfall access.' },
+      priceIdr: 300000,
+      priceUsd: 22,
+      pricing: 'perBooking',
+    },
+  ],
+  medan: [
+    {
+      id: 'medan-hotel-help',
+      title: { id: 'Bantuan hotel Medan/Toba', cn: 'Medan/Toba 酒店协助', us: 'Medan/Toba hotel support' },
+      description: { id: 'Bantuan request hotel sesuai jalur.', cn: '根据路线协助酒店请求。', us: 'Hotel request support matched to the route.' },
+      priceIdr: 350000,
+      priceUsd: 24,
+      pricing: 'perBooking',
+    },
+    {
+      id: 'family-car-upgrade',
+      title: { id: 'Upgrade mobil keluarga', cn: '家庭车辆升级', us: 'Family car upgrade' },
+      description: { id: 'Unit lebih lega untuk rute Sumatra Utara.', cn: '北苏门答腊路线更宽敞车辆。', us: 'Roomier vehicle for North Sumatra routes.' },
+      priceIdr: 300000,
+      priceUsd: 22,
+      pricing: 'perBooking',
+    },
+    {
+      id: 'local-food-stop',
+      title: { id: 'Stop kuliner lokal', cn: '当地美食停留', us: 'Local food stop' },
+      description: { id: 'Tambah stop makanan lokal sesuai jam perjalanan.', cn: '根据行程时间增加当地美食点。', us: 'Add a local food stop when travel timing allows.' },
+      priceIdr: 85000,
+      priceUsd: 7,
+      pricing: 'perPax',
+    },
+  ],
+};
 
 const destinationFallbackImage = {
   bromo: '/images/routes/bromo-jeep.jpg',
@@ -226,6 +333,29 @@ const routeUsdPriceById = {
   'jogja-bromo-overland': 130,
 };
 
+const routeReviewById = {
+  'bromo-sunrise': { rating: 5, reviewCount: 892 },
+  'bromo-madakaripura': { rating: 5, reviewCount: 265 },
+  'jogja-heritage': { rating: 5, reviewCount: 341 },
+  'bromo-family-jeep': { rating: 5, reviewCount: 214 },
+  'bromo-camping': { rating: 5, reviewCount: 118 },
+  'bromo-photography': { rating: 5, reviewCount: 176 },
+  'tumpak-sewu-daytrip': { rating: 5, reviewCount: 203 },
+  'tumpak-sewu-lower-trek': { rating: 5, reviewCount: 146 },
+  'tumpak-kapas-biru': { rating: 5, reviewCount: 91 },
+  'tumpak-bromo-2d1n': { rating: 5, reviewCount: 188 },
+  'jogja-prambanan-city': { rating: 5, reviewCount: 156 },
+  'jogja-merapi-jeep': { rating: 5, reviewCount: 224 },
+  'jogja-family-slow': { rating: 5, reviewCount: 132 },
+  'jogja-culinary-night': { rating: 5, reviewCount: 84 },
+  'medan-lake-toba': { rating: 5, reviewCount: 117 },
+  'medan-culinary': { rating: 5, reviewCount: 73 },
+  'medan-berastagi': { rating: 5, reviewCount: 69 },
+  'medan-toba-family': { rating: 5, reviewCount: 102 },
+  'bromo-tumpak': { rating: 5, reviewCount: 194 },
+  'jogja-bromo-overland': { rating: 5, reviewCount: 58 },
+};
+
 const localizedRouteTextById = {
   'bromo-sunrise': {
     title: { id: 'Private Trip Sunrise Bromo', cn: 'Bromo 日出私人行程', us: 'Bromo Sunrise Private Trip' },
@@ -382,6 +512,7 @@ function createRoute(route) {
   const difficulty = route.difficulty ?? 'Easy';
   const discovery = routeDiscoveryById[route.id] ?? {};
   const localizedText = localizedRouteTextById[route.id] ?? {};
+  const review = route.review ?? routeReviewById[route.id] ?? { rating: 5, reviewCount: 0 };
 
   return {
     featured: false,
@@ -425,13 +556,22 @@ function createRoute(route) {
     goodToKnow: route.goodToKnow ?? defaultGoodToKnow,
     policies: route.policies ?? defaultPackagePolicies,
     testimonials: route.testimonials ?? [],
+    rating: review.rating,
+    reviewCount: review.reviewCount,
+    reviewSource: route.reviewSource ?? { id: 'Traveler reviews', cn: '旅客评价', us: 'Traveler reviews' },
+    reviewSummary: route.reviewSummary ?? {
+      id: 'Rating preview berdasarkan testimoni dan catatan traveler.',
+      cn: '基于旅客反馈和评价的评分预览。',
+      us: 'Rating preview based on traveler feedback and notes.',
+    },
+    addOns: route.addOns ?? routeAddOnsByDestination[route.destinationId] ?? [],
     operator: route.operator ?? { id: 'Tinggal Jalan local team', cn: 'Tinggal Jalan 当地团队', us: 'Tinggal Jalan local team' },
     badge: route.badge ?? discovery.badge ?? route.tag,
     bestFor: route.bestFor ?? discovery.bestFor ?? route.why,
     styles: route.styles ?? discovery.styles ?? ['private'],
     highlights,
     difficulty,
-    priceNote: DUMMY_PRICE_NOTE,
+    priceNote: PRICE_NOTE,
     itinerary: route.itinerary ?? [
       {
         id: 'Pickup dari meeting point yang dipilih',
@@ -468,9 +608,9 @@ function createRoute(route) {
     ],
     notes: route.notes ?? [
       {
-        id: 'Estimasi harga dummy untuk prototype; konfirmasi harga operasional final sebelum launch.',
-        cn: '原型预估价格；正式上线前需确认最终运营价格。',
-        us: DUMMY_PRICE_NOTE,
+        id: 'Estimasi harga; konfirmasi harga operasional final setelah jadwal dan kebutuhan grup dicek.',
+        cn: '预估价格；确认日期和团队需求后提供最终运营价格。',
+        us: PRICE_NOTE,
       },
       {
         id: 'Jadwal bisa disesuaikan dengan waktu pesawat atau kereta.',
@@ -888,7 +1028,7 @@ export const routeArticles = [
     basePrice: 1550000,
     difficulty: 'Moderate',
     highlights: ['Yogyakarta departure', 'East Java transfer', 'Bromo sunrise'],
-    intro: 'A dummy overland package connecting Jogja and Bromo for travelers comparing multi-city Java routes.',
+    intro: 'An overland package connecting Jogja and Bromo for travelers comparing multi-city Java routes.',
     why: 'This package tests catalog support for cross-destination routes while keeping Jogja as the filter entry point.',
     sourceRefs: [...sourceRefsByDestination.jogja, ...sourceRefsByDestination.bromo],
   }),

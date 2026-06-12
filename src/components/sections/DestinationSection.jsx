@@ -14,10 +14,7 @@ export function DestinationSection() {
 
   return (
     <section id="destination" className="relative overflow-hidden px-4 pb-14 pt-24 sm:px-8 lg:px-10">
-      <div className="adventure-blob -right-20 top-12 h-56 w-56 opacity-70" />
-      <div className="adventure-path left-8 top-40 hidden opacity-80 lg:block" />
-      <div className="terrain-sweep bottom-14 left-[-3rem] hidden h-20 w-80 opacity-80 sm:block" />
-      <div className="relative mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl">
         <SectionHeader eyebrow={t.destinationEyebrow} title={t.destinationTitle}>
           {t.destinationText}
         </SectionHeader>
@@ -44,8 +41,8 @@ export function DestinationSection() {
                 />
               </div>
               <div className="p-5">
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brandBlue">{item.region}</p>
-                <h3 className="mt-2 text-2xl font-extrabold transition duration-300 group-hover:text-brandBlue">{item.name}</h3>
+                <p className="text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">{item.region}</p>
+                <h3 className="mt-2 text-2xl font-bold transition duration-300 group-hover:text-brandBlue">{item.name}</h3>
                 <p className="mt-3 min-h-20 text-sm font-semibold leading-6 text-brandMuted">{getLocalized(item.copy, language)}</p>
               </div>
             </article>

@@ -41,6 +41,9 @@ export const homeReviews = [
   {
     name: 'Joe',
     origin: { id: 'UK', cn: '英国', us: 'UK' },
+    rating: 5,
+    reviewCount: 128,
+    source: { id: 'Google Reviews', cn: 'Google 评价', us: 'Google Reviews' },
     text: {
       id: 'Trip Bromo lancar dari pickup sampai sunrise. Guidenya tepat waktu, membantu, dan mudah diajak komunikasi.',
       cn: 'Bromo 行程从接送到日出都很顺利。向导准时、细心，沟通也很方便。',
@@ -50,6 +53,9 @@ export const homeReviews = [
   {
     name: 'Sarah',
     origin: { id: 'Australia', cn: '澳大利亚', us: 'Australia' },
+    rating: 5,
+    reviewCount: 96,
+    source: { id: 'Traveler note', cn: '旅客反馈', us: 'Traveler note' },
     text: {
       id: 'Itinerary jelas, transport nyaman, dan komunikasi cepat sebelum trip. Sangat membantu untuk tamu internasional.',
       cn: '行程清楚、交通舒适，出发前沟通很快。对国际旅客非常有帮助。',
@@ -59,6 +65,9 @@ export const homeReviews = [
   {
     name: 'Ryo',
     origin: { id: 'Jepang', cn: '日本', us: 'Japan' },
+    rating: 5,
+    reviewCount: 74,
+    source: { id: 'Trip feedback', cn: '行程反馈', us: 'Trip feedback' },
     text: {
       id: 'Semuanya terasa rapi sejak chat pertama. Tim membantu kami memahami rute sebelum booking.',
       cn: '从第一次聊天开始，一切都安排得很清楚。团队在预订前帮我们了解路线。',

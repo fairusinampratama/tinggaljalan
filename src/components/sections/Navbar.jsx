@@ -17,7 +17,7 @@ export function Navbar({ language, setLanguage, t }) {
           <img src={logoUrl} alt="Tinggal Jalan" className="h-9 w-auto object-contain sm:h-10" />
         </Link>
 
-        <div className="hidden items-center gap-5 text-sm font-black lg:flex">
+        <div className="hidden items-center gap-5 text-sm font-bold lg:flex">
           {t.nav.map((item, index) => (
             <NavLink key={item} to={navRoutes[index]} className="border-b-2 border-transparent py-2 transition duration-200 hover:-translate-y-0.5 hover:border-brandBlue hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue">
               {item}
@@ -31,7 +31,7 @@ export function Navbar({ language, setLanguage, t }) {
               <button
                 key={item.id}
                 type="button"
-                className={`rounded-full px-3 py-1.5 text-xs font-black transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
                   language === item.id ? 'bg-brandBlue text-white shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandBlue'
                 }`}
                 onClick={() => setLanguage(item.id)}
@@ -55,7 +55,7 @@ export function Navbar({ language, setLanguage, t }) {
         <div className="border-t border-brandLine bg-white px-4 py-4 lg:hidden">
           <div className="grid gap-2">
             {t.nav.map((item, index) => (
-              <Link key={item} to={navRoutes[index]} className="rounded-xl px-3 py-3 text-sm font-black transition duration-200 hover:-translate-y-0.5 hover:bg-brandSoft hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue" onClick={() => setIsMenuOpen(false)}>
+              <Link key={item} to={navRoutes[index]} className="rounded-xl px-3 py-3 text-sm font-bold transition duration-200 hover:-translate-y-0.5 hover:bg-brandSoft hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue" onClick={() => setIsMenuOpen(false)}>
                 {item}
               </Link>
             ))}
@@ -64,7 +64,7 @@ export function Navbar({ language, setLanguage, t }) {
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex-1 rounded-full px-3 py-2 text-xs font-black transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${language === item.id ? 'bg-brandBlue text-white shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandBlue'}`}
+                  className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${language === item.id ? 'bg-brandBlue text-white shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandBlue'}`}
                   onClick={() => setLanguage(item.id)}
                 >
                   {item.label}

@@ -1,5 +1,5 @@
 export const buttonClass =
-  'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-extrabold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue sm:min-h-11 sm:px-5 sm:py-2.5';
+  'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue sm:min-h-11 sm:px-5 sm:py-2.5';
 
 export const primaryButtonClass = `${buttonClass} bg-brandBlue text-white shadow-soft hover:bg-brandDark hover:shadow-xl hover:shadow-brandBlue/10`;
 

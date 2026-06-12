@@ -8,7 +8,7 @@ export function AppLayout() {
   const { language, setLanguage, t, whatsappUrl } = useBooking();
 
   return (
-    <main className="adventure-grid min-h-screen bg-brandLight text-brandDark">
+    <main className="min-h-screen bg-brandLight text-brandDark">
       <Navbar language={language} setLanguage={setLanguage} t={t} />
       <Outlet />
       <Footer t={t} whatsappUrl={whatsappUrl} />

@@ -10,8 +10,8 @@ export function HomeCtaSection({ whatsappUrl }) {
     <section className="bg-brandDark px-4 py-14 text-white sm:px-8 lg:px-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-2xl">
-          <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-brandBlue">{t.ctaEyebrow}</p>
-          <h2 className="font-display text-[1.625rem] font-extrabold leading-tight sm:text-[2rem]">{t.ctaTitle}</h2>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">{t.ctaEyebrow}</p>
+          <h2 className="font-display text-[1.625rem] font-bold leading-tight sm:text-[2rem]">{t.ctaTitle}</h2>
           <p className="mt-4 text-sm font-semibold leading-7 text-white/70">
             {t.ctaText}
           </p>

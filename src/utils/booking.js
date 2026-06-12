@@ -1,38 +1,62 @@
 import { blockedBookingRules, dateAvailabilityRules, vouchers } from '../data/bookingOptions';
 
-export function getBookingCurrency(travelerType = 'local') {
-  return travelerType === 'international' ? 'USD' : 'IDR';
+export function getBookingCurrency(currency = 'IDR') {
+  return currency === 'USD' ? 'USD' : 'IDR';
 }
 
-export function getRoutePrice(route, travelerType = 'local') {
-  return getBookingCurrency(travelerType) === 'USD' ? route.basePriceUsd : route.basePriceIdr ?? route.basePrice;
+export function getRoutePrice(route, currency = 'IDR') {
+  return getBookingCurrency(currency) === 'USD' ? route.basePriceUsd : route.basePriceIdr ?? route.basePrice;
 }
 
-export function getPaymentGateway(travelerType = 'local') {
-  return travelerType === 'international' ? 'Stripe' : 'Midtrans';
+export function getPaymentGateway(currency = 'IDR') {
+  return getBookingCurrency(currency) === 'USD' ? 'Stripe' : 'Midtrans';
 }
 
-export function calculateBookingSummary(route, pax, voucherCode, travelerType = 'local') {
-  const currency = getBookingCurrency(travelerType);
+export function getSelectedAddOns(route, addOnIds = []) {
+  const selectedIds = new Set(addOnIds);
+  return (route.addOns ?? []).filter((addOn) => selectedIds.has(addOn.id));
+}
+
+export function getAddOnPrice(addOn, currency = 'IDR') {
+  return getBookingCurrency(currency) === 'USD' ? addOn.priceUsd : addOn.priceIdr;
+}
+
+export function calculateBookingSummary(route, pax, voucherCode, currencyInput = 'IDR', addOnIds = []) {
+  const currency = getBookingCurrency(currencyInput);
   const voucher = vouchers[voucherCode.trim().toUpperCase()];
   const appliedVoucher =
     voucher && (!voucher.currency || voucher.currency === currency) && (!voucher.currencies || voucher.currencies.includes(currency))
       ? voucher
       : null;
-  const basePrice = getRoutePrice(route, travelerType);
+  const basePrice = getRoutePrice(route, currency);
   const subtotal = basePrice * pax;
+  const addOns = getSelectedAddOns(route, addOnIds).map((addOn) => {
+    const unitPrice = getAddOnPrice(addOn, currency);
+    const quantity = addOn.pricing === 'perPax' ? pax : 1;
+
+    return {
+      ...addOn,
+      unitPrice,
+      quantity,
+      total: unitPrice * quantity,
+    };
+  });
+  const addOnsTotal = addOns.reduce((total, addOn) => total + addOn.total, 0);
+  const preDiscountTotal = subtotal + addOnsTotal;
   const discount = appliedVoucher?.percent
-    ? Math.round((subtotal * appliedVoucher.percent) / 100)
+    ? Math.round((preDiscountTotal * appliedVoucher.percent) / 100)
     : appliedVoucher?.amount ?? 0;
 
   return {
     voucher: appliedVoucher,
     currency,
-    paymentGateway: getPaymentGateway(travelerType),
+    paymentGateway: getPaymentGateway(currency),
     basePrice,
     subtotal,
+    addOns,
+    addOnsTotal,
     discount,
-    total: Math.max(subtotal - discount, 0),
+    total: Math.max(preDiscountTotal - discount, 0),
   };
 }
 
