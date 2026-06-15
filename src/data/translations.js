@@ -8,7 +8,7 @@ export const navTargets = ['#home', '#destination', '#articles', '#booking', '#c
 
 export const copy = {
   id: {
-    nav: ['Home', 'Destination', 'Routes', 'Booking', 'Contact'],
+    nav: ['Home', 'Destination', 'Routes', 'Berita & Panduan', 'Booking', 'Contact'],
     heroTag: 'Indonesia Tours & Meaningful Outdoor Activities',
     heroTitle: 'Tur Indonesia dan aktivitas outdoor bermakna bersama Tinggal Jalan.',
     heroText:
@@ -187,6 +187,7 @@ export const copy = {
     footerSupport: 'Support',
     footerCompany: 'Company',
     footerRoutes: 'All packages',
+    footerNews: 'Berita & Panduan',
     footerBookTrip: 'Book a trip',
     footerHowBookingWorks: 'How booking works',
     footerPaymentAfterConfirmation: 'Payment after confirmation',
@@ -200,7 +201,7 @@ export const copy = {
     availableOnText: 'Bandingkan rute, lihat bukti traveler, atau lanjut booking melalui marketplace yang sudah kamu gunakan.',
   },
   en: {
-    nav: ['Home', 'Destination', 'Routes', 'Booking', 'Contact'],
+    nav: ['Home', 'Destination', 'Routes', 'News & Guides', 'Booking', 'Contact'],
     heroTag: 'Indonesia Tours & Meaningful Outdoor Activities',
     heroTitle: 'Indonesia tours and meaningful outdoor activities with Tinggal Jalan.',
     heroText:
@@ -378,6 +379,7 @@ export const copy = {
     footerSupport: 'Support',
     footerCompany: 'Company',
     footerRoutes: 'All packages',
+    footerNews: 'News & Guides',
     footerBookTrip: 'Book a trip',
     footerHowBookingWorks: 'How booking works',
     footerPaymentAfterConfirmation: 'Payment after confirmation',
@@ -391,7 +393,7 @@ export const copy = {
     availableOnText: 'Compare routes, read traveler proof, or continue booking through the marketplace you already use.',
   },
   zh: {
-    nav: ['首页', '目的地', '路线', '预订', '联系'],
+    nav: ['首页', '目的地', '路线', '旅行资讯', '预订', '联系'],
     heroTag: '印尼旅行与有意义的户外体验',
     heroTitle: '与 Tinggal Jalan 一起体验印尼旅行与有意义的户外活动。',
     heroText: '专注于 Bromo 及周边目的地，提供清楚行程、当地团队、灵活接送点与 WhatsApp 咨询。',
@@ -567,6 +569,7 @@ export const copy = {
     footerSupport: '支持',
     footerCompany: '公司',
     footerRoutes: '全部套餐',
+    footerNews: '旅行资讯',
     footerBookTrip: '预订行程',
     footerHowBookingWorks: '预订流程',
     footerPaymentAfterConfirmation: '确认后付款',

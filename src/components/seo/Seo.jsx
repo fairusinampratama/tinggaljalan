@@ -35,6 +35,10 @@ function setCanonical(url) {
   canonical.setAttribute('href', url);
 }
 
+function removeMeta(selector) {
+  document.head.querySelector(selector)?.remove();
+}
+
 function setJsonLd(id, data) {
   document.head.querySelectorAll(`script[data-seo-jsonld="${id}"]`).forEach((item) => item.remove());
 
@@ -57,7 +61,18 @@ const htmlLangByRegion = {
   zh: 'zh-CN',
 };
 
-export function Seo({ title, description, path = '/', image = defaultSeo.image, noindex = false, jsonLd = null, language = 'id' }) {
+export function Seo({
+  title,
+  description,
+  path = '/',
+  image = defaultSeo.image,
+  noindex = false,
+  jsonLd = null,
+  language = 'id',
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+}) {
   useEffect(() => {
     const pageTitle = title || defaultSeo.title;
     const pageDescription = description || defaultSeo.description;
@@ -72,9 +87,19 @@ export function Seo({ title, description, path = '/', image = defaultSeo.image, 
     setMetaAttribute('meta[property="og:site_name"]', 'content', siteName);
     setMetaAttribute('meta[property="og:title"]', 'content', pageTitle);
     setMetaAttribute('meta[property="og:description"]', 'content', pageDescription);
-    setMetaAttribute('meta[property="og:type"]', 'content', 'website');
+    setMetaAttribute('meta[property="og:type"]', 'content', type);
     setMetaAttribute('meta[property="og:url"]', 'content', canonicalUrl);
     setMetaAttribute('meta[property="og:image"]', 'content', imageUrl);
+    if (publishedTime) {
+      setMetaAttribute('meta[property="article:published_time"]', 'content', publishedTime);
+    } else {
+      removeMeta('meta[property="article:published_time"]');
+    }
+    if (modifiedTime) {
+      setMetaAttribute('meta[property="article:modified_time"]', 'content', modifiedTime);
+    } else {
+      removeMeta('meta[property="article:modified_time"]');
+    }
     setMetaAttribute('meta[name="twitter:card"]', 'content', 'summary_large_image');
     setMetaAttribute('meta[name="twitter:title"]', 'content', pageTitle);
     setMetaAttribute('meta[name="twitter:description"]', 'content', pageDescription);
@@ -85,7 +110,7 @@ export function Seo({ title, description, path = '/', image = defaultSeo.image, 
     return () => {
       setJsonLd('page', null);
     };
-  }, [description, image, jsonLd, language, noindex, path, title]);
+  }, [description, image, jsonLd, language, modifiedTime, noindex, path, publishedTime, title, type]);
 
   return null;
 }

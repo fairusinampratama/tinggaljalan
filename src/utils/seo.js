@@ -68,3 +68,48 @@ export function buildRouteJsonLd(route, language = 'us') {
     },
   };
 }
+
+export function getNewsSeo(article, language = 'us') {
+  const title = getLocalized(article.seo?.title ?? article.title, language);
+  const description = getLocalized(article.seo?.description ?? article.excerpt, language);
+
+  return {
+    title,
+    description,
+    path: `/news/${article.slug}`,
+    image: article.coverImage,
+    type: 'article',
+    publishedTime: article.publishedDate,
+    modifiedTime: article.updatedDate ?? article.publishedDate,
+  };
+}
+
+export function buildNewsArticleJsonLd(article, language = 'us') {
+  const seo = getNewsSeo(article, language);
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': article.category === 'kabar' ? 'NewsArticle' : 'BlogPosting',
+    headline: getLocalized(article.title, language),
+    description: seo.description,
+    image: absoluteUrl(article.coverImage),
+    datePublished: article.publishedDate,
+    dateModified: article.updatedDate ?? article.publishedDate,
+    author: {
+      '@type': 'Organization',
+      name: siteName,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: siteName,
+      logo: {
+        '@type': 'ImageObject',
+        url: absoluteUrl('/favicon.svg'),
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': absoluteUrl(`/news/${article.slug}`),
+    },
+  };
+}

@@ -5,7 +5,7 @@ import { logoUrl } from '../../data/brand';
 import { languages } from '../../data/translations';
 import { iconButtonClass } from '../ui/styles';
 
-const navRoutes = ['/', '/#destination', '/routes', '/booking', '/#contact'];
+const navRoutes = ['/', '/#destination', '/routes', '/news', '/booking', '/#contact'];
 
 export function Navbar({ language, setLanguage, t }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

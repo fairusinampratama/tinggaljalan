@@ -11,6 +11,41 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://tinggaljalan.com/news</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>https://tinggaljalan.com/news/paket-wisata-bromo-dari-malang</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://tinggaljalan.com/news/tips-ke-tumpak-sewu-untuk-pemula</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://tinggaljalan.com/news/itinerary-jogja-3-hari-2-malam</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://tinggaljalan.com/news/liburan-keluarga-medan-danau-toba</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://tinggaljalan.com/news/cara-memilih-private-trip-indonesia</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
+  </url>
+  <url>
+    <loc>https://tinggaljalan.com/news/kabar-rute-baru-tinggal-jalan</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://tinggaljalan.com/routes/bromo-sunrise</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

@@ -7,6 +7,8 @@ import { CheckoutConfirmationPage } from './pages/CheckoutConfirmationPage';
 import { CheckoutPaymentPage } from './pages/CheckoutPaymentPage';
 import { CheckoutReviewPage } from './pages/CheckoutReviewPage';
 import { HomePage } from './pages/HomePage';
+import { NewsDetailPage } from './pages/NewsDetailPage';
+import { NewsPage } from './pages/NewsPage';
 import { RouteDetailPage } from './pages/RouteDetailPage';
 import { RoutesPage } from './pages/RoutesPage';
 
@@ -37,6 +39,8 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="routes" element={<RoutesPage />} />
             <Route path="routes/:routeId" element={<RouteDetailPage />} />
+            <Route path="news" element={<NewsPage />} />
+            <Route path="news/:articleSlug" element={<NewsDetailPage />} />
             <Route path="booking" element={<BookingPage />} />
             <Route path="checkout/review" element={<CheckoutReviewPage />} />
             <Route path="checkout/payment" element={<CheckoutPaymentPage />} />

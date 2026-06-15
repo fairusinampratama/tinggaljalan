@@ -8,6 +8,7 @@ export function Footer({ t, whatsappUrl }) {
       title: t.footerExplore,
       links: [
         { label: t.footerRoutes, href: '/routes' },
+        { label: t.footerNews, href: '/news' },
         { label: t.footerBookTrip, href: '/booking' },
         { label: t.nav?.[1] ?? 'Destination', href: '/#destination' },
       ],
@@ -16,7 +17,7 @@ export function Footer({ t, whatsappUrl }) {
       title: t.footerSupport,
       links: [
         { label: t.footerFaq, href: '/#faq' },
-        { label: t.nav?.[4] ?? 'Contact', href: '#contact' },
+        { label: t.nav?.[5] ?? 'Contact', href: '#contact' },
         { label: t.email, href: contactDetails.emailHref },
       ],
     },
