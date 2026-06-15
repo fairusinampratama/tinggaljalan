@@ -62,7 +62,7 @@ export function Footer({ t, whatsappUrl }) {
           </nav>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">{t.contactEyebrow}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.04em] text-white/58">{t.contactEyebrow}</p>
             <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
             <div className="mt-5 flex flex-col gap-3">

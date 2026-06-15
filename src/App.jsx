@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
-import { BookingProvider } from './context/BookingContext';
 import { BookingPage } from './pages/BookingPage';
 import { CheckoutConfirmationPage } from './pages/CheckoutConfirmationPage';
 import { CheckoutPaymentPage } from './pages/CheckoutPaymentPage';
@@ -32,22 +31,20 @@ function ScrollRestoration() {
 function App() {
   return (
     <BrowserRouter>
-      <BookingProvider>
-        <ScrollRestoration />
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="routes" element={<RoutesPage />} />
-            <Route path="routes/:routeId" element={<RouteDetailPage />} />
-            <Route path="news" element={<NewsPage />} />
-            <Route path="news/:articleSlug" element={<NewsDetailPage />} />
-            <Route path="booking" element={<BookingPage />} />
-            <Route path="checkout/review" element={<CheckoutReviewPage />} />
-            <Route path="checkout/payment" element={<CheckoutPaymentPage />} />
-            <Route path="checkout/confirmation" element={<CheckoutConfirmationPage />} />
-          </Route>
-        </Routes>
-      </BookingProvider>
+      <ScrollRestoration />
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route index element={<HomePage />} />
+          <Route path="routes" element={<RoutesPage />} />
+          <Route path="routes/:routeId" element={<RouteDetailPage />} />
+          <Route path="news" element={<NewsPage />} />
+          <Route path="news/:articleSlug" element={<NewsDetailPage />} />
+          <Route path="booking" element={<BookingPage />} />
+          <Route path="checkout/review" element={<CheckoutReviewPage />} />
+          <Route path="checkout/payment" element={<CheckoutPaymentPage />} />
+          <Route path="checkout/confirmation" element={<CheckoutConfirmationPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

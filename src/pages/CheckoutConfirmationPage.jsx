@@ -23,7 +23,7 @@ export function CheckoutConfirmationPage() {
       <CheckoutSteps current={2} />
       <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
         <section className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
-          <div className="grid h-11 w-11 place-items-center rounded-full bg-brandBlue text-white">
+          <div className="grid h-11 w-11 place-items-center rounded-full bg-brandBlue text-brandDark">
             <CheckCircle className="h-5 w-5" />
           </div>
           <h2 className="mt-5 text-2xl font-bold">{t.waitingConfirmation}</h2>

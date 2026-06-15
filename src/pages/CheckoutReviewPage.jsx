@@ -74,7 +74,7 @@ export function CheckoutReviewPage() {
                 />
                 <button
                   type="button"
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brandBlue text-white transition duration-200 hover:-translate-y-0.5 hover:bg-brandDark hover:shadow-lg hover:shadow-brandBlue/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue"
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brandBlue text-brandDark transition duration-200 hover:-translate-y-0.5 hover:bg-[#dc6948] hover:shadow-lg hover:shadow-brandBlue/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue"
                   onClick={() => setAppliedVoucher(voucherCode)}
                   aria-label={t.voucher}
                 >

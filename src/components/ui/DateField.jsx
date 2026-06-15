@@ -184,7 +184,7 @@ export function DateField({ label, value, onChange, language = 'en', className =
                   title={availability.reason || statusLabels[availability.status] || statusLabels.available}
                   className={`grid aspect-square min-h-9 place-items-center rounded-xl text-xs font-semibold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
                     isSelected
-                      ? 'bg-brandBlue text-white shadow-lg shadow-brandBlue/20'
+                      ? 'bg-brandBlue text-brandDark shadow-lg shadow-brandBlue/20'
                       : dayStatusClass
                   } ${isToday && !isSelected ? 'ring-1 ring-brandBlue/30' : ''}`}
                   onClick={() => selectDate(day.iso)}

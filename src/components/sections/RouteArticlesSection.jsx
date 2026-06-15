@@ -62,7 +62,7 @@ export function RouteArticlesSection({
                   />
                 </div>
                 <div className={`${isCatalog ? 'flex min-w-0 flex-col p-4' : 'p-5'}`}>
-                  <span className="rounded-full bg-brandBlue/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.04em] text-brandBlue transition duration-300 group-hover:bg-brandBlue group-hover:text-white group-focus-within:bg-brandBlue group-focus-within:text-white">
+                  <span className="rounded-full bg-brandBlue/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.04em] text-brandBlue transition duration-300 group-hover:bg-brandBlue group-hover:text-brandDark group-focus-within:bg-brandBlue group-focus-within:text-brandDark">
                     {getLocalized(isCatalog ? item.badge : item.tag, language)}
                   </span>
                   <h3 className={`${isCatalog ? 'mt-3 line-clamp-3 text-lg' : 'mt-4 text-2xl'} font-bold leading-tight transition duration-300 group-hover:text-brandBlue group-focus-within:text-brandBlue`}>

@@ -32,7 +32,7 @@ export function Navbar({ language, setLanguage, t }) {
                 key={item.id}
                 type="button"
                 className={`rounded-full px-3 py-1.5 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
-                  language === item.id ? 'bg-brandBlue text-white shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandBlue'
+                  language === item.id ? 'bg-brandBlue text-brandDark shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandDark'
                 }`}
                 onClick={() => setLanguage(item.id)}
               >
@@ -64,7 +64,7 @@ export function Navbar({ language, setLanguage, t }) {
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${language === item.id ? 'bg-brandBlue text-white shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandBlue'}`}
+                  className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${language === item.id ? 'bg-brandBlue text-brandDark shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandDark'}`}
                   onClick={() => setLanguage(item.id)}
                 >
                   {item.label}

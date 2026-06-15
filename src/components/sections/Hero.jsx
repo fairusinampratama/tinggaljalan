@@ -23,12 +23,14 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
           </svg>
         </div>
         <div className="relative mx-auto flex min-h-[620px] max-w-7xl items-center px-4 pb-28 pt-20 text-white sm:px-8 sm:pt-24 lg:px-10">
-          <div className="max-w-3xl">
-            <p className="mb-5 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-bold uppercase tracking-[0.04em] text-brandBlue sm:text-[15px] lg:text-base">
+          <div className="max-w-4xl">
+            <p className="mb-5 inline-flex max-w-full rounded-full border border-white/45 bg-brandLight/95 px-3.5 py-1.5 text-[10px] font-extrabold uppercase leading-5 tracking-[0.05em] text-brandBlue shadow-soft sm:px-4 sm:text-[11px] lg:text-xs">
               {t.heroTag}
             </p>
-            <h1 className="font-display text-[2rem] font-bold leading-[1.08] sm:text-4xl lg:text-[2.5rem]">{t.heroTitle}</h1>
-            <p className="mt-6 max-w-2xl text-sm font-semibold leading-7 text-white/90 sm:text-base">{t.heroText}</p>
+            <h1 className="max-w-[850px] font-display text-[2.35rem] font-extrabold leading-[1.02] tracking-normal sm:text-[3.4rem] lg:text-[4rem]">
+              {t.heroTitle}
+            </h1>
+            <p className="mt-6 max-w-2xl text-base font-medium leading-8 text-white/90 sm:text-lg">{t.heroText}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to="/routes" className={primaryButtonClass}>
                 <Route className={iconSize} /> {t.exploreRoutes}

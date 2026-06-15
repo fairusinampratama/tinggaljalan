@@ -214,7 +214,7 @@ export function NewsFilterBar({
                 type="button"
                 className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition ${
                   isActive
-                    ? 'border-brandBlue bg-brandBlue text-white shadow-soft'
+                    ? 'border-brandBlue bg-brandBlue text-brandDark shadow-soft'
                     : 'border-brandLine bg-white text-brandDark hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue'
                 }`}
                 onClick={() => onUpdate({ category: category.value })}

@@ -240,7 +240,7 @@ export function RoutesPage() {
                 type="button"
                 className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition ${
                   isActive
-                    ? 'border-brandBlue bg-brandBlue text-white shadow-soft'
+                    ? 'border-brandBlue bg-brandBlue text-brandDark shadow-soft'
                     : 'border-brandLine bg-white text-brandDark hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue'
                 }`}
                 onClick={() => updateQuery({ destination: destination.value })}

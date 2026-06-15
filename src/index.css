@@ -1,17 +1,17 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
-  --font-display: Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+  --font-display: Outfit, 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
 
-  --color-brandBlue: #212842;
-  --color-brandDark: #212842;
-  --color-brandMuted: #5f6472;
-  --color-brandLight: #faf7ef;
-  --color-brandSoft: #f0e7d5;
-  --color-brandLine: #e4dccb;
+  --color-brandBlue: #ef7d58;
+  --color-brandDark: #201d1a;
+  --color-brandMuted: #6f625a;
+  --color-brandLight: #f7efe8;
+  --color-brandSoft: #efe1d5;
+  --color-brandLine: #dfd0c4;
 
-  --shadow-soft: 0 12px 36px rgba(17, 24, 39, 0.08);
+  --shadow-soft: 0 14px 34px rgba(32, 29, 26, 0.08);
 }
 
 html {
@@ -20,9 +20,9 @@ html {
 
 body {
   margin: 0;
-  background: #faf7ef;
-  color: #212842;
-  font-family: Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+  background: #f7efe8;
+  color: #201d1a;
+  font-family: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -34,7 +34,7 @@ body {
   inset: auto 0 -1px 0;
   height: clamp(5.5rem, 11vw, 10rem);
   pointer-events: none;
-  color: #faf7ef;
+  color: #f7efe8;
 }
 
 .section-wave svg {

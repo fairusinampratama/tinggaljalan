@@ -16,7 +16,7 @@ export function CheckoutSteps({ current }) {
         <div
           key={step.path}
           className={`rounded-xl border px-4 py-3 text-sm font-bold ${stepHoverClass} ${
-            index <= current ? 'border-brandBlue bg-brandBlue text-white' : 'border-brandLine bg-white text-brandMuted'
+            index <= current ? 'border-brandBlue bg-brandBlue text-brandDark' : 'border-brandLine bg-white text-brandMuted'
           }`}
         >
           {index + 1}. {step.label}
