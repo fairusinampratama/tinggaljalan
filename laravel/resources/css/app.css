@@ -1,0 +1,63 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../**/*.jsx';
+
+@theme {
+    --font-sans: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+    --font-display: Outfit, 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+
+    --color-brandBlue: #ef7d58;
+    --color-brandDark: #201d1a;
+    --color-brandMuted: #6f625a;
+    --color-brandLight: #f7efe8;
+    --color-brandSoft: #efe1d5;
+    --color-brandLine: #dfd0c4;
+
+    --shadow-soft: 0 14px 34px rgba(32, 29, 26, 0.08);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    background: #f7efe8;
+    color: #201d1a;
+    font-family: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+}
+
+.section-wave {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    color: #f7efe8;
+    height: 132px;
+    pointer-events: none;
+}
+
+.section-wave svg {
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}

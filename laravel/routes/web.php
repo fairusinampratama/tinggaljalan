@@ -1,0 +1,32 @@
+<?php
+
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\NewsController;
+use App\Http\Controllers\RouteController;
+use App\Http\Controllers\SitemapController;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/', HomeController::class)->name('home');
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
+Route::get('/robots.txt', fn () => response(
+    "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /booking\nDisallow: /checkout/\n\nSitemap: https://tinggaljalan.com/sitemap.xml\n",
+    200,
+    ['Content-Type' => 'text/plain; charset=UTF-8']
+))->name('robots');
+Route::get('/language/{language}', LanguageController::class)->name('language');
+
+Route::get('/routes', [RouteController::class, 'index'])->name('routes.index');
+Route::get('/routes/{slug}', [RouteController::class, 'show'])->name('routes.show');
+
+Route::get('/news', [NewsController::class, 'index'])->name('news.index');
+Route::get('/news/{slug}', [NewsController::class, 'show'])->name('news.show');
+
+Route::get('/booking', [BookingController::class, 'create'])->name('booking.create');
+Route::post('/booking/recalculate', [BookingController::class, 'recalculate'])->name('booking.recalculate');
+Route::post('/booking', [BookingController::class, 'storeDraft'])->name('booking.store');
+Route::get('/checkout/review', [BookingController::class, 'review'])->name('checkout.review');
+Route::post('/checkout/review', [BookingController::class, 'submit'])->name('checkout.submit');
+Route::get('/checkout/payment', [BookingController::class, 'payment'])->name('checkout.payment');
+Route::get('/checkout/confirmation', [BookingController::class, 'confirmation'])->name('checkout.confirmation');
