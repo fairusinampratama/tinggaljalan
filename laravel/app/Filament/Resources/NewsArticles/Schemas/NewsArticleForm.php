@@ -7,6 +7,7 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -23,7 +24,8 @@ class NewsArticleForm
                         Select::make('destination_id')->relationship('destination', 'name')->searchable()->preload(),
                         Select::make('article_category_id')->relationship('articleCategory', 'slug')->searchable()->preload()->required(),
                         TextInput::make('slug')->required()->maxLength(255),
-                        TextInput::make('cover_image')->label('Cover image path')->maxLength(255),
+                        AdminForm::imageUpload('cover_image', 'Cover image', 'admin/news/covers')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
                 AdminForm::localized('title', 'Title', required: true),
@@ -58,7 +60,9 @@ class NewsArticleForm
                     ->getOptionLabelFromRecordUsing(fn ($record): string => $record->title['us'] ?? $record->slug)
                     ->columns(2)
                     ->columnSpanFull(),
-                AdminForm::json('tags', 'Tags'),
+                TagsInput::make('tags')
+                    ->placeholder('Add tag')
+                    ->columnSpanFull(),
                 AdminForm::json('seo', 'SEO metadata'),
             ]);
     }

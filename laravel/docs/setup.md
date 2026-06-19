@@ -12,6 +12,7 @@ npm install
 npm run build
 docker compose up -d mysql
 php artisan migrate:fresh --seed
+php artisan storage:link
 ```
 
 If the host PHP does not have the extensions required by Filament (`intl`, `zip`, and `pdo_mysql`), or if the test suite needs a higher PHP memory limit, use the Docker PHP app container instead:
@@ -20,6 +21,7 @@ If the host PHP does not have the extensions required by Filament (`intl`, `zip`
 docker compose build app
 docker compose up -d mysql
 docker compose run --rm app php artisan migrate:fresh --seed
+docker compose run --rm app php artisan storage:link
 docker compose up -d app
 ```
 
@@ -74,6 +76,12 @@ After the database is migrated and seeded, start the Laravel server, queue liste
 
 ```bash
 composer run dev
+```
+
+The admin media fields store uploads on Laravel's public disk, so make sure the storage symlink exists before testing image uploads:
+
+```bash
+php artisan storage:link
 ```
 
 When using the Docker PHP app container, start the web server with:

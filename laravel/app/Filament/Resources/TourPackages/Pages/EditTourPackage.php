@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\TourPackages\Pages;
 
 use App\Filament\Resources\TourPackages\TourPackageResource;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -15,7 +14,6 @@ class EditTourPackage extends EditRecord
     {
         return [
             ViewAction::make(),
-            DeleteAction::make(),
         ];
     }
 }

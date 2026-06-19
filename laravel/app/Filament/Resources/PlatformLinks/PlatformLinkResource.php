@@ -20,9 +20,11 @@ class PlatformLinkResource extends Resource
 {
     protected static ?string $model = PlatformLink::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Site Management';
+
+    protected static ?int $navigationSort = 20;
 
     public static function form(Schema $schema): Schema
     {

@@ -2,8 +2,7 @@
 
 namespace App\Filament\Resources\NewsArticles\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
@@ -22,8 +21,16 @@ class NewsArticlesTable
                 TextColumn::make('articleCategory.slug')->label('Category')->sortable(),
                 TextColumn::make('destination.name')->searchable(),
                 TextColumn::make('slug')->searchable(),
-                TextColumn::make('status')->badge()->searchable(),
+                TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'published' => 'success',
+                        'draft' => 'gray',
+                        default => 'warning',
+                    })
+                    ->searchable(),
                 TextColumn::make('published_at')->dateTime()->sortable(),
+                TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_featured')->boolean(),
             ])
             ->filters([
@@ -35,11 +42,13 @@ class NewsArticlesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('view_site')
+                    ->label('View on site')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->url(fn ($record): string => route('news.show', $record->slug))
+                    ->visible(fn ($record): bool => $record->status === 'published' && $record->published_at !== null && $record->published_at->lte(now()))
+                    ->openUrlInNewTab(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

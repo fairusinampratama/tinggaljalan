@@ -44,15 +44,34 @@ class PublicSite
 
     public static function image(?string $path): string
     {
-        if (! $path) {
-            return asset('images/hero-bromo.jpg');
-        }
+        $path = self::assetPath($path);
 
         if (Str::startsWith($path, ['http://', 'https://', '/'])) {
             return $path;
         }
 
         return asset($path);
+    }
+
+    public static function assetPath(?string $path): string
+    {
+        if (! $path) {
+            return '/images/hero-bromo.jpg';
+        }
+
+        if (Str::startsWith($path, ['http://', 'https://', '/'])) {
+            return $path;
+        }
+
+        if (Str::startsWith($path, 'storage/')) {
+            return '/'.$path;
+        }
+
+        if (Str::startsWith($path, 'admin/')) {
+            return '/storage/'.$path;
+        }
+
+        return '/'.ltrim($path, '/');
     }
 
     public static function setting(string $group, string $key, mixed $fallback = null): mixed

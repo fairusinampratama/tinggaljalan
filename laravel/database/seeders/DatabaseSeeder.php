@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Tinggal Jalan Admin',
                 'password' => Hash::make('password'),
+                'is_admin' => true,
             ],
         );
 

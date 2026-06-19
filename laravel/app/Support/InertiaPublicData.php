@@ -312,15 +312,7 @@ class InertiaPublicData
 
     private static function assetPath(?string $path): string
     {
-        if (! $path) {
-            return '/images/hero-bromo.jpg';
-        }
-
-        if (Str::startsWith($path, ['http://', 'https://', '/'])) {
-            return $path;
-        }
-
-        return '/'.ltrim($path, '/');
+        return PublicSite::assetPath($path);
     }
 
     private static function settingList(string $group, string $key): array

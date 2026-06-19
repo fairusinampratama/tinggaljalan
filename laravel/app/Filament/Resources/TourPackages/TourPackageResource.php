@@ -20,9 +20,33 @@ class TourPackageResource extends Resource
 {
     protected static ?string $model = TourPackage::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBriefcase;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Travel Products';
+
+    protected static ?int $navigationSort = 10;
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = TourPackage::query()
+            ->where(function ($query) {
+                $query
+                    ->where('is_active', false)
+                    ->orWhereNull('cover_image')
+                    ->orWhere(function ($query) {
+                        $query->whereNull('base_price_idr')->whereNull('base_price_usd');
+                    })
+                    ->orDoesntHave('itineraryItems');
+            })
+            ->count();
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'warning';
+    }
 
     public static function form(Schema $schema): Schema
     {

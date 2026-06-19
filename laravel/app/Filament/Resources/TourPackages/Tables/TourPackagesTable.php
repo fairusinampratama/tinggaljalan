@@ -2,8 +2,7 @@
 
 namespace App\Filament\Resources\TourPackages\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
@@ -28,6 +27,7 @@ class TourPackagesTable
                 TextColumn::make('sort_order')->numeric()->sortable(),
                 IconColumn::make('is_featured')->boolean(),
                 IconColumn::make('is_active')->boolean(),
+                TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('destination_id')->relationship('destination', 'name')->label('Destination'),
@@ -37,11 +37,13 @@ class TourPackagesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('view_site')
+                    ->label('View on site')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->url(fn ($record): string => route('routes.show', $record->slug))
+                    ->visible(fn ($record): bool => (bool) $record->is_active)
+                    ->openUrlInNewTab(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->toolbarActions([]);
     }
 }

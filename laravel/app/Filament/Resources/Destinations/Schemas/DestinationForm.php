@@ -20,7 +20,8 @@ class DestinationForm
                         TextInput::make('name')->required()->maxLength(255),
                         TextInput::make('region')->maxLength(255),
                         TextInput::make('province')->maxLength(255),
-                        TextInput::make('cover_image')->label('Cover image path')->maxLength(255)->columnSpanFull(),
+                        AdminForm::imageUpload('cover_image', 'Cover image', 'admin/destinations/covers')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2),
                 AdminForm::localized('short_description', 'Short description', textarea: true),
@@ -32,7 +33,8 @@ class DestinationForm
                         Toggle::make('is_active')->required(),
                     ])
                     ->columns(3),
-                AdminForm::json('gallery', 'Gallery image paths'),
+                AdminForm::imageUpload('gallery', 'Gallery images', 'admin/destinations/gallery', multiple: true)
+                    ->columnSpanFull(),
                 AdminForm::json('source_refs', 'Source references'),
                 AdminForm::json('seo', 'SEO metadata'),
             ]);

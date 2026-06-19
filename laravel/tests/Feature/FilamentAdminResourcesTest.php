@@ -41,6 +41,29 @@ class FilamentAdminResourcesTest extends TestCase
         }
     }
 
+    public function test_authenticated_admin_can_access_dashboard_with_operations_widgets(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertOk()
+            ->assertSee('Today at a glance')
+            ->assertSee('Booking action queue')
+            ->assertSee('Package readiness');
+    }
+
+    public function test_authenticated_non_admin_cannot_access_admin_panel(): void
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+
+        $this->actingAs($user)
+            ->get('/admin')
+            ->assertForbidden();
+    }
+
     public function test_authenticated_admin_can_access_core_create_and_edit_pages(): void
     {
         $this->seed();

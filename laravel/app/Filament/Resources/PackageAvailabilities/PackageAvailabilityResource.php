@@ -20,9 +20,11 @@ class PackageAvailabilityResource extends Resource
 {
     protected static ?string $model = PackageAvailability::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDateRange;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Travel Products';
+
+    protected static ?int $navigationSort = 50;
 
     public static function form(Schema $schema): Schema
     {

@@ -20,9 +20,11 @@ class TrustStatResource extends Resource
 {
     protected static ?string $model = TrustStat::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static string|\UnitEnum|null $navigationGroup = 'Site Management';
+
+    protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
     {

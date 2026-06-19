@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\NewsArticles\Pages;
 
 use App\Filament\Resources\NewsArticles\NewsArticleResource;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
@@ -15,7 +14,6 @@ class EditNewsArticle extends EditRecord
     {
         return [
             ViewAction::make(),
-            DeleteAction::make(),
         ];
     }
 }

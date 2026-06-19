@@ -29,9 +29,7 @@ class Seo
 
     public static function assetUrl(?string $path = null): string
     {
-        if (! $path) {
-            $path = self::DEFAULT_IMAGE;
-        }
+        $path = PublicSite::assetPath($path ?: self::DEFAULT_IMAGE);
 
         if (Str::startsWith($path, ['http://', 'https://'])) {
             return $path;

@@ -65,6 +65,34 @@ class PublicPagesTest extends TestCase
                 ->where('seo.og_type', 'product'));
     }
 
+    public function test_route_detail_supports_static_and_uploaded_media_paths(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'cover_image' => 'images/static-package.jpg',
+            'gallery' => ['/images/static-gallery.jpg'],
+        ]);
+
+        $this->get("/routes/{$package->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('route.image', '/images/static-package.jpg')
+                ->where('route.gallery.0', '/images/static-gallery.jpg'));
+
+        $package->update([
+            'cover_image' => 'admin/packages/covers/uploaded-package.jpg',
+            'gallery' => ['admin/packages/gallery/uploaded-gallery.jpg'],
+        ]);
+
+        $this->get("/routes/{$package->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('route.image', '/storage/admin/packages/covers/uploaded-package.jpg')
+                ->where('route.gallery.0', '/storage/admin/packages/gallery/uploaded-gallery.jpg'));
+    }
+
     public function test_news_listing_and_detail_render_with_redirect_for_unknown_slug(): void
     {
         $this->seed();
@@ -90,6 +118,26 @@ class PublicPagesTest extends TestCase
 
         $this->get('/news/not-real')
             ->assertRedirect('/news');
+    }
+
+    public function test_news_detail_supports_static_and_uploaded_media_paths(): void
+    {
+        $this->seed();
+
+        $article = NewsArticle::where('slug', 'paket-wisata-bromo-dari-malang')->firstOrFail();
+        $article->update(['cover_image' => 'images/static-news.jpg']);
+
+        $this->get("/news/{$article->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('article.coverImage', '/images/static-news.jpg'));
+
+        $article->update(['cover_image' => 'admin/news/covers/uploaded-news.jpg']);
+
+        $this->get("/news/{$article->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('article.coverImage', '/storage/admin/news/covers/uploaded-news.jpg'));
     }
 
     public function test_booking_draft_persists_and_submission_creates_booking(): void
