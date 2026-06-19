@@ -18,4 +18,4 @@ WORKDIR /var/www/html
 
 EXPOSE 8000
 
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public", "vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
+CMD ["sh", "-c", "cd public && php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
