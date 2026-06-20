@@ -7,6 +7,7 @@ use App\Models\Faq;
 use App\Models\TourPackage;
 use App\Support\InertiaPublicData;
 use App\Support\PublicSite;
+use App\Support\RouteFilterOptions;
 use App\Support\Seo;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,9 +20,10 @@ class RouteController extends Controller
         $search = trim((string) $request->query('search', ''));
         $destination = $request->query('destination', 'all');
         $style = $request->query('style', 'recommended');
+        $style = RouteFilterOptions::isActive($style) ? $style : RouteFilterOptions::DEFAULT_SLUG;
 
         $packages = TourPackage::query()
-            ->with('destination')
+            ->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])
             ->active()
             ->when($destination !== 'all', fn ($query) => $query->whereHas('destination', fn ($destinationQuery) => $destinationQuery->where('slug', $destination)))
             ->when($style !== 'recommended', fn ($query) => $query->whereJsonContains('styles', $style))
@@ -51,7 +53,7 @@ class RouteController extends Controller
             'search' => $search,
             'destinationFilter' => $destination,
             'styleFilter' => $style,
-            'styles' => ['recommended', 'family', 'adventure', 'multi-day', 'culture', 'waterfall', 'sunrise'],
+            'styles' => array_column(RouteFilterOptions::publicOptions(), 'value'),
             'seo' => Seo::routesIndex($packages, $search !== ''),
         ]);
     }
@@ -60,13 +62,23 @@ class RouteController extends Controller
     {
         $language = PublicSite::language($request);
         $package = TourPackage::query()
-            ->with(['destination', 'itineraryItems', 'addOns', 'newsArticles', 'bookings'])
+            ->with(['destination', 'itineraryItems', 'packageAddOns', 'newsArticles', 'bookings'])
             ->active()
-            ->where('slug', $slug)
+            ->where(function ($query) use ($slug) {
+                $query->where('slug', $slug);
+
+                if (ctype_digit($slug)) {
+                    $query->orWhere('id', (int) $slug);
+                }
+            })
             ->first();
 
         if (! $package) {
             return redirect()->route('routes.index');
+        }
+
+        if ($package->slug !== $slug) {
+            return redirect()->route('routes.show', ['slug' => $package->slug]);
         }
 
         return Inertia::render('RouteDetailPage', [

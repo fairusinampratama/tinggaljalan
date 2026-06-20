@@ -43,6 +43,36 @@ class SeoInfrastructureTest extends TestCase
                 ->where('seo.json_ld.1.@type', 'TouristTrip'));
     }
 
+    public function test_route_detail_seo_description_can_be_overridden_or_fall_back_to_excerpt(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'excerpt' => ['us' => 'Fallback package excerpt.', 'id' => '', 'cn' => ''],
+            'seo' => [
+                'description' => ['us' => 'Custom route SEO description.', 'id' => '', 'cn' => ''],
+            ],
+        ]);
+
+        $this->get("/routes/{$package->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('seo.description', 'Custom route SEO description.')
+                ->where('seo.title', 'Bromo Sunrise Private Trip | Tinggal Jalan'));
+
+        $package->update([
+            'seo' => [
+                'description' => ['us' => '', 'id' => '', 'cn' => ''],
+            ],
+        ]);
+
+        $this->get("/routes/{$package->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('seo.description', 'Fallback package excerpt.'));
+    }
+
     public function test_news_detail_has_article_metadata_and_schema(): void
     {
         $this->seed();

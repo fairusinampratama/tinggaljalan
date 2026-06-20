@@ -91,7 +91,8 @@ class Seo
     public static function routeDetail(TourPackage $package, string $language): array
     {
         $title = PublicSite::localized($package->title, $language);
-        $description = PublicSite::localized($package->seo['description'] ?? $package->excerpt, $language);
+        $description = PublicSite::localized($package->seo['description'] ?? null, $language);
+        $description = filled($description) ? $description : PublicSite::localized($package->excerpt, $language);
 
         return self::page([
             'title' => "{$title} | Tinggal Jalan",

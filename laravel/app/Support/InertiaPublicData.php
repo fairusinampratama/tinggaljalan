@@ -2,19 +2,18 @@
 
 namespace App\Support;
 
-use App\Models\AddOn;
 use App\Models\ArticleCategory;
 use App\Models\Destination;
 use App\Models\Faq;
 use App\Models\NewsArticle;
 use App\Models\PackageAvailability;
+use App\Models\PackageAddOn;
 use App\Models\PlatformLink;
 use App\Models\Review;
 use App\Models\TourPackage;
 use App\Models\TrustStat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 class InertiaPublicData
 {
@@ -22,7 +21,7 @@ class InertiaPublicData
     {
         $language = PublicSite::language($request);
         $packages = TourPackage::query()
-            ->with(['destination', 'addOns', 'itineraryItems', 'newsArticles'])
+            ->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])
             ->active()
             ->ordered()
             ->get();
@@ -44,7 +43,7 @@ class InertiaPublicData
                 'value' => $category->slug,
                 'label' => self::localizedArray($category->label),
             ])->values(),
-            'routeStyles' => self::routeStyles($packages),
+            'routeStyles' => RouteFilterOptions::publicOptions(),
             'faqs' => Faq::query()->active()->ordered()->get()->map(fn (Faq $faq) => [
                 'question' => self::localizedArray($faq->question),
                 'answer' => self::localizedArray($faq->answer),
@@ -186,7 +185,11 @@ class InertiaPublicData
                 'meta' => self::localizedArray($item['meta'] ?? $package->review_source),
                 'quote' => self::localizedArray($item['quote'] ?? $item['text'] ?? []),
             ])->values()->all(),
-            'addOns' => $package->addOns->map(fn (AddOn $addOn) => self::addOn($addOn))->values()->all(),
+            'addOns' => $package->packageAddOns
+                ->filter(fn (PackageAddOn $packageAddOn): bool => $packageAddOn->is_active)
+                ->map(fn (PackageAddOn $packageAddOn) => self::packageAddOn($packageAddOn))
+                ->values()
+                ->all(),
             'packageOptions' => [[
                 'id' => $package->slug,
                 'title' => self::localizedArray($package->title),
@@ -244,16 +247,16 @@ class InertiaPublicData
         return $articles->map(fn (NewsArticle $article) => self::article($article))->values()->all();
     }
 
-    public static function addOn(AddOn $addOn): array
+    public static function packageAddOn(PackageAddOn $packageAddOn): array
     {
         return [
-            'id' => $addOn->slug,
-            'slug' => $addOn->slug,
-            'title' => self::localizedArray($addOn->title),
-            'description' => self::localizedArray($addOn->description),
-            'priceIdr' => $addOn->price_idr,
-            'priceUsd' => $addOn->price_usd,
-            'pricing' => $addOn->pricing_type === 'per_pax' ? 'perPax' : 'perBooking',
+            'id' => (string) $packageAddOn->id,
+            'slug' => (string) $packageAddOn->id,
+            'title' => self::localizedArray($packageAddOn->title),
+            'description' => self::localizedArray($packageAddOn->description),
+            'priceIdr' => $packageAddOn->price_idr,
+            'priceUsd' => $packageAddOn->price_usd,
+            'pricing' => $packageAddOn->pricing_type === 'per_pax' ? 'perPax' : 'perBooking',
         ];
     }
 
@@ -289,10 +292,10 @@ class InertiaPublicData
                     'code' => $summary['voucher']->code,
                     'label' => $summary['voucher']->label,
                 ] : null,
-                'addOns' => $summary['addOns']->map(function (AddOn $addOn) use ($summary) {
-                    $addOnPayload = self::addOn($addOn);
-                    $unitPrice = $summary['currency'] === 'USD' ? (int) $addOn->price_usd : (int) $addOn->price_idr;
-                    $quantity = $addOn->pricing_type === 'per_pax' ? $summary['pax'] : 1;
+                'addOns' => $summary['addOns']->map(function (PackageAddOn $packageAddOn) use ($summary) {
+                    $addOnPayload = self::packageAddOn($packageAddOn);
+                    $unitPrice = $summary['currency'] === 'USD' ? (int) $packageAddOn->price_usd : (int) $packageAddOn->price_idr;
+                    $quantity = $packageAddOn->pricing_type === 'per_pax' ? $summary['pax'] : 1;
 
                     return $addOnPayload + [
                         'unitPrice' => $unitPrice,
@@ -300,10 +303,10 @@ class InertiaPublicData
                         'total' => $unitPrice * $quantity,
                     ];
                 })->values()->all(),
-                'addOnsTotal' => $summary['addOns']->sum(function (AddOn $addOn) use ($summary) {
-                    $unitPrice = $summary['currency'] === 'USD' ? (int) $addOn->price_usd : (int) $addOn->price_idr;
+                'addOnsTotal' => $summary['addOns']->sum(function (PackageAddOn $packageAddOn) use ($summary) {
+                    $unitPrice = $summary['currency'] === 'USD' ? (int) $packageAddOn->price_usd : (int) $packageAddOn->price_idr;
 
-                    return $addOn->pricing_type === 'per_pax' ? $unitPrice * $summary['pax'] : $unitPrice;
+                    return $packageAddOn->pricing_type === 'per_pax' ? $unitPrice * $summary['pax'] : $unitPrice;
                 }),
             ],
             'availability' => self::availabilityPayload(PublicSite::availability($package, $draft['date'] ?? null)),
@@ -328,37 +331,6 @@ class InertiaPublicData
                 return [$field => in_array($field, $localizedFields, true) ? self::localizedArray($value) : $value];
             })->all();
         })->values()->all();
-    }
-
-    private static function routeStyles(Collection $packages): array
-    {
-        $labels = [
-            'recommended' => ['id' => 'Rekomendasi', 'us' => 'Recommended', 'cn' => '推荐'],
-            'family' => ['id' => 'Keluarga', 'us' => 'Family', 'cn' => '家庭'],
-            'adventure' => ['id' => 'Adventure', 'us' => 'Adventure', 'cn' => '探险'],
-            'waterfall' => ['id' => 'Waterfall', 'us' => 'Waterfall', 'cn' => '瀑布'],
-            'sunrise' => ['id' => 'Sunrise', 'us' => 'Sunrise', 'cn' => '日出'],
-            'culture' => ['id' => 'Budaya', 'us' => 'Culture', 'cn' => '文化'],
-            'multi-day' => ['id' => 'Multi-day', 'us' => 'Multi-day', 'cn' => '多日游'],
-        ];
-        $styles = $packages
-            ->flatMap(fn (TourPackage $package) => $package->styles ?? [])
-            ->unique()
-            ->values();
-
-        return collect(['recommended'])
-            ->merge($styles)
-            ->unique()
-            ->map(fn ($style) => [
-                'value' => $style,
-                'label' => $labels[$style] ?? [
-                    'id' => str($style)->replace('-', ' ')->title()->toString(),
-                    'us' => str($style)->replace('-', ' ')->title()->toString(),
-                    'cn' => str($style)->replace('-', ' ')->title()->toString(),
-                ],
-            ])
-            ->values()
-            ->all();
     }
 
     private static function availabilityByDate(TourPackage $package): array
@@ -400,9 +372,9 @@ class InertiaPublicData
         }
 
         return [
-            'id' => $value['id'] ?? $value['us'] ?? $value['cn'] ?? '',
-            'us' => $value['us'] ?? $value['id'] ?? $value['cn'] ?? '',
-            'cn' => $value['cn'] ?? $value['us'] ?? $value['id'] ?? '',
+            'id' => self::firstFilled($value['id'] ?? null, $value['us'] ?? null, $value['cn'] ?? null),
+            'us' => self::firstFilled($value['us'] ?? null, $value['id'] ?? null, $value['cn'] ?? null),
+            'cn' => self::firstFilled($value['cn'] ?? null, $value['us'] ?? null, $value['id'] ?? null),
         ];
     }
 
@@ -428,5 +400,16 @@ class InertiaPublicData
     private static function localizedObject(mixed $value): array
     {
         return collect($value ?? [])->mapWithKeys(fn ($item, $key) => [$key => is_array($item) ? self::localizedArray($item) : $item])->all();
+    }
+
+    private static function firstFilled(mixed ...$values): string
+    {
+        foreach ($values as $value) {
+            if (filled($value)) {
+                return (string) $value;
+            }
+        }
+
+        return '';
     }
 }

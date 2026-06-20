@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\NewsArticle;
+use App\Models\RouteFilter;
 use App\Models\TourPackage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +29,7 @@ class FilamentAdminResourcesTest extends TestCase
 
         foreach ([
             '/admin/destinations',
+            '/admin/route-filters',
             '/admin/tour-packages',
             '/admin/news-articles',
             '/admin/bookings',
@@ -93,6 +95,9 @@ class FilamentAdminResourcesTest extends TestCase
         foreach ([
             '/admin/destinations/create',
             "/admin/destinations/{$destination->getKey()}/edit",
+            '/admin/route-filters/create',
+            '/admin/route-filters/'.RouteFilter::firstOrFail()->getKey(),
+            '/admin/route-filters/'.RouteFilter::firstOrFail()->getKey().'/edit',
             '/admin/tour-packages/create',
             "/admin/tour-packages/{$package->getKey()}/edit",
             '/admin/news-articles/create',
@@ -104,5 +109,25 @@ class FilamentAdminResourcesTest extends TestCase
                 ->get($path)
                 ->assertOk();
         }
+    }
+
+    public function test_seeded_route_filters_are_admin_managed_and_loaded_in_package_form(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $package = TourPackage::firstOrFail();
+
+        $this->assertDatabaseHas('route_filters', [
+            'slug' => 'recommended',
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->get("/admin/tour-packages/{$package->getKey()}/edit")
+            ->assertOk()
+            ->assertSee('Route filters')
+            ->assertSee('Recommended')
+            ->assertSee('Family');
     }
 }

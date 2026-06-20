@@ -61,9 +61,9 @@ class TourPackage extends Model
         return $this->hasMany(ItineraryItem::class)->orderBy('day_number')->orderBy('sort_order');
     }
 
-    public function addOns(): BelongsToMany
+    public function packageAddOns(): HasMany
     {
-        return $this->belongsToMany(AddOn::class);
+        return $this->hasMany(PackageAddOn::class)->orderBy('sort_order')->orderBy('id');
     }
 
     public function newsArticles(): BelongsToMany

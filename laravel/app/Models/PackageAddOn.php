@@ -2,16 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\HasTravelScopes;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['slug', 'title', 'description', 'price_idr', 'price_usd', 'pricing_type', 'is_active'])]
-class AddOn extends Model
+#[Fillable(['tour_package_id', 'source_key', 'title', 'description', 'price_idr', 'price_usd', 'pricing_type', 'sort_order', 'is_active'])]
+class PackageAddOn extends Model
 {
-    use HasTravelScopes;
-
     protected function casts(): array
     {
         return [
@@ -19,12 +16,13 @@ class AddOn extends Model
             'description' => 'array',
             'price_idr' => 'integer',
             'price_usd' => 'integer',
+            'sort_order' => 'integer',
             'is_active' => 'boolean',
         ];
     }
 
-    public function tourPackages(): BelongsToMany
+    public function tourPackage(): BelongsTo
     {
-        return $this->belongsToMany(TourPackage::class);
+        return $this->belongsTo(TourPackage::class);
     }
 }

@@ -29,7 +29,7 @@ class BookingController extends Controller
         return Inertia::render('BookingPage', [
             'language' => $language,
             'draft' => $draft,
-            'routes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'addOns', 'itineraryItems', 'newsArticles'])->active()->ordered()->get()),
+            'routes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->ordered()->get()),
             'route' => $package ? InertiaPublicData::route($package) : null,
             'booking' => InertiaPublicData::bookingPayload($request, $package, $draft),
             'seo' => Seo::noindex([
@@ -67,7 +67,7 @@ class BookingController extends Controller
         return Inertia::render('CheckoutReviewPage', [
             'language' => $language,
             'draft' => $draft,
-            'routes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'addOns', 'itineraryItems', 'newsArticles'])->active()->ordered()->get()),
+            'routes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->ordered()->get()),
             'route' => $package ? InertiaPublicData::route($package) : null,
             'booking' => InertiaPublicData::bookingPayload($request, $package, $draft),
             'seo' => Seo::noindex([
@@ -107,12 +107,14 @@ class BookingController extends Controller
             'pickup' => $draft['pickup'] ?? null,
             'traveler_type' => $draft['traveler_type'] ?? 'international',
             'currency' => $summary['currency'],
-            'selected_add_ons' => $summary['addOns']->map(fn ($addOn) => [
-                'slug' => $addOn->slug,
-                'title' => $addOn->title,
-                'price_idr' => $addOn->price_idr,
-                'price_usd' => $addOn->price_usd,
-                'pricing_type' => $addOn->pricing_type,
+            'selected_add_ons' => $summary['addOns']->map(fn ($packageAddOn) => [
+                'id' => $packageAddOn->id,
+                'slug' => (string) $packageAddOn->id,
+                'title' => $packageAddOn->title,
+                'description' => $packageAddOn->description,
+                'price_idr' => $packageAddOn->price_idr,
+                'price_usd' => $packageAddOn->price_usd,
+                'pricing_type' => $packageAddOn->pricing_type,
             ])->all(),
             'voucher_code' => $summary['voucher']?->code,
             'subtotal' => $summary['subtotal'],
@@ -166,7 +168,7 @@ class BookingController extends Controller
                 'email' => $booking->email,
                 'notes' => $booking->notes,
             ],
-            'routes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'addOns', 'itineraryItems', 'newsArticles'])->active()->ordered()->get()),
+            'routes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->ordered()->get()),
             'route' => $package ? InertiaPublicData::route($package) : null,
             'whatsappUrl' => $whatsappUrl,
             'seo' => Seo::noindex([

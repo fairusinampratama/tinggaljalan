@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\AddOn;
+use App\Filament\Support\TourPackageReadiness;
 use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\Faq;
 use App\Models\NewsArticle;
 use App\Models\PackageAvailability;
+use App\Models\PackageAddOn;
 use App\Models\PlatformLink;
 use App\Models\Review;
 use App\Models\Setting;
@@ -40,7 +41,7 @@ class TravelContentFoundationTest extends TestCase
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $this->assertTrue($package->destination->is($bromo));
         $this->assertGreaterThan(0, $package->itineraryItems()->count());
-        $this->assertGreaterThan(0, $package->addOns()->count());
+        $this->assertGreaterThan(0, PackageAddOn::where('tour_package_id', $package->id)->count());
         $this->assertSame('Bromo Sunrise Private Trip', $package->title['us']);
 
         $article = NewsArticle::where('slug', 'paket-wisata-bromo-dari-malang')->firstOrFail();
@@ -69,7 +70,7 @@ class TravelContentFoundationTest extends TestCase
         $this->seed();
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
-        $addOn = AddOn::where('slug', 'local-guide')->firstOrFail();
+        $addOn = PackageAddOn::where('tour_package_id', $package->id)->firstOrFail();
 
         $booking = Booking::create([
             'booking_code' => 'TJ-TEST-001',
@@ -85,7 +86,7 @@ class TravelContentFoundationTest extends TestCase
             'currency' => 'IDR',
             'selected_add_ons' => [
                 [
-                    'slug' => $addOn->slug,
+                    'slug' => (string) $addOn->id,
                     'title' => $addOn->title,
                     'price_idr' => $addOn->price_idr,
                 ],
@@ -99,8 +100,64 @@ class TravelContentFoundationTest extends TestCase
         ]);
 
         $this->assertSame('TJ-TEST-001', $booking->booking_code);
-        $this->assertSame('local-guide', $booking->selected_add_ons[0]['slug']);
+        $this->assertSame((string) $addOn->id, $booking->selected_add_ons[0]['slug']);
         $this->assertTrue($booking->tourPackage->is($package));
         $this->assertSame(630000, $booking->total);
+    }
+
+    public function test_tour_package_readiness_flags_missing_selling_fields(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->withCount('itineraryItems')->firstOrFail();
+
+        $this->assertTrue(TourPackageReadiness::isReady($package));
+        $this->assertSame('Ready', TourPackageReadiness::status($package));
+
+        $package->update([
+            'cover_image' => null,
+            'duration' => null,
+            'base_price_idr' => null,
+            'base_price_usd' => null,
+            'highlights' => [],
+            'includes' => [],
+        ]);
+        $package->itineraryItems()->delete();
+        $package = $package->fresh()->loadCount('itineraryItems');
+
+        $this->assertSame('Needs work', TourPackageReadiness::status($package));
+        $this->assertSame([
+            'Cover image',
+            'Duration',
+            'Price',
+            'Itinerary',
+            'Highlights',
+            'Includes',
+        ], TourPackageReadiness::missingItems($package));
+    }
+
+    public function test_tour_package_can_use_english_primary_content_without_translations(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'title' => ['us' => 'English Only Volcano Trip', 'id' => '', 'cn' => ''],
+            'category' => ['us' => 'Private tour', 'id' => '', 'cn' => ''],
+            'tag' => ['us' => 'Sunrise', 'id' => '', 'cn' => ''],
+            'excerpt' => ['us' => 'A focused sunrise route with optional translations later.', 'id' => '', 'cn' => ''],
+            'intro' => ['us' => 'Use English first so operators can publish faster.', 'id' => '', 'cn' => ''],
+            'best_for' => ['us' => 'Travelers who want the main route ready first.', 'id' => '', 'cn' => ''],
+            'difficulty' => ['us' => 'Easy', 'id' => '', 'cn' => ''],
+            'highlights' => [
+                ['us' => 'Sunrise viewpoint', 'id' => '', 'cn' => ''],
+            ],
+            'includes' => [
+                ['us' => 'Private transport', 'id' => '', 'cn' => ''],
+            ],
+        ]);
+
+        $this->assertSame('English Only Volcano Trip', $package->fresh()->title['us']);
+        $this->assertSame([], TourPackageReadiness::missingItems($package->fresh()->loadCount('itineraryItems')));
     }
 }

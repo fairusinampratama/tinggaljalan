@@ -90,7 +90,7 @@ class NewsController extends Controller
             'relatedArticles' => InertiaPublicData::articles($related),
             'relatedRoutes' => InertiaPublicData::routes($article->tourPackages->isNotEmpty()
                 ? $article->tourPackages
-                : TourPackage::query()->with(['destination', 'addOns', 'itineraryItems', 'newsArticles'])->active()->where('destination_id', $article->destination_id)->limit(3)->get()),
+                : TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->where('destination_id', $article->destination_id)->limit(3)->get()),
             'seo' => Seo::articleDetail($article, $language),
         ]);
     }

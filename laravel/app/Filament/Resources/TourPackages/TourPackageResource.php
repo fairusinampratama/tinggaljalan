@@ -9,6 +9,7 @@ use App\Filament\Resources\TourPackages\Pages\ViewTourPackage;
 use App\Filament\Resources\TourPackages\Schemas\TourPackageForm;
 use App\Filament\Resources\TourPackages\Schemas\TourPackageInfolist;
 use App\Filament\Resources\TourPackages\Tables\TourPackagesTable;
+use App\Filament\Support\TourPackageReadiness;
 use App\Models\TourPackage;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -28,17 +29,7 @@ class TourPackageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = TourPackage::query()
-            ->where(function ($query) {
-                $query
-                    ->where('is_active', false)
-                    ->orWhereNull('cover_image')
-                    ->orWhere(function ($query) {
-                        $query->whereNull('base_price_idr')->whereNull('base_price_usd');
-                    })
-                    ->orDoesntHave('itineraryItems');
-            })
-            ->count();
+        $count = TourPackageReadiness::applyNeedsAttention(TourPackage::query())->count();
 
         return $count > 0 ? (string) $count : null;
     }

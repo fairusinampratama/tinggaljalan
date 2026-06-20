@@ -39,7 +39,13 @@ class PublicSite
             return $fallback ?? '';
         }
 
-        return (string) ($value[$language] ?? $value['us'] ?? $value['id'] ?? $value['cn'] ?? $fallback ?? '');
+        foreach ([$language, 'us', 'id', 'cn'] as $key) {
+            if (filled($value[$key] ?? null)) {
+                return (string) $value[$key];
+            }
+        }
+
+        return $fallback ?? '';
     }
 
     public static function image(?string $path): string
@@ -165,11 +171,11 @@ class PublicSite
     public static function packageFromDraft(array $draft): ?TourPackage
     {
         return TourPackage::query()
-            ->with(['destination', 'addOns', 'itineraryItems'])
+            ->with(['destination', 'packageAddOns', 'itineraryItems'])
             ->active()
             ->where('slug', $draft['route'] ?? null)
             ->first()
-            ?? TourPackage::query()->with(['destination', 'addOns', 'itineraryItems'])->active()->ordered()->first();
+            ?? TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems'])->active()->ordered()->first();
     }
 
     public static function availability(?TourPackage $package, ?string $date): array
@@ -200,14 +206,15 @@ class PublicSite
         $pax = max(1, (int) ($draft['pax'] ?? 1));
         $base = $currency === 'USD' ? (int) $package?->base_price_usd : (int) $package?->base_price_idr;
         $selected = collect($draft['add_ons'] ?? []);
-        $addOns = $package?->addOns
-            ->filter(fn ($addOn) => $selected->contains($addOn->slug))
+        $addOns = $package?->packageAddOns
+            ->filter(fn ($packageAddOn) => $packageAddOn->is_active)
+            ->filter(fn ($packageAddOn) => $selected->contains((string) $packageAddOn->id))
             ->values() ?? collect();
 
-        $addOnTotal = $addOns->sum(function ($addOn) use ($currency, $pax) {
-            $price = $currency === 'USD' ? (int) $addOn->price_usd : (int) $addOn->price_idr;
+        $addOnTotal = $addOns->sum(function ($packageAddOn) use ($currency, $pax) {
+            $price = $currency === 'USD' ? (int) $packageAddOn->price_usd : (int) $packageAddOn->price_idr;
 
-            return $addOn->pricing_type === 'per_pax' ? $price * $pax : $price;
+            return $packageAddOn->pricing_type === 'per_pax' ? $price * $pax : $price;
         });
         $subtotal = ($base * $pax) + $addOnTotal;
         $voucher = self::activeVoucher($draft['voucher'] ?? null, $currency);

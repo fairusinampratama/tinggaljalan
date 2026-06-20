@@ -3,13 +3,23 @@
 namespace App\Filament\Resources\TourPackages\Schemas;
 
 use App\Filament\Support\AdminForm;
-use Filament\Forms\Components\CheckboxList;
+use App\Filament\Support\TourPackageTranslationHelper;
+use App\Models\TourPackage;
+use App\Support\RouteFilterOptions;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\Wizard;
+use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
 
 class TourPackageForm
@@ -18,115 +28,461 @@ class TourPackageForm
     {
         return $schema
             ->components([
-                Section::make('Package overview')
-                    ->description('The basics operators need to identify and publish this route.')
-                    ->schema([
-                        Select::make('destination_id')->relationship('destination', 'name')->searchable()->preload()->required(),
-                        TextInput::make('slug')->required()->maxLength(255),
-                        TextInput::make('duration')->maxLength(255),
-                        AdminForm::imageUpload('cover_image', 'Cover image', 'admin/packages/covers')
-                            ->columnSpanFull(),
-                        ...AdminForm::localizedFields('title', required: true),
-                    ])
-                    ->columns(3),
-                Section::make('Public page copy')
-                    ->description('Localized text used across route cards, detail pages, SEO previews, and booking summaries.')
-                    ->schema([
-                        ...AdminForm::localizedFields('category'),
-                        ...AdminForm::localizedFields('tag'),
-                        ...AdminForm::localizedFields('excerpt', textarea: true),
-                        ...AdminForm::localizedFields('intro', textarea: true),
-                        ...AdminForm::localizedFields('best_for', textarea: true),
-                        ...AdminForm::localizedFields('difficulty'),
-                        ...AdminForm::localizedFields('cover_alt'),
-                    ])
-                    ->columns(3)
-                    ->collapsible(),
-                Section::make('Pricing and status')
-                    ->description('Controls public visibility, featured placement, and displayed starting prices.')
-                    ->schema([
-                        TextInput::make('base_price_idr')->numeric()->prefix('IDR'),
-                        TextInput::make('base_price_usd')->numeric()->prefix('USD'),
-                        TextInput::make('rating')->numeric()->step('0.01'),
-                        TextInput::make('review_count')->required()->numeric()->default(0),
-                        TextInput::make('sort_order')->required()->numeric()->default(0),
-                        Toggle::make('is_featured')->required(),
-                        Toggle::make('is_active')->required(),
-                        Textarea::make('price_note')->columnSpanFull(),
-                    ])
-                    ->columns(4),
-                Section::make('Itinerary and add-ons')
-                    ->description('What travelers compare before contacting the team.')
-                    ->schema([
-                        Repeater::make('itineraryItems')
-                            ->relationship()
-                            ->schema([
-                                TextInput::make('day_number')->numeric()->default(1)->required(),
-                                TextInput::make('time_label'),
-                                TextInput::make('sort_order')->numeric()->default(0)->required(),
-                                AdminForm::localized('title', 'Title', required: true),
-                                AdminForm::localized('description', 'Description', textarea: true),
-                            ])
-                            ->defaultItems(0)
-                            ->reorderable()
-                            ->columnSpanFull(),
-                        CheckboxList::make('addOns')
-                            ->relationship(
-                                name: 'addOns',
-                                titleAttribute: 'slug',
-                                modifyQueryUsing: fn ($query) => $query->orderBy('slug'),
-                            )
-                            ->getOptionLabelFromRecordUsing(fn ($record): string => $record->title['us'] ?? $record->slug)
-                            ->columns(2)
-                            ->columnSpanFull(),
-                    ])
+                Wizard::make([
+                    Step::make('Basic info')
+                        ->description('Name, destination, URL, and cover image.')
+                        ->schema(self::basicInfoSchema())
+                        ->columns(3),
+                    Step::make('Homepage & listing')
+                        ->description('Card copy, prices, review proof, and publishing controls.')
+                        ->schema(self::homepageListingSchema())
+                        ->columns(2),
+                    Step::make('Detail page content')
+                        ->description('Main selling copy shown after customers open the route.')
+                        ->schema(self::detailContentSchema())
+                        ->columns(2),
+                    Step::make('Itinerary & add-ons')
+                        ->description('Trip flow and optional extras.')
+                        ->schema(self::itinerarySchema()),
+                    Step::make('Media & logistics')
+                        ->description('Gallery, pickup context, and trip operation details.')
+                        ->schema(self::mediaLogisticsSchema())
+                        ->columns(3),
+                    Step::make('Optional translations')
+                        ->description('Leave empty to use English automatically.')
+                        ->schema(self::translationSchema())
+                        ->columns(2),
+                    Step::make('Advanced')
+                        ->description('Optional metadata for policies, testimonials, filters, and SEO.')
+                        ->schema(self::advancedSchema())
+                        ->columns(3),
+                ])
+                    ->skippable()
+                    ->persistStepInQueryString('tour-package-step')
                     ->columnSpanFull(),
-                Section::make('Media and logistics')
-                    ->description('Images and pickup context used on public pages and booking forms.')
-                    ->schema([
-                        AdminForm::imageUpload('gallery', 'Gallery images', 'admin/packages/gallery', multiple: true)
-                            ->columnSpanFull(),
-                        AdminForm::json('pickup_areas', 'Pickup areas'),
-                        ...AdminForm::localizedFields('pickup_label'),
-                        ...AdminForm::localizedFields('group_type'),
-                    ])
-                    ->columns(3)
-                    ->columnSpanFull(),
-                Section::make('Traveler-facing lists')
-                    ->description('Structured bullets shown in package detail sections.')
-                    ->schema([
-                        AdminForm::localizedRepeater('highlights', 'Highlights', textarea: true),
-                        AdminForm::localizedRepeater('includes', 'Includes'),
-                        AdminForm::localizedRepeater('excludes', 'Excludes'),
-                        AdminForm::localizedRepeater('notes', 'Notes', textarea: true),
-                        AdminForm::localizedRepeater('details', 'Details', textarea: true),
-                        AdminForm::localizedRepeater('good_to_know', 'Good to know', textarea: true),
-                    ])
-                    ->columnSpanFull()
-                    ->collapsible(),
-                Section::make('Advanced metadata')
-                    ->description('Structured data used by policies, testimonials, route filters, and SEO.')
-                    ->schema([
-                        AdminForm::json('policies', 'Policies'),
-                        AdminForm::json('testimonials', 'Testimonials'),
-                        ...AdminForm::localizedFields('review_source'),
-                        Select::make('styles')
-                            ->multiple()
-                            ->options([
-                                'recommended' => 'Recommended',
-                                'family' => 'Family',
-                                'adventure' => 'Adventure',
-                                'waterfall' => 'Waterfall',
-                                'sunrise' => 'Sunrise',
-                                'culture' => 'Culture',
-                                'multi-day' => 'Multi-day',
-                            ])
-                            ->columnSpanFull(),
-                        AdminForm::json('seo', 'SEO metadata'),
-                    ])
-                    ->columns(3)
-                    ->columnSpanFull()
-                    ->collapsed(),
             ]);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function basicInfoSchema(): array
+    {
+        return [
+            Select::make('destination_id')
+                ->relationship('destination', 'name')
+                ->searchable()
+                ->preload()
+                ->helperText('The destination used for filters, grouping, and related route suggestions.')
+                ->required(),
+            AdminForm::primaryLocalizedField('title', 'Title', required: true)
+                ->helperText('Main route name shown on cards, detail pages, booking forms, and SEO titles.'),
+            TextInput::make('slug')
+                ->helperText('URL text for this route, for example bromo-sunrise. Keep it lowercase with hyphens.')
+                ->required()
+                ->maxLength(255),
+            TextInput::make('duration')
+                ->helperText('Short trip length shown to customers, for example 1 day or 2D1N.')
+                ->maxLength(255),
+            AdminForm::primaryLocalizedField('difficulty', 'Difficulty')
+                ->helperText('Simple customer-facing effort level, for example Easy, Moderate, or Challenging.'),
+            AdminForm::imageUpload('cover_image', 'Cover image', 'admin/packages/covers')
+                ->helperText('Main image used on route cards, detail hero, and social previews.')
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function homepageListingSchema(): array
+    {
+        return [
+            Fieldset::make('Starting prices')
+                ->schema([
+                    TextInput::make('base_price_idr')
+                        ->label('Base price IDR')
+                        ->helperText('Starting price shown to Indonesian visitors. Use numbers only.')
+                        ->numeric()
+                        ->minValue(0)
+                        ->prefix('IDR'),
+                    TextInput::make('base_price_usd')
+                        ->label('Base price USD')
+                        ->helperText('Starting price shown to international visitors. Use numbers only.')
+                        ->numeric()
+                        ->minValue(0)
+                        ->prefix('USD'),
+                ])
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                ])
+                ->columnSpanFull(),
+            Fieldset::make('Review display')
+                ->schema([
+                    TextInput::make('rating')
+                        ->helperText('Displayed star rating. Use a value from 0 to 5.')
+                        ->numeric()
+                        ->step('0.01')
+                        ->minValue(0)
+                        ->maxValue(5),
+                    TextInput::make('review_count')
+                        ->label('Review count')
+                        ->helperText('Displayed number of reviews. This is public-facing social proof.')
+                        ->required()
+                        ->numeric()
+                        ->minValue(0)
+                        ->default(0),
+                ])
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                ])
+                ->columnSpanFull(),
+            Fieldset::make('Publishing')
+                ->schema([
+                    TextInput::make('sort_order')
+                        ->label('Sort order')
+                        ->helperText('Lower numbers appear first.')
+                        ->required()
+                        ->numeric()
+                        ->default(0),
+                    Toggle::make('is_featured')
+                        ->label('Show on home page')
+                        ->helperText('Adds this route to the main home page featured routes.')
+                        ->required(),
+                    Toggle::make('is_active')
+                        ->label('Show publicly')
+                        ->helperText('Allows this route to appear on /routes and open its detail page.')
+                        ->required(),
+                ])
+                ->columns([
+                    'default' => 1,
+                    'md' => 3,
+                ])
+                ->columnSpanFull(),
+            AdminForm::primaryLocalizedField('category', 'Category')
+                ->helperText('Broad route type shown in route cards and grouping, for example Sunrise tour or Family trip.'),
+            AdminForm::primaryLocalizedField('tag', 'Tag')
+                ->helperText('Short badge text shown on route cards. Keep it brief.'),
+            AdminForm::primaryLocalizedField('excerpt', 'Excerpt', textarea: true)
+                ->helperText('Short summary used on listing cards and search previews.')
+                ->columnSpanFull(),
+            Textarea::make('price_note')
+                ->label('Price note')
+                ->helperText('Small pricing disclaimer shown near the price, such as final confirmation or seasonal notes.')
+                ->rows(3)
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function detailContentSchema(): array
+    {
+        return [
+            AdminForm::primaryLocalizedField('intro', 'Intro', textarea: true)
+                ->helperText('Opening paragraph on the detail page. Explain what the traveler gets.')
+                ->columnSpanFull(),
+            AdminForm::primaryLocalizedField('best_for', 'Best for', textarea: true)
+                ->helperText('Helps customers decide if the route fits them, for example families, sunrise hunters, or first-time visitors.')
+                ->columnSpanFull(),
+            AdminForm::primaryLocalizedRepeater('highlights', 'Highlights', required: true, textarea: true)
+                ->helperText('Main selling points shown high on the detail page. Add one point per row.'),
+            AdminForm::primaryLocalizedRepeater('includes', 'Includes', required: true)
+                ->helperText('What is included in the package price, one item per row.'),
+            AdminForm::primaryLocalizedRepeater('excludes', 'Excludes')
+                ->helperText('What travelers must pay or arrange separately.'),
+            AdminForm::primaryLocalizedRepeater('notes', 'Notes', textarea: true)
+                ->helperText('Operational notes that help set expectations before booking.'),
+            AdminForm::primaryLocalizedRepeater('details', 'Details', textarea: true)
+                ->helperText('Extra route facts shown in the route details list.'),
+            AdminForm::primaryLocalizedRepeater('good_to_know', 'Good to know', textarea: true)
+                ->helperText('Practical advice such as clothing, weather, pickup timing, or physical requirements.'),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function itinerarySchema(): array
+    {
+        return [
+            Repeater::make('itineraryItems')
+                ->relationship()
+                ->schema([
+                    TextInput::make('day_number')
+                        ->helperText('Use 1 for one-day trips. Use 1, 2, 3 for multi-day routes.')
+                        ->numeric()
+                        ->default(1)
+                        ->required(),
+                    TextInput::make('time_label')
+                        ->helperText('Optional time shown before the activity, for example 03:00 or Morning.'),
+                    TextInput::make('sort_order')
+                        ->helperText('Lower numbers appear earlier within the same day.')
+                        ->numeric()
+                        ->default(0)
+                        ->required(),
+                    TextInput::make('title.us')
+                        ->label('Title')
+                        ->helperText('Short itinerary step title, for example Sunrise viewpoint.')
+                        ->required()
+                        ->columnSpanFull(),
+                    Textarea::make('description.us')
+                        ->label('Description')
+                        ->helperText('Optional detail for this itinerary step.')
+                        ->columnSpanFull(),
+                    Section::make('Optional translations for this item')
+                        ->description('Leave empty to use English for this itinerary item.')
+                        ->schema([
+                            TextInput::make('title.id')->label('Title - Indonesian'),
+                            TextInput::make('title.cn')->label('Title - Chinese'),
+                            Textarea::make('description.id')->label('Description - Indonesian'),
+                            Textarea::make('description.cn')->label('Description - Chinese'),
+                        ])
+                        ->columns(2)
+                        ->collapsed()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                ])
+                ->defaultItems(0)
+                ->reorderable()
+                ->columnSpanFull(),
+            Repeater::make('packageAddOns')
+                ->label('Package add-ons')
+                ->relationship()
+                ->helperText('Optional extras for this route only. Each route can have different add-ons and prices.')
+                ->schema([
+                    TextInput::make('title.us')
+                        ->label('Add-on title')
+                        ->helperText('Customer-facing name, for example Local guide or Extra pickup stop.')
+                        ->required()
+                        ->columnSpanFull(),
+                    Textarea::make('description.us')
+                        ->label('Description')
+                        ->helperText('Optional short explanation shown near this add-on.')
+                        ->rows(2)
+                        ->columnSpanFull(),
+                    TextInput::make('price_idr')
+                        ->label('Route price IDR')
+                        ->helperText('Price for this add-on on this route.')
+                        ->numeric()
+                        ->minValue(0)
+                        ->prefix('IDR'),
+                    TextInput::make('price_usd')
+                        ->label('Route price USD')
+                        ->helperText('USD price for this add-on on this route.')
+                        ->numeric()
+                        ->minValue(0)
+                        ->prefix('USD'),
+                    Select::make('pricing_type')
+                        ->options([
+                            'per_booking' => 'Per booking',
+                            'per_pax' => 'Per guest',
+                        ])
+                        ->default('per_booking')
+                        ->required(),
+                    TextInput::make('sort_order')
+                        ->helperText('Lower numbers appear first.')
+                        ->numeric()
+                        ->default(0)
+                        ->required(),
+                    Toggle::make('is_active')
+                        ->label('Show this add-on')
+                        ->helperText('Hidden add-ons are not shown publicly or counted in booking totals.')
+                        ->default(true),
+                    Section::make('Optional translations for this add-on')
+                        ->description('Leave empty to use English for this add-on.')
+                        ->schema([
+                            TextInput::make('title.id')->label('Title - Indonesian'),
+                            TextInput::make('title.cn')->label('Title - Chinese'),
+                            Textarea::make('description.id')->label('Description - Indonesian')->rows(2),
+                            Textarea::make('description.cn')->label('Description - Chinese')->rows(2),
+                        ])
+                        ->columns(2)
+                        ->collapsed()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                ])
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                ])
+                ->defaultItems(0)
+                ->reorderable()
+                ->reorderableWithButtons()
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function mediaLogisticsSchema(): array
+    {
+        return [
+            AdminForm::galleryUpload('gallery', 'Gallery images', 'admin/packages/gallery')
+                ->helperText('Add 2-4 route-specific images. Drag to reorder; the first image appears largest after the cover image.')
+                ->columnSpanFull(),
+            AdminForm::primaryLocalizedField('cover_alt', 'Cover alt text')
+                ->helperText('Short image description for accessibility and SEO.'),
+            AdminForm::pickupAreasRepeater(),
+            AdminForm::primaryLocalizedField('pickup_label', 'Pickup label')
+                ->helperText('Short public summary shown on route cards, detail meta pills, and booking sidebar. Example: Hotel pickup included.'),
+            AdminForm::primaryLocalizedField('group_type', 'Group type')
+                ->helperText('Describe the operating model, not only the vehicle. Example: Private trip or Shared jeep.'),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function translationSchema(): array
+    {
+        return [
+            Section::make('Optional page translations')
+                ->description('Leave these empty unless you need custom Indonesian or Chinese text. Empty translations use English automatically.')
+                ->afterHeader([
+                    self::copyEnglishTranslationsAction(),
+                ])
+                ->schema([
+                    ...AdminForm::translationFields('title', 'Title'),
+                    ...AdminForm::translationFields('category', 'Category'),
+                    ...AdminForm::translationFields('tag', 'Tag'),
+                    ...AdminForm::translationFields('excerpt', 'Excerpt', textarea: true),
+                    ...AdminForm::translationFields('intro', 'Intro', textarea: true),
+                    ...AdminForm::translationFields('best_for', 'Best for', textarea: true),
+                    ...AdminForm::translationFields('difficulty', 'Difficulty'),
+                    ...AdminForm::translationFields('cover_alt', 'Cover alt text'),
+                    ...AdminForm::translationFields('pickup_label', 'Pickup label'),
+                    ...AdminForm::translationFields('group_type', 'Group type'),
+                    ...AdminForm::translationFields('review_source', 'Review source'),
+                ])
+                ->columns(2)
+                ->columnSpanFull(),
+        ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function advancedSchema(): array
+    {
+        return [
+            Section::make('Route filters')
+                ->description('Controls how this package appears in /routes filters and route groupings.')
+                ->schema([
+                    Select::make('styles')
+                        ->helperText('Choose the filter tags customers can use to discover this route.')
+                        ->multiple()
+                        ->options(fn (?TourPackage $record = null): array => RouteFilterOptions::adminOptions($record?->styles ?? []))
+                        ->searchable()
+                        ->preload()
+                        ->columnSpanFull(),
+                ])
+                ->columns(3)
+                ->columnSpanFull(),
+            Section::make('Review proof')
+                ->description('Public trust signals shown on the route detail page.')
+                ->schema([
+                    AdminForm::primaryLocalizedField('review_source', 'Review source')
+                        ->helperText('Where the reviews come from, for example Google, Traveloka, or Tripadvisor.')
+                        ->columnSpanFull(),
+                    AdminForm::testimonialsRepeater(),
+                ])
+                ->columns(2)
+                ->columnSpanFull(),
+            Section::make('Traveler policies')
+                ->description('Clear expectations shown near the route detail policy section.')
+                ->schema([
+                    AdminForm::primaryLocalizedField('policies.cancellation', 'Cancellation policy', textarea: true)
+                        ->helperText('Explain cancellation timing, weather changes, and how updates are handled.')
+                        ->columnSpanFull(),
+                    AdminForm::primaryLocalizedField('policies.confirmation', 'Confirmation policy', textarea: true)
+                        ->helperText('Explain confirmation, payment timing, or WhatsApp follow-up.')
+                        ->columnSpanFull(),
+                    Section::make('Policy translations')
+                        ->description('Leave empty to use English automatically.')
+                        ->schema([
+                            ...AdminForm::translationFields('policies.cancellation', 'Cancellation policy', textarea: true),
+                            ...AdminForm::translationFields('policies.confirmation', 'Confirmation policy', textarea: true),
+                        ])
+                        ->columns(2)
+                        ->collapsed()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->columnSpanFull(),
+            Section::make('SEO override')
+                ->description('Optional search/social text. Leave blank to use the package title and excerpt.')
+                ->schema([
+                    AdminForm::primaryLocalizedField('seo.title', 'SEO title')
+                        ->helperText('Optional internal override field. Route page titles still use the package title in this pass.')
+                        ->columnSpanFull(),
+                    AdminForm::primaryLocalizedField('seo.description', 'SEO description', textarea: true)
+                        ->helperText('Overrides the route meta description when filled.')
+                        ->columnSpanFull(),
+                    Section::make('SEO translations')
+                        ->description('Leave empty to use English automatically.')
+                        ->schema([
+                            ...AdminForm::translationFields('seo.title', 'SEO title'),
+                            ...AdminForm::translationFields('seo.description', 'SEO description', textarea: true),
+                        ])
+                        ->columns(2)
+                        ->collapsed()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                    Section::make('Developer metadata')
+                        ->description('Technical or prototype metadata. Most operators should leave this alone.')
+                        ->schema([
+                            AdminForm::json('seo.source_refs', 'Source references'),
+                            TextInput::make('seo.image_credit')
+                                ->label('Image credit')
+                                ->columnSpanFull(),
+                            AdminForm::json('seo.operator', 'Operator metadata'),
+                            AdminForm::json('seo.package_options', 'Legacy package options'),
+                        ])
+                        ->columns(2)
+                        ->collapsed()
+                        ->collapsible()
+                        ->columnSpanFull(),
+                ])
+                ->columns(2)
+                ->columnSpanFull(),
+        ];
+    }
+
+    private static function copyEnglishTranslationsAction(): Action
+    {
+        return Action::make('copyEnglishToMissingTranslations')
+            ->label('Copy English to missing translations')
+            ->requiresConfirmation()
+            ->modalHeading('Copy English into empty translation fields?')
+            ->modalDescription('This only fills empty Indonesian and Chinese fields. Existing translations will not be changed.')
+            ->action(function (Get $get, Set $set): void {
+                $state = [];
+
+                foreach (TourPackageTranslationHelper::LOCALIZED_FIELDS as $field) {
+                    $state[$field] = $get($field);
+                }
+
+                foreach (TourPackageTranslationHelper::LOCALIZED_LIST_FIELDS as $field) {
+                    $state[$field] = $get($field);
+                }
+
+                $state['itineraryItems'] = $get('itineraryItems');
+                $filledState = TourPackageTranslationHelper::fillMissingFromEnglish($state);
+
+                foreach ($filledState as $field => $value) {
+                    $set($field, $value);
+                }
+
+                Notification::make()
+                    ->title('Missing translations filled from English')
+                    ->success()
+                    ->send();
+            });
     }
 }

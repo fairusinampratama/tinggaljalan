@@ -66,7 +66,11 @@ DB_PORT=3307
 DB_DATABASE=tinggaljalan
 DB_USERNAME=tinggaljalan
 DB_PASSWORD=password
+SESSION_DRIVER=file
+CACHE_STORE=file
 ```
+
+Use MySQL for application data so admin CRUD is tested against the same database family as shared hosting. Keep local sessions and cache file-backed unless you specifically need to test database sessions; database-backed sessions/cache can make Docker page loads feel slow on some machines because every request writes to MySQL.
 
 SQLite can still be useful for quick framework bootstrapping, but do not use it for CRUD QA because the production target is shared hosting with MySQL/MariaDB.
 
@@ -90,11 +94,63 @@ When using the Docker PHP app container, start the web server with:
 docker compose up -d app
 ```
 
+If the app was already running before changing environment values, recreate it and clear cached config:
+
+```bash
+docker compose up -d --force-recreate app
+docker compose exec app php artisan optimize:clear
+```
+
 Open the admin panel at:
 
 ```txt
 http://127.0.0.1:8000/admin
 ```
+
+## Production Preview
+
+Use the production-preview stack when you want to check speed and shared-hosting-like behavior. It runs Nginx in front of PHP-FPM instead of Laravel's development server, uses built frontend assets, and keeps MySQL for application data.
+
+Build frontend assets and create the preview env file:
+
+```bash
+npm run build
+cp .env.prod-preview.example .env.prod-preview
+```
+
+Build and start the preview stack:
+
+```bash
+export WWWUSER=$(id -u)
+export WWWGROUP=$(id -g)
+docker compose -f compose.prod-preview.yaml build
+docker compose -f compose.prod-preview.yaml up -d
+```
+
+The preview PHP-FPM container runs migrations, seeds route filters, clears stale caches, and creates the storage link at startup when `RUN_PREVIEW_MIGRATIONS=true`. If you need to run the preparation commands manually, use:
+
+```bash
+docker compose -f compose.prod-preview.yaml exec php-fpm composer install --optimize-autoloader
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan key:generate --force
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan migrate --force
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan db:seed --class=RouteFilterSeeder --force
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan storage:link
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan config:cache
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan route:cache
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan view:cache
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan icons:cache
+docker compose -f compose.prod-preview.yaml exec php-fpm php artisan filament:cache
+```
+
+Open the production preview at:
+
+```txt
+http://127.0.0.1:8000
+```
+
+Use `compose.prod-preview.yaml` for day-to-day local admin CRUD QA, speed checks, and deployment confidence checks. The preview stack is closer to shared hosting because Nginx serves static files directly and PHP-FPM handles PHP with multiple workers and OPcache instead of the single-process `php -S` server.
+
+Do not run the old `docker compose up -d app` development server at the same time, because it also binds port `8000`.
 
 ## Verification
 

@@ -23,7 +23,6 @@ export function RouteArticlesSection({
   const priceCurrency = region.currency;
 
   function openRouteArticle(routeId) {
-    setSelectedRouteId(routeId);
     navigate(`/routes/${routeId}`);
   }
 
@@ -112,7 +111,7 @@ export function RouteArticlesSection({
                     </p>
                   )}
                   <div className={`${isCatalog ? 'mt-4 hidden' : 'mt-5'} flex flex-wrap gap-2`} onClick={(event) => event.stopPropagation()}>
-                    <Link to={`/routes/${item.id}`} className={primaryButtonClass} onClick={() => setSelectedRouteId(item.id)}>
+                    <Link to={`/routes/${item.id}`} className={primaryButtonClass}>
                       <FileText className={iconSize} /> {t.readArticle}
                     </Link>
                     <a href={whatsappUrl} target="_blank" rel="noreferrer" className={secondaryButtonClass}>

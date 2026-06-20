@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Resources\TourPackages\TourPackageResource;
+use App\Filament\Support\TourPackageReadiness;
 use App\Models\TourPackage;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
@@ -25,18 +26,10 @@ class PackageReadiness extends TableWidget
             ->heading('Package readiness')
             ->description('Packages missing public-page essentials before they feel production-ready.')
             ->query(
-                TourPackage::query()
+                TourPackageReadiness::applyNeedsAttention(TourPackage::query()
                     ->with('destination')
                     ->withCount('itineraryItems')
-                    ->where(function ($query) {
-                        $query
-                            ->where('is_active', false)
-                            ->orWhereNull('cover_image')
-                            ->orWhere(function ($query) {
-                                $query->whereNull('base_price_idr')->whereNull('base_price_usd');
-                            })
-                            ->orDoesntHave('itineraryItems');
-                    })
+                )
                     ->latest('updated_at')
                     ->limit(8),
             )
@@ -49,7 +42,7 @@ class PackageReadiness extends TableWidget
                     ->placeholder('-'),
                 TextColumn::make('readiness')
                     ->label('Needs')
-                    ->state(fn (TourPackage $record): string => implode(', ', self::readinessIssues($record))),
+                    ->state(fn (TourPackage $record): string => TourPackageReadiness::summary($record)),
                 IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
@@ -68,21 +61,5 @@ class PackageReadiness extends TableWidget
             ->paginated(false)
             ->emptyStateHeading('Packages look ready')
             ->emptyStateDescription('No active-status, image, price, or itinerary gaps found.');
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private static function readinessIssues(TourPackage $record): array
-    {
-        return collect([
-            $record->is_active ? null : 'Inactive',
-            filled($record->cover_image) ? null : 'Cover image',
-            ($record->base_price_idr || $record->base_price_usd) ? null : 'Price',
-            ((int) ($record->itinerary_items_count ?? 0)) > 0 ? null : 'Itinerary',
-        ])
-            ->filter()
-            ->values()
-            ->all();
     }
 }

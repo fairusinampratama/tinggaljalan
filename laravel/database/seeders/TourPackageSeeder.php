@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\AddOn;
 use App\Models\Destination;
+use App\Models\PackageAddOn;
 use App\Models\TourPackage;
 use Database\Seeders\Concerns\LoadsPrototypeData;
 use Illuminate\Database\Seeder;
@@ -77,24 +77,36 @@ class TourPackageSeeder extends Seeder
                 ]);
             }
 
-            $addOnIds = [];
+            $addOnKeys = [];
             foreach (($route['addOns'] ?? []) as $addOnData) {
-                $addOn = AddOn::updateOrCreate(
-                    ['slug' => $addOnData['id']],
+                $sourceKey = $addOnData['id'];
+                $addOnKeys[] = $sourceKey;
+
+                PackageAddOn::updateOrCreate(
                     [
-                        'title' => $this->localized($addOnData['title'] ?? $addOnData['id']),
+                        'tour_package_id' => $package->id,
+                        'source_key' => $sourceKey,
+                    ],
+                    [
+                        'title' => $this->localized($addOnData['title'] ?? $sourceKey),
                         'description' => $this->localized($addOnData['description'] ?? null),
                         'price_idr' => $addOnData['priceIdr'] ?? null,
                         'price_usd' => $addOnData['priceUsd'] ?? null,
                         'pricing_type' => $this->pricingType($addOnData['pricing'] ?? null),
+                        'sort_order' => count($addOnKeys),
                         'is_active' => true,
                     ],
                 );
-
-                $addOnIds[] = $addOn->id;
             }
 
-            $package->addOns()->sync($addOnIds);
+            if ($addOnKeys === []) {
+                $package->packageAddOns()->delete();
+            } else {
+                $package->packageAddOns()
+                    ->whereNotNull('source_key')
+                    ->whereNotIn('source_key', $addOnKeys)
+                    ->delete();
+            }
         }
     }
 }

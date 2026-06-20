@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TourPackages\Schemas;
 
+use App\Filament\Support\TourPackageReadiness;
 use App\Models\TourPackage;
 use App\Support\PublicSite;
 use Filament\Infolists\Components\IconEntry;
@@ -39,6 +40,21 @@ class TourPackageInfolist
                         IconEntry::make('is_featured')->label('Featured')->boolean(),
                     ])
                     ->columns(3)
+                    ->columnSpanFull(),
+                Section::make('Readiness')
+                    ->schema([
+                        TextEntry::make('readiness_status')
+                            ->label('Status')
+                            ->badge()
+                            ->state(fn (TourPackage $record): string => TourPackageReadiness::status($record))
+                            ->color(fn (TourPackage $record): string => TourPackageReadiness::color($record)),
+                        TextEntry::make('readiness_missing')
+                            ->label('Missing items')
+                            ->state(fn (TourPackage $record): array => TourPackageReadiness::missingItems($record))
+                            ->bulleted()
+                            ->placeholder('No required gaps found.'),
+                    ])
+                    ->columns(2)
                     ->columnSpanFull(),
                 Section::make('Pricing and reviews')
                     ->schema([
@@ -98,11 +114,61 @@ class TourPackageInfolist
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
+                Section::make('Media and logistics')
+                    ->schema([
+                        TextEntry::make('gallery_summary')
+                            ->label('Gallery images')
+                            ->state(fn (TourPackage $record): array => self::assetPaths($record->gallery))
+                            ->bulleted()
+                            ->placeholder('No gallery images.'),
+                        TextEntry::make('cover_alt_us')
+                            ->label('Cover alt text')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->cover_alt, 'us', '-')),
+                        TextEntry::make('pickup_areas_summary')
+                            ->label('Pickup areas')
+                            ->state(fn (TourPackage $record): array => self::localizedList($record->pickup_areas))
+                            ->bulleted()
+                            ->placeholder('No pickup areas.'),
+                        TextEntry::make('pickup_label_us')
+                            ->label('Pickup label')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->pickup_label, 'us', '-')),
+                        TextEntry::make('group_type_us')
+                            ->label('Group type')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->group_type, 'us', '-')),
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull(),
+                Section::make('Advanced summary')
+                    ->schema([
+                        TextEntry::make('styles')
+                            ->label('Route filter styles')
+                            ->badge()
+                            ->placeholder('-'),
+                        TextEntry::make('review_source_advanced')
+                            ->label('Review source')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->review_source, 'us', '-')),
+                        TextEntry::make('policy_cancellation')
+                            ->label('Cancellation policy')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->policies['cancellation'] ?? null, 'us', '-'))
+                            ->columnSpanFull(),
+                        TextEntry::make('policy_confirmation')
+                            ->label('Confirmation policy')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->policies['confirmation'] ?? null, 'us', '-'))
+                            ->columnSpanFull(),
+                        TextEntry::make('testimonials_summary')
+                            ->label('Testimonials')
+                            ->state(fn (TourPackage $record): array => self::testimonials($record->testimonials))
+                            ->bulleted()
+                            ->placeholder('No testimonials.'),
+                        TextEntry::make('seo_description')
+                            ->label('SEO description')
+                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->seo['description'] ?? null, 'us', '-'))
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull(),
                 Section::make('Advanced metadata')
                     ->schema([
-                        TextEntry::make('pickup_areas')->placeholder('-')->columnSpanFull(),
-                        TextEntry::make('policies')->placeholder('-')->columnSpanFull(),
-                        TextEntry::make('testimonials')->placeholder('-')->columnSpanFull(),
                         TextEntry::make('seo')->label('SEO metadata')->placeholder('-')->columnSpanFull(),
                     ])
                     ->columnSpanFull()
@@ -134,6 +200,39 @@ class TourPackageInfolist
 
         return collect($items ?? [])
             ->map(fn ($item): string => is_array($item) ? PublicSite::localized($item, 'us') : (string) $item)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function assetPaths(mixed $paths): array
+    {
+        return collect($paths ?? [])
+            ->filter()
+            ->map(fn (?string $path): string => PublicSite::assetPath($path))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function testimonials(mixed $items): array
+    {
+        return collect($items ?? [])
+            ->map(function ($item): string {
+                if (! is_array($item)) {
+                    return '';
+                }
+
+                $name = $item['name'] ?? 'Traveler';
+                $quote = PublicSite::localized($item['quote'] ?? $item['text'] ?? null, 'us');
+
+                return filled($quote) ? "{$name}: {$quote}" : '';
+            })
             ->filter()
             ->values()
             ->all();
