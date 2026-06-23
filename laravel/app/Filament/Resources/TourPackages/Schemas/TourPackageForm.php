@@ -53,7 +53,7 @@ class TourPackageForm
                         ->schema(self::translationSchema())
                         ->columns(2),
                     Step::make('Advanced')
-                        ->description('Optional metadata for policies, testimonials, filters, and SEO.')
+                        ->description('Optional metadata for policies, testimonials, and filters.')
                         ->schema(self::advancedSchema())
                         ->columns(3),
                 ])
@@ -415,42 +415,6 @@ class TourPackageForm
                 ])
                 ->columns(2)
                 ->columnSpanFull(),
-            Section::make('SEO override')
-                ->description('Optional search/social text. Leave blank to use the package title and excerpt.')
-                ->schema([
-                    AdminForm::primaryLocalizedField('seo.title', 'SEO title')
-                        ->helperText('Optional internal override field. Route page titles still use the package title in this pass.')
-                        ->columnSpanFull(),
-                    AdminForm::primaryLocalizedField('seo.description', 'SEO description', textarea: true)
-                        ->helperText('Overrides the route meta description when filled.')
-                        ->columnSpanFull(),
-                    Section::make('SEO translations')
-                        ->description('Leave empty to use English automatically.')
-                        ->schema([
-                            ...AdminForm::translationFields('seo.title', 'SEO title'),
-                            ...AdminForm::translationFields('seo.description', 'SEO description', textarea: true),
-                        ])
-                        ->columns(2)
-                        ->collapsed()
-                        ->collapsible()
-                        ->columnSpanFull(),
-                    Section::make('Developer metadata')
-                        ->description('Technical or prototype metadata. Most operators should leave this alone.')
-                        ->schema([
-                            AdminForm::json('seo.source_refs', 'Source references'),
-                            TextInput::make('seo.image_credit')
-                                ->label('Image credit')
-                                ->columnSpanFull(),
-                            AdminForm::json('seo.operator', 'Operator metadata'),
-                            AdminForm::json('seo.package_options', 'Legacy package options'),
-                        ])
-                        ->columns(2)
-                        ->collapsed()
-                        ->collapsible()
-                        ->columnSpanFull(),
-                ])
-                ->columns(2)
-                ->columnSpanFull(),
         ];
     }
 
@@ -485,4 +449,5 @@ class TourPackageForm
                     ->send();
             });
     }
+
 }

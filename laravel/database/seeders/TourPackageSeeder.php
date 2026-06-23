@@ -59,12 +59,6 @@ class TourPackageSeeder extends Seeder
                     'sort_order' => $route['sortOrder'] ?? 99,
                     'is_featured' => $route['featured'] ?? false,
                     'is_active' => true,
-                    'seo' => [
-                        'source_refs' => $route['sourceRefs'] ?? [],
-                        'image_credit' => $route['imageCredit'] ?? null,
-                        'operator' => $route['operator'] ?? null,
-                        'package_options' => $route['packageOptions'] ?? [],
-                    ],
                 ],
             );
 

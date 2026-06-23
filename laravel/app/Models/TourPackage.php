@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['destination_id', 'slug', 'title', 'category', 'tag', 'excerpt', 'intro', 'best_for', 'duration', 'difficulty', 'base_price_idr', 'base_price_usd', 'price_note', 'cover_image', 'cover_alt', 'gallery', 'pickup_areas', 'pickup_label', 'group_type', 'highlights', 'includes', 'excludes', 'notes', 'details', 'good_to_know', 'policies', 'testimonials', 'rating', 'review_count', 'review_source', 'styles', 'sort_order', 'is_featured', 'is_active', 'seo'])]
+#[Fillable(['destination_id', 'slug', 'title', 'category', 'tag', 'excerpt', 'intro', 'best_for', 'duration', 'difficulty', 'base_price_idr', 'base_price_usd', 'price_note', 'cover_image', 'cover_alt', 'gallery', 'pickup_areas', 'pickup_label', 'group_type', 'highlights', 'includes', 'excludes', 'notes', 'details', 'good_to_know', 'policies', 'testimonials', 'rating', 'review_count', 'review_source', 'styles', 'sort_order', 'is_featured', 'is_active'])]
 class TourPackage extends Model
 {
     use HasTravelScopes;
@@ -47,7 +47,6 @@ class TourPackage extends Model
             'sort_order' => 'integer',
             'is_featured' => 'boolean',
             'is_active' => 'boolean',
-            'seo' => 'array',
         ];
     }
 

@@ -43,34 +43,57 @@ class SeoInfrastructureTest extends TestCase
                 ->where('seo.json_ld.1.@type', 'TouristTrip'));
     }
 
-    public function test_route_detail_seo_description_can_be_overridden_or_fall_back_to_excerpt(): void
+    public function test_route_detail_seo_is_generated_from_package_content_and_ignores_overrides(): void
     {
         $this->seed();
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $package->update([
-            'excerpt' => ['us' => 'Fallback package excerpt.', 'id' => '', 'cn' => ''],
-            'seo' => [
-                'description' => ['us' => 'Custom route SEO description.', 'id' => '', 'cn' => ''],
-            ],
+            'title' => ['us' => 'Automatic package title.', 'id' => '', 'cn' => ''],
+            'excerpt' => ['us' => 'Automatic package excerpt.', 'id' => '', 'cn' => ''],
         ]);
 
         $this->get("/routes/{$package->slug}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('seo.description', 'Custom route SEO description.')
-                ->where('seo.title', 'Bromo Sunrise Private Trip | Tinggal Jalan'));
+                ->where('seo.title', 'Automatic package title. | Tinggal Jalan')
+                ->where('seo.description', 'Automatic package excerpt.')
+                ->where('seo.og_type', 'product'));
+    }
 
+    public function test_route_detail_seo_description_falls_back_to_intro_when_excerpt_is_empty(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $package->update([
-            'seo' => [
-                'description' => ['us' => '', 'id' => '', 'cn' => ''],
-            ],
+            'title' => ['us' => 'Package with intro fallback.', 'id' => '', 'cn' => ''],
+            'excerpt' => ['us' => '', 'id' => '', 'cn' => ''],
+            'intro' => ['us' => 'Intro fallback description.', 'id' => '', 'cn' => ''],
         ]);
 
         $this->get("/routes/{$package->slug}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('seo.description', 'Fallback package excerpt.'));
+                ->where('seo.title', 'Package with intro fallback. | Tinggal Jalan')
+                ->where('seo.description', 'Intro fallback description.'));
+    }
+
+    public function test_route_detail_seo_content_falls_back_from_empty_translations_to_english(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'title' => ['us' => 'English package title', 'id' => '', 'cn' => ''],
+            'excerpt' => ['us' => 'English package excerpt.', 'id' => '', 'cn' => ''],
+        ]);
+
+        $this->get("/routes/{$package->slug}?lang=id")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('seo.title', 'English package title | Tinggal Jalan')
+                ->where('seo.description', 'English package excerpt.'));
     }
 
     public function test_news_detail_has_article_metadata_and_schema(): void

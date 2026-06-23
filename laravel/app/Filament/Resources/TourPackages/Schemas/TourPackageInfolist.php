@@ -160,19 +160,9 @@ class TourPackageInfolist
                             ->state(fn (TourPackage $record): array => self::testimonials($record->testimonials))
                             ->bulleted()
                             ->placeholder('No testimonials.'),
-                        TextEntry::make('seo_description')
-                            ->label('SEO description')
-                            ->state(fn (TourPackage $record): string => PublicSite::localized($record->seo['description'] ?? null, 'us', '-'))
-                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-                Section::make('Advanced metadata')
-                    ->schema([
-                        TextEntry::make('seo')->label('SEO metadata')->placeholder('-')->columnSpanFull(),
-                    ])
-                    ->columnSpanFull()
-                    ->collapsed(),
             ]);
     }
 
