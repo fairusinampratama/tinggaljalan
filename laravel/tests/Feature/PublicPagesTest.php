@@ -30,7 +30,9 @@ class PublicPagesTest extends TestCase
                 ->has('publicData.site.logoUrl')
                 ->has('publicData.site.contactDetails')
                 ->has('publicData.home.whyChooseItems')
-                ->has('publicData.bookingOptions.paxOptions')
+                ->where('publicData.bookingOptions.paxMin', 1)
+                ->where('publicData.bookingOptions.paxMax', 999)
+                ->where('publicData.bookingOptions.largeGroupThreshold', 10)
                 ->has('publicData.trustStats')
                 ->has('publicData.platformLinks')
                 ->where('seo.robots', 'index,follow'));
@@ -59,7 +61,7 @@ class PublicPagesTest extends TestCase
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         RouteFilter::create([
             'slug' => 'honeymoon',
-            'label' => ['us' => 'Honeymoon', 'id' => 'Bulan madu', 'cn' => '蜜月'],
+            'label' => ['us' => 'Honeymoon', 'id' => 'Bulan madu', 'cn' => 'èœœæœˆ'],
             'description' => ['us' => 'Private trips for couples'],
             'sort_order' => 80,
             'is_active' => true,
@@ -94,7 +96,7 @@ class PublicPagesTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('RoutesPage')
                 ->where('styleFilter', 'recommended')
-                ->where('publicData.routeStyles', fn (array $styles) => collect($styles)->pluck('value')->doesntContain('secret'))
+                ->where('publicData.routeStyles', fn ($styles) => collect($styles)->pluck('value')->doesntContain('secret'))
                 ->where('routes.0.slug', $package->slug));
 
         $this->get("/routes/{$package->slug}")
@@ -177,7 +179,7 @@ class PublicPagesTest extends TestCase
         $package->update([
             'pickup_areas' => [
                 ['us' => 'Malang hotel', 'id' => '', 'cn' => ''],
-                ['us' => 'Surabaya airport', 'id' => 'Bandara Surabaya', 'cn' => '泗水机场'],
+                ['us' => 'Surabaya airport', 'id' => 'Bandara Surabaya', 'cn' => 'æ³—æ°´æœºåœº'],
             ],
             'pickup_label' => ['us' => 'Hotel pickup included', 'id' => '', 'cn' => ''],
             'group_type' => ['us' => 'Private trip', 'id' => '', 'cn' => ''],
@@ -305,7 +307,7 @@ class PublicPagesTest extends TestCase
         $package = TourPackage::where('slug', 'bromo-sunrise')->with('packageAddOns')->firstOrFail();
         $packageAddOn = $package->packageAddOns->firstOrFail();
 
-        $this->post('/booking', [
+        $this->withSession(['language' => 'cn'])->post('/booking', [
             'route' => $package->slug,
             'date' => '2026-06-25',
             'pax' => 2,
@@ -324,8 +326,9 @@ class PublicPagesTest extends TestCase
 
         $this->post('/checkout/review', [
             'name' => 'Traveler Test',
-            'whatsapp' => '+628111111111',
-            'email' => 'traveler@example.test',
+            'whatsapp' => '08111111111',
+            'whatsapp_country' => 'ID',
+            'email' => 'TRAVELER@EXAMPLE.TEST',
             'voucher' => 'BROMO10',
             'notes' => 'Need sunrise pickup',
         ])->assertRedirect('/checkout/confirmation');
@@ -334,10 +337,50 @@ class PublicPagesTest extends TestCase
             'name' => 'Traveler Test',
             'tour_package_id' => $package->id,
             'status' => 'new',
+            'whatsapp' => '+628111111111',
+            'whatsapp_country' => 'ID',
+            'email' => 'traveler@example.test',
+            'communication_language' => 'cn',
         ]);
         $this->assertNotNull(Booking::where('name', 'Traveler Test')->first()?->selected_add_ons);
+
+        $this->get('/checkout/confirmation')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('language', 'cn'));
     }
 
+    public function test_booking_accepts_large_group_guest_count_within_configured_limit(): void
+    {
+        $this->seed();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $payload = [
+            'route' => $package->slug,
+            'date' => '2026-08-01',
+            'pax' => 100,
+            'pickup' => 'Malang Hotel',
+            'traveler_type' => 'international',
+            'currency' => 'USD',
+            'add_ons' => [],
+        ];
+
+        $this->post('/booking', $payload)->assertRedirect('/checkout/review');
+        $this->assertSame(100, session('booking_draft.pax'));
+
+        $this->post('/booking', [...$payload, 'pax' => 1000])
+            ->assertSessionHasErrors('pax');
+    }
+    public function test_booking_submission_requires_valid_email_and_whatsapp(): void
+    {
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+
+        $this->post('/checkout/review', [
+            'name' => 'Invalid Contact',
+            'whatsapp' => '123',
+            'whatsapp_country' => 'ID',
+            'email' => '',
+        ])->assertSessionHasErrors(['whatsapp', 'email']);
+    }
     public function test_booking_recalculation_uses_database_vouchers_prices_add_ons_and_availability(): void
     {
         $this->seed();

@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CreditCard, Minus, Plus } from 'lucide-react';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { DateField } from '../components/ui/DateField';
@@ -34,10 +34,11 @@ export function BookingPage() {
     updateBooking,
   } = useBooking();
   const bookingOptions = publicData.bookingOptions ?? {};
-  const paxOptions = bookingOptions.paxOptions ?? [];
   const travelerTypeOptions = bookingOptions.travelerTypeOptions ?? [];
   const currencyOptions = bookingOptions.currencyOptions ?? [];
-  const localizedPaxOptions = paxOptions.map((option) => ({ ...option, label: getLocalized(option.label, language) }));
+  const paxMin = bookingOptions.paxMin ?? 1;
+  const paxMax = bookingOptions.paxMax ?? 999;
+  const largeGroupThreshold = bookingOptions.largeGroupThreshold ?? 10;
   const localizedTravelerTypeOptions = travelerTypeOptions.map((option) => ({
     ...option,
     label: getLocalized(option.label, language),
@@ -59,6 +60,18 @@ export function BookingPage() {
     updateBooking({
       addOns: selectedAddOns,
     }, { recalculate: true });
+  }
+
+  function normalizePax(value) {
+    const parsed = Number.parseInt(value, 10);
+
+    if (!Number.isFinite(parsed)) return paxMin;
+
+    return Math.min(paxMax, Math.max(paxMin, parsed));
+  }
+
+  function changePax(value, { recalculate = true } = {}) {
+    updateBooking({ pax: normalizePax(value) }, { recalculate });
   }
 
   function submitDraft(event) {
@@ -86,9 +99,17 @@ export function BookingPage() {
         noindex
       />
       <PageShell eyebrow={t.bookingEyebrow} title={t.tripSetupTitle}>
-      <div className="relative">
+      <div className="relative mb-8">
         <div className="relative">
           <CheckoutSteps current={0} />
+        </div>
+        <div className="mt-5 rounded-2xl border border-brandBlue/15 bg-brandSoft px-4 py-3 text-sm font-bold leading-6 text-brandMuted">
+          <p className="flex items-start gap-2 text-brandDark">
+            <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-brandBlue" />
+            <span>{t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}</span>
+          </p>
+          {bookingSummary.paymentNote ? <p className="mt-2 text-xs leading-5">{bookingSummary.paymentNote}</p> : null}
+          {bookingSummary.currency === 'USD' && bookingSummary.usdPaymentNote ? <p className="mt-2 text-xs leading-5 text-amber-800">{bookingSummary.usdPaymentNote}</p> : null}
         </div>
       </div>
       <div className="relative grid gap-8 lg:grid-cols-[1fr_0.85fr]">
@@ -130,7 +151,45 @@ export function BookingPage() {
               />
             </Field>
             <Field label={t.pax}>
-              <Dropdown value={booking.pax} options={localizedPaxOptions} onChange={(pax) => updateBooking({ pax }, { recalculate: true })} />
+              <div>
+                <div className="flex overflow-hidden rounded-xl border border-brandLine bg-brandLight transition focus-within:border-brandBlue hover:border-brandBlue/40 hover:bg-white">
+                  <button
+                    type="button"
+                    aria-label={t.decreaseGuests}
+                    disabled={Number(booking.pax) <= paxMin}
+                    className="grid w-12 shrink-0 place-items-center border-r border-brandLine text-brandDark transition hover:bg-brandSoft disabled:cursor-not-allowed disabled:opacity-35"
+                    onClick={() => changePax(Number(booking.pax) - 1)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={paxMin}
+                    max={paxMax}
+                    step="1"
+                    value={booking.pax}
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-sm font-extrabold text-brandDark outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      updateBooking({ pax: value === '' ? '' : normalizePax(value) });
+                    }}
+                    onBlur={() => changePax(booking.pax)}
+                  />
+                  <button
+                    type="button"
+                    aria-label={t.increaseGuests}
+                    disabled={Number(booking.pax) >= paxMax}
+                    className="grid w-12 shrink-0 place-items-center border-l border-brandLine text-brandDark transition hover:bg-brandSoft disabled:cursor-not-allowed disabled:opacity-35"
+                    onClick={() => changePax(Number(booking.pax) + 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {Number(booking.pax) > largeGroupThreshold ? (
+                  <p className="mt-2 text-xs font-semibold leading-5 text-amber-800">{t.largeGroupNote}</p>
+                ) : null}
+              </div>
             </Field>
             <Field label={t.pickup}>
               <input

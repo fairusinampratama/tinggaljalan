@@ -3,7 +3,10 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Resources\Bookings\BookingResource;
+use App\Filament\Support\BookingAttention;
+use App\Filament\Support\BookingNextStep;
 use App\Models\Booking;
+use App\Support\PublicSite;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -22,11 +25,9 @@ class RecentBookings extends TableWidget
     {
         return $table
             ->heading('Booking action queue')
-            ->description('Latest bookings that usually need follow-up or confirmation.')
+            ->description('Leads and upcoming trips that need follow-up or confirmation.')
             ->query(
-                Booking::query()
-                    ->with(['tourPackage', 'destination'])
-                    ->whereIn('status', ['new', 'contacted', 'confirmed'])
+                BookingAttention::applyNeedsAttention(Booking::query()->with(['tourPackage', 'destination']))
                     ->latest()
                     ->limit(8),
             )
@@ -34,25 +35,38 @@ class RecentBookings extends TableWidget
                 TextColumn::make('booking_code')
                     ->label('Code')
                     ->searchable(),
+                TextColumn::make('attention')
+                    ->label('Attention')
+                    ->badge()
+                    ->state(fn (Booking $record): string => BookingAttention::status($record))
+                    ->color(fn (Booking $record): string => BookingAttention::color($record)),
+                TextColumn::make('next_step')
+                    ->label('Next step')
+                    ->badge()
+                    ->state(fn (Booking $record): string => BookingNextStep::label($record))
+                    ->color(fn (Booking $record): string => BookingNextStep::color($record))
+                    ->description(fn (Booking $record): string => BookingNextStep::summary($record)),
                 TextColumn::make('name')
                     ->label('Customer')
                     ->searchable()
                     ->placeholder('-'),
-                TextColumn::make('tourPackage.slug')
+                TextColumn::make('package_title')
                     ->label('Package')
-                    ->placeholder('-'),
+                    ->state(fn (Booking $record): string => $record->tourPackage
+                        ? PublicSite::localized($record->tourPackage->title, 'us', $record->tourPackage->slug)
+                        : '-')
+                    ->wrap(),
                 TextColumn::make('travel_date')
                     ->date()
                     ->sortable()
                     ->placeholder('-'),
                 TextColumn::make('total')
-                    ->money('IDR')
+                    ->formatStateUsing(fn ($state, Booking $record): string => PublicSite::formatMoney((int) $state, $record->currency ?: 'IDR'))
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
                         'new' => 'warning',
-                        'contacted' => 'info',
                         'confirmed' => 'success',
                         'cancelled' => 'danger',
                         'completed' => 'gray',
@@ -63,9 +77,7 @@ class RecentBookings extends TableWidget
                 Action::make('view')
                     ->icon(Heroicon::OutlinedDocumentMagnifyingGlass)
                     ->url(fn (Booking $record): string => BookingResource::getUrl('view', ['record' => $record])),
-                Action::make('edit')
-                    ->icon(Heroicon::OutlinedPencilSquare)
-                    ->url(fn (Booking $record): string => BookingResource::getUrl('edit', ['record' => $record])),
+
                 Action::make('whatsapp')
                     ->label('WhatsApp')
                     ->icon(Heroicon::OutlinedChatBubbleLeftRight)
@@ -75,6 +87,6 @@ class RecentBookings extends TableWidget
             ])
             ->paginated(false)
             ->emptyStateHeading('No booking follow-up queued')
-            ->emptyStateDescription('New, contacted, and confirmed bookings will appear here.');
+            ->emptyStateDescription('New leads, incomplete requests, and trips in the next 7 days will appear here.');
     }
 }

@@ -38,8 +38,11 @@ export function CheckoutConfirmationPage() {
             <p className="text-sm font-bold text-brandDark">{t.bookingCode}</p>
             <p className="mt-1 text-2xl font-extrabold text-brandBlue">{savedBookingCode}</p>
             <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
-              {t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}. {t.paymentDeferredNote}
+              {t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}. {bookingSummary.paymentNote || t.paymentDeferredNote}
             </p>
+            {bookingSummary.currency === 'USD' && bookingSummary.usdPaymentNote ? (
+              <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">{bookingSummary.usdPaymentNote}</p>
+            ) : null}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <a href={handoffUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>

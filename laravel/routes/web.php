@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingPaymentWhatsappController;
+use App\Http\Controllers\CheckoutPaymentController;
+use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\NewsController;
@@ -29,4 +32,12 @@ Route::post('/booking', [BookingController::class, 'storeDraft'])->name('booking
 Route::get('/checkout/review', [BookingController::class, 'review'])->name('checkout.review');
 Route::post('/checkout/review', [BookingController::class, 'submit'])->name('checkout.submit');
 Route::get('/checkout/payment', [BookingController::class, 'payment'])->name('checkout.payment');
+Route::get('/checkout/payment/{payment}', [CheckoutPaymentController::class, 'show'])->name('checkout.payment.show');
+Route::get('/checkout/payment/{payment}/status', [CheckoutPaymentController::class, 'status'])
+    ->middleware('throttle:20,1')
+    ->name('checkout.payment.status');
+Route::post('/midtrans/webhook', MidtransWebhookController::class)->name('midtrans.webhook');
+Route::get('/admin/payment-handoffs/{payment}/whatsapp', BookingPaymentWhatsappController::class)
+    ->middleware('auth')
+    ->name('admin.booking-payments.whatsapp');
 Route::get('/checkout/confirmation', [BookingController::class, 'confirmation'])->name('checkout.confirmation');

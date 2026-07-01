@@ -7,6 +7,7 @@ use App\Models\NewsArticle;
 use App\Models\PackageAvailability;
 use App\Models\TourPackage;
 use App\Models\Voucher;
+use App\Payments\PaymentSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -163,6 +164,7 @@ class PublicSite
             'name' => '',
             'email' => '',
             'whatsapp' => '',
+            'whatsapp_country' => 'ID',
             'voucher' => 'BROMO10',
             'notes' => '',
         ], $request->session()->get('booking_draft', []));
@@ -228,8 +230,12 @@ class PublicSite
 
         $total = max(0, $subtotal - $discount);
 
+        $paymentSettings = app(PaymentSettingsService::class);
+
         return compact('currency', 'pax', 'base', 'addOns', 'subtotal', 'voucher', 'discount', 'total') + [
-            'payment_gateway' => $currency === 'USD' ? 'Wise / card link after confirmation' : 'Bank transfer / QRIS after confirmation',
+            'payment_gateway' => $paymentSettings->publicLabel(),
+            'payment_note' => $paymentSettings->bookingNote(),
+            'usd_payment_note' => $paymentSettings->usdNote(),
         ];
     }
 

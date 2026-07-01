@@ -7119,7 +7119,7 @@
     ],
     "paymentGateways": {
       "IDR": "Midtrans",
-      "USD": "Stripe"
+      "USD": "Midtrans"
     },
     "currencyOptions": [
       {
@@ -7143,9 +7143,9 @@
         },
         "value": "USD",
         "meta": {
-          "id": "Stripe setelah konfirmasi",
-          "cn": "确认后使用 Stripe",
-          "us": "Stripe after confirmation"
+          "id": "Midtrans setelah konfirmasi",
+          "cn": "确认后使用 Midtrans",
+          "us": "Midtrans after confirmation"
         }
       }
     ],
@@ -7212,7 +7212,7 @@
       "answer": {
         "en": "We accept bank transfer, e-wallet, and cash payments for onsite booking.",
         "id": "Kami menerima transfer bank, e-wallet, dan pembayaran tunai untuk pemesanan di lokasi.",
-        "cn": "确认可用性后，本地旅客使用 IDR/Midtrans，国际旅客使用 USD/Stripe。"
+        "cn": "确认可用性后，本地旅客使用 IDR/Midtrans，国际旅客使用 USD/Midtrans。"
       }
     },
     {
@@ -7378,9 +7378,9 @@
         "Medan"
       ],
       "paymentNote": {
-        "id": "IDR via Midtrans dan USD via Stripe setelah tim mengonfirmasi jadwal.",
-        "cn": "团队确认日程后，本地 IDR 使用 Midtrans，国际 USD 使用 Stripe。",
-        "us": "IDR via Midtrans and USD via Stripe after team confirmation."
+        "id": "IDR dan USD diproses lewat Midtrans setelah tim mengonfirmasi jadwal. Quote USD dikonversi ke IDR saat permintaan pembayaran dibuat.",
+        "cn": "团队确认日程后，本地 IDR 使用 Midtrans，国际 USD 使用 Midtrans。",
+        "us": "IDR and USD bookings are handled through Midtrans after team confirmation. USD quotes are converted to IDR when payment is requested."
       }
     }
   }

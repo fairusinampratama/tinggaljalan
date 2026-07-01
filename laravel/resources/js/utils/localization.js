@@ -17,7 +17,7 @@ export const regions = {
     locale: 'zh-CN',
     currency: 'USD',
     travelerType: 'international',
-    paymentGateway: 'Stripe',
+    paymentGateway: 'Secure payment link after confirmation',
   },
   us: {
     id: 'us',
@@ -26,7 +26,7 @@ export const regions = {
     locale: 'en-US',
     currency: 'USD',
     travelerType: 'international',
-    paymentGateway: 'Stripe',
+    paymentGateway: 'Secure payment link after confirmation',
   },
 };
 

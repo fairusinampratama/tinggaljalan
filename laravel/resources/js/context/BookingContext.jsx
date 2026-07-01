@@ -10,6 +10,7 @@ function normalizeDraft(draft = {}, defaults = {}) {
     name: '',
     email: '',
     whatsapp: '',
+    whatsappCountry: 'ID',
     destination: '',
     date: '',
     pax: 2,
@@ -23,6 +24,7 @@ function normalizeDraft(draft = {}, defaults = {}) {
     ...draft,
     travelerType: draft.travelerType ?? draft.traveler_type ?? defaults.travelerType ?? defaults.traveler_type ?? 'international',
     addOns: draft.addOns ?? draft.add_ons ?? defaults.addOns ?? defaults.add_ons ?? [],
+    whatsappCountry: draft.whatsappCountry ?? draft.whatsapp_country ?? defaults.whatsappCountry ?? defaults.whatsapp_country ?? 'ID',
   };
 }
 
@@ -36,6 +38,8 @@ function emptySummary(currency = 'USD') {
     discount: 0,
     total: 0,
     paymentGateway: '',
+    paymentNote: '',
+    usdPaymentNote: '',
     voucher: null,
     addOns: [],
     addOnsTotal: 0,

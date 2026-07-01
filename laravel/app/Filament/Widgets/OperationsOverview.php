@@ -26,7 +26,7 @@ class OperationsOverview extends StatsOverviewWidget
     {
         $newBookings = Booking::query()->where('status', 'new')->count();
         $upcomingTrips = Booking::query()
-            ->whereIn('status', ['contacted', 'confirmed'])
+            ->where('status', 'confirmed')
             ->whereDate('travel_date', '>=', now()->toDateString())
             ->count();
         $activePackages = TourPackage::query()->active()->count();
@@ -34,12 +34,12 @@ class OperationsOverview extends StatsOverviewWidget
 
         return [
             Stat::make('New bookings', $newBookings)
-                ->description('Need first response')
+                ->description('Need availability review')
                 ->icon(Heroicon::OutlinedClipboardDocumentCheck)
                 ->color($newBookings > 0 ? 'warning' : 'success')
                 ->url(BookingResource::getUrl('index')),
             Stat::make('Upcoming trips', $upcomingTrips)
-                ->description('Contacted or confirmed')
+                ->description('Confirmed active trips')
                 ->icon(Heroicon::OutlinedCalendarDateRange)
                 ->color('info')
                 ->url(BookingResource::getUrl('index')),

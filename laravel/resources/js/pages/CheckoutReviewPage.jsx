@@ -1,7 +1,9 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
 import { Send, Ticket } from 'lucide-react';
+import { isPossiblePhoneNumber } from 'react-phone-number-input';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
+import { PhoneInput } from '../components/checkout/PhoneInput';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { Field } from '../components/ui/Field';
 import { PageShell } from '../components/ui/PageShell';
@@ -24,7 +26,10 @@ export function CheckoutReviewPage() {
     bookingBlock,
     dateAvailability,
   } = useBooking();
-  const contactComplete = booking.name.trim() && booking.whatsapp.trim();
+  const { errors = {} } = usePage().props;
+  const whatsappValid = booking.whatsapp ? isPossiblePhoneNumber(booking.whatsapp) : false;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email.trim());
+  const contactComplete = booking.name.trim() && whatsappValid && emailValid;
   const dateUnavailable = bookingBlock.blocked || dateAvailability.status === 'booked';
 
   function submitBooking(event) {
@@ -33,6 +38,7 @@ export function CheckoutReviewPage() {
     router.post('/checkout/review', {
       name: booking.name,
       whatsapp: booking.whatsapp,
+      whatsapp_country: booking.whatsappCountry,
       email: booking.email,
       voucher: voucherCode,
       notes: booking.notes,
@@ -55,29 +61,47 @@ export function CheckoutReviewPage() {
           <h2 className="text-2xl font-bold">{t.contactDetails}</h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">{t.contactText}</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <Field label={t.fullName}>
+            <Field label={`${t.fullName} *`}>
               <input
+                required
+                autoComplete="name"
                 className="w-full rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
                 value={booking.name}
                 onChange={(event) => setBooking((current) => ({ ...current, name: event.target.value }))}
                 placeholder={t.namePlaceholder}
               />
+              {errors.name ? <p className="mt-1 text-xs font-bold text-red-600">{errors.name}</p> : null}
             </Field>
-            <Field label={t.whatsapp}>
-              <input
-                className="w-full rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+            <Field label={`${t.whatsapp} *`}>
+              <PhoneInput
                 value={booking.whatsapp}
-                onChange={(event) => setBooking((current) => ({ ...current, whatsapp: event.target.value }))}
-                placeholder={t.whatsappPlaceholder}
+                country={booking.whatsappCountry}
+                required
+                invalid={Boolean(errors.whatsapp || (booking.whatsapp && !whatsappValid))}
+                onChange={(whatsapp) => setBooking((current) => ({ ...current, whatsapp }))}
+                onCountryChange={(whatsappCountry) => setBooking((current) => ({ ...current, whatsappCountry }))}
               />
+              <p className="mt-1.5 text-xs font-semibold text-brandMuted">{t.whatsappHelp}</p>
+              {errors.whatsapp ? <p className="mt-1 text-xs font-bold text-red-600">{errors.whatsapp}</p> : null}
+              {!errors.whatsapp && booking.whatsapp && !whatsappValid ? <p className="mt-1 text-xs font-bold text-red-600">{t.whatsappInvalid}</p> : null}
             </Field>
-            <Field label={t.emailOptional}>
+            <Field label={`${t.email} *`}>
               <input
-                className="w-full rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+                type="email"
+                required
+                autoComplete="email"
+                aria-invalid={Boolean(errors.email || (booking.email && !emailValid))}
+                className={`w-full rounded-xl border bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:bg-white ${
+                  errors.email || (booking.email && !emailValid)
+                    ? 'border-red-400 focus:border-red-500'
+                    : 'border-brandLine hover:border-brandBlue/40 focus:border-brandBlue'
+                }`}
                 value={booking.email}
                 onChange={(event) => setBooking((current) => ({ ...current, email: event.target.value }))}
-                placeholder={t.optionalPlaceholder}
+                placeholder="name@example.com"
               />
+              <p className="mt-1.5 text-xs font-semibold text-brandMuted">{t.emailHelp}</p>
+              {errors.email ? <p className="mt-1 text-xs font-bold text-red-600">{errors.email}</p> : null}
             </Field>
             <Field label={t.voucher}>
               <div className="flex gap-2">

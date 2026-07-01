@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\TourPackage;
+use App\Support\BookingLanguage;
 use App\Support\InertiaPublicData;
+use App\Support\PhoneNumber;
 use App\Support\PublicSite;
 use App\Support\Seo;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Propaganistas\LaravelPhone\Rules\Phone;
 
 class BookingController extends Controller
 {
@@ -80,10 +83,18 @@ class BookingController extends Controller
 
     public function submit(Request $request)
     {
+        $country = strtoupper(trim((string) $request->input('whatsapp_country', 'ID')));
+        $request->merge([
+            'whatsapp_country' => $country,
+            'whatsapp' => PhoneNumber::normalize($request->input('whatsapp'), $country),
+            'email' => strtolower(trim((string) $request->input('email'))),
+        ]);
+
         $draft = array_merge(PublicSite::bookingDraft($request), $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'whatsapp' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'whatsapp_country' => ['required', 'string', 'size:2', Rule::in(array_keys(PhoneNumber::countries()))],
+            'whatsapp' => ['required', 'string', (new Phone)->countryField('whatsapp_country')->lenient()],
+            'email' => ['required', 'email:rfc', 'max:255'],
             'voucher' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]));
@@ -102,6 +113,8 @@ class BookingController extends Controller
             'name' => $draft['name'],
             'email' => $draft['email'] ?? null,
             'whatsapp' => $draft['whatsapp'],
+            'whatsapp_country' => $draft['whatsapp_country'],
+            'communication_language' => BookingLanguage::normalize(PublicSite::language($request)),
             'travel_date' => $draft['date'],
             'pax' => $summary['pax'],
             'pickup' => $draft['pickup'] ?? null,
@@ -138,21 +151,22 @@ class BookingController extends Controller
 
     public function confirmation(Request $request)
     {
-        $language = PublicSite::language($request);
         $booking = Booking::query()->with('tourPackage.destination')->find($request->session()->get('booking_id'));
 
         if (! $booking) {
             return redirect()->route('booking.create');
         }
 
+        $language = BookingLanguage::normalize($booking->communication_language);
+
         $whatsappUrl = PublicSite::whatsappUrl([
-            'Halo Tinggal Jalan, saya ingin konfirmasi booking:',
-            "Kode: {$booking->booking_code}",
-            'Rute: '.PublicSite::localized($booking->tourPackage?->title, $language),
-            "Tanggal: {$booking->travel_date?->toDateString()}",
-            "Tamu: {$booking->pax}",
-            "Pickup: {$booking->pickup}",
-            'Total: '.PublicSite::formatMoney($booking->total, $booking->currency),
+            BookingLanguage::translate('booking.confirmation_help', [], $language),
+            BookingLanguage::translate('booking.booking_code', [], $language).": {$booking->booking_code}",
+            BookingLanguage::translate('booking.package', [], $language).': '.PublicSite::localized($booking->tourPackage?->title, $language),
+            BookingLanguage::translate('booking.travel_date', [], $language).': '.BookingLanguage::date($booking->travel_date, $language),
+            BookingLanguage::translate('booking.guests', [], $language).": {$booking->pax}",
+            BookingLanguage::translate('booking.pickup', [], $language).": {$booking->pickup}",
+            BookingLanguage::translate('booking.total', [], $language).': '.PublicSite::formatMoney($booking->total, $booking->currency),
         ]);
 
         $draft = PublicSite::bookingDraft($request);
@@ -184,7 +198,7 @@ class BookingController extends Controller
         return [
             'route' => ['required', Rule::exists('tour_packages', 'slug')],
             'date' => ['required', 'date'],
-            'pax' => ['required', 'integer', 'min:1', 'max:30'],
+            'pax' => ['required', 'integer', 'min:'.config('booking.minimum_guests'), 'max:'.config('booking.maximum_guests')],
             'pickup' => ['nullable', 'string', 'max:255'],
             'traveler_type' => ['required', Rule::in(['local', 'international'])],
             'currency' => ['required', Rule::in(['IDR', 'USD'])],

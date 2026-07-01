@@ -12,6 +12,7 @@ use App\Models\PlatformLink;
 use App\Models\Review;
 use App\Models\TourPackage;
 use App\Models\TrustStat;
+use App\Payments\PaymentSettingsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -36,6 +37,7 @@ class InertiaPublicData
             'site' => self::site(),
             'home' => self::home(),
             'bookingOptions' => self::bookingOptions($request),
+            'paymentSettings' => app(PaymentSettingsService::class)->publicPayload(),
             'routes' => self::routes($packages),
             'destinations' => Destination::query()->active()->ordered()->get()->map(fn (Destination $destination) => self::destination($destination))->values(),
             'articles' => self::articles($articles),
@@ -99,7 +101,9 @@ class InertiaPublicData
     {
         return [
             'destinationOptions' => Destination::query()->active()->ordered()->pluck('name')->values()->all(),
-            'paxOptions' => self::settingList('booking', 'pax_options'),
+            'paxMin' => (int) config('booking.minimum_guests'),
+            'paxMax' => (int) config('booking.maximum_guests'),
+            'largeGroupThreshold' => (int) config('booking.large_group_threshold'),
             'travelerTypeOptions' => self::settingList('booking', 'traveler_type_options'),
             'currencyOptions' => self::settingList('booking', 'currency_options'),
             'initialBooking' => PublicSite::bookingDraft($request),
@@ -276,6 +280,7 @@ class InertiaPublicData
                 'name' => $draft['name'] ?? '',
                 'email' => $draft['email'] ?? '',
                 'whatsapp' => $draft['whatsapp'] ?? '',
+                'whatsappCountry' => $draft['whatsapp_country'] ?? $draft['whatsappCountry'] ?? 'ID',
                 'voucher' => $draft['voucher'] ?? '',
                 'notes' => $draft['notes'] ?? '',
             ],
@@ -288,6 +293,8 @@ class InertiaPublicData
                 'discount' => $summary['discount'],
                 'total' => $summary['total'],
                 'paymentGateway' => $summary['payment_gateway'],
+                'paymentNote' => $summary['payment_note'],
+                'usdPaymentNote' => $summary['usd_payment_note'],
                 'voucher' => $summary['voucher'] ? [
                     'code' => $summary['voucher']->code,
                     'label' => $summary['voucher']->label,

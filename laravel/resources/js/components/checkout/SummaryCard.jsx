@@ -19,6 +19,8 @@ export function SummaryCard({ t, booking, selectedRoute, summary, bookingBlock, 
         <div className="flex justify-between gap-4"><span>{t.travelerType}</span><span className="text-right text-brandDark">{booking.travelerType === 'international' ? t.travelerInternational : t.travelerLocal}</span></div>
         <div className="flex justify-between gap-4"><span>{t.currency}</span><span className="text-right text-brandDark">{summary.currency}</span></div>
         <div className="flex justify-between gap-4"><span>{t.paymentAfterConfirmation}</span><span className="text-right text-brandDark">{summary.paymentGateway}</span></div>
+        {summary.paymentNote ? <p className="rounded-xl bg-brandSoft px-4 py-3 text-xs font-bold leading-5 text-brandMuted">{summary.paymentNote}</p> : null}
+        {summary.currency === 'USD' && summary.usdPaymentNote ? <p className="rounded-xl bg-amber-50 px-4 py-3 text-xs font-bold leading-5 text-amber-900">{summary.usdPaymentNote}</p> : null}
         <div className="h-px bg-brandLine" />
         <div className="flex justify-between"><span>{t.basePrice}</span><span>{formatCurrency(summary.basePrice, summary.currency)}</span></div>
         <div className="flex justify-between"><span>{t.subtotal}</span><span>{formatCurrency(summary.subtotal, summary.currency)}</span></div>

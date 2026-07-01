@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\EmailGatewaySetting;
+use App\Models\PaymentSetting;
+use App\Models\WhatsappGatewaySetting;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -24,6 +27,10 @@ class DatabaseSeeder extends Seeder
                 'is_admin' => true,
             ],
         );
+
+        PaymentSetting::midtrans();
+        EmailGatewaySetting::current();
+        WhatsappGatewaySetting::current();
 
         $this->call([
             DestinationSeeder::class,
