@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
-  <title id="title">Tinggal Jalan favicon</title>
-  <rect width="64" height="64" rx="18" fill="#193b33"/>
-  <circle cx="32" cy="32" r="23" fill="#e59a47"/>
-  <path d="M19 22h20v7h-6v17h-8V29h-6v-7Z" fill="#193b33"/>
-  <path d="M42 22h8v14c0 6.8-4.4 11-11.1 11-3.6 0-6.6-1.2-8.6-3.5l4.4-5.2c1.1 1.2 2.2 1.8 3.7 1.8 2.2 0 3.6-1.4 3.6-4.3V22Z" fill="#193b33"/>
-  <path d="M18 51c8.5 3.9 19.2 3.9 28 0" fill="none" stroke="#fffaf3" stroke-width="3" stroke-linecap="round" opacity=".9"/>
-</svg>

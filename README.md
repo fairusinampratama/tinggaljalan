@@ -1,117 +1,56 @@
-# Tinggal Jalan Indonesia Tours Frontend
+# Tinggal Jalan
 
-A responsive travel package catalog and booking-request frontend for **Tinggal Jalan Indonesia Tours**. The project is built with Vite, React, Tailwind CSS v4, and lucide-react.
+This is the main repository for the **Tinggal Jalan** web platform, built with **Laravel** and **Filament PHP**. 
 
-This is a frontend-only implementation before backend integration. It demonstrates the customer journey, route details, pricing logic, booking states, SEO metadata, WhatsApp handoff, and regional behavior without backend booking persistence, real payment capture, CMS, database, email delivery, or real form submission.
+The application serves both the public-facing travel website and a comprehensive backend admin panel.
 
-## Features
+## Technology Stack
 
-- Brand-aligned Tinggal Jalan frontend with current logo, favicon, and app title
-- Responsive layout for mobile, tablet, and desktop
-- Region-based language selector for Indonesia, English, and Mandarin
-- Viator-inspired route catalog cards with ratings, review counts, duration, free-cancellation label, and strong price hierarchy
-- Route catalog with localized duration, pickup, private-trip labels, IDR/USD pricing, and route-specific add-ons
-- Route detail page with gallery, package option, itinerary, pickup/drop-off, inclusions, exclusions, good-to-know notes, policies, add-ons, and traveler proof
-- Step-by-step booking flow: trip setup, customer details, review, and confirmation
-- Booking request flow with voucher discount, pickup point, pax, date, traveler type, separate currency selection, add-ons, customer email, and notes
-- Currency-based payment label: IDR uses Midtrans and USD uses Stripe after team confirmation
-- Blocked-booking and limited-seat state examples for availability review
-- WhatsApp CTA with prefilled booking summary
-- Email field and confirmation state for booking-request follow-up
-- Runtime SEO metadata, canonical URLs, Open Graph/Twitter tags, route JSON-LD, `robots.txt`, and `sitemap.xml`
-- Local route image assets plus current-logo favicon
+- **Backend:** Laravel 11+
+- **Admin Panel:** Filament PHP v3+
+- **Frontend:** Blade Templates + Tailwind CSS
+- **Database:** MySQL (via Docker for local development)
 
-## Tech Stack
+## Local Development (Docker)
 
-- Vite 8
-- React 19
-- React Router
-- Tailwind CSS 4 via `@tailwindcss/vite`
-- lucide-react 1
+This project uses Laravel Sail / Docker Compose for local development.
 
-## Getting Started
-
-Install dependencies:
-
+### 1. Start the containers
 ```bash
-npm install
+docker compose up -d
 ```
+*Note: This will spin up the `app` (Laravel) and `mysql` containers.*
 
-Start the development server:
-
+### 2. Install Dependencies
 ```bash
-npm run dev
+docker compose exec app composer install
+docker compose exec app npm install
 ```
 
-Build for production:
-
+### 3. Setup Environment
+Copy `.env.example` to `.env` and generate an application key:
 ```bash
-npm run build
+cp .env.example .env
+docker compose exec app php artisan key:generate
 ```
 
-Preview a production build:
-
+### 4. Build Frontend Assets & Migrate
 ```bash
-npm run preview
+docker compose exec app npm run build
+docker compose exec app php artisan migrate:fresh --seed
 ```
 
-## Project Structure
+## Admin Access
 
-```text
-.
-├── index.html
-├── public/
-│   ├── favicon.svg
-│   └── images/
-│       ├── credits.md
-│       ├── destinations/
-│       └── routes/
-├── src/
-│   ├── components/
-│   │   ├── checkout/
-│   │   ├── layout/
-│   │   ├── seo/
-│   │   ├── sections/
-│   │   └── ui/
-│   ├── context/
-│   ├── data/
-│   ├── pages/
-│   ├── utils/
-│   ├── App.jsx
-│   ├── index.css
-│   └── main.jsx
-└── vite.config.js
+The Filament administration panel is accessible at:
+
+```txt
+URL: http://localhost:8000/admin
 ```
 
-## Assets
-
-The travel images are stored locally in `public/images`. Image source URLs are documented in `public/images/credits.md`.
-
-## Notes
-
-- Booking, voucher, block-booking, add-on, payment-label, and email follow-up states are frontend-only until backend integration.
-- Routes are frontend-only React routes; configure a production host fallback to `index.html` before deploying.
-- WhatsApp links use the Tinggal Jalan contact number from `src/data/brand.js`.
-- Booking state is kept in memory for frontend review and resets on browser refresh.
-- Static prototype data lives in `src/data`.
-- Shared helper logic lives in `src/utils`.
-- Route/page screens live in `src/pages`.
-- Traveler type and currency are separate booking fields. Currency controls price display, voucher eligibility, and payment label.
-- The temporary SEO base URL is `https://tinggaljalan.com` in `src/utils/seo.js`; update it when the final deployment domain changes.
-- Booking and checkout pages are marked `noindex`; home, routes, and route detail pages are indexable.
-
-## Verification
-
-Verify with:
-
-```bash
-npm run build
+**Default Local Credentials (from seeders):**
+```txt
+Email: admin@tinggaljalan.test
+Password: password
 ```
-
-Recommended frontend QA before backend:
-
-```bash
-rg -n "prototype|mock|dummy|DUMMY" index.html src public/robots.txt public/sitemap.xml
-rg -n "adventure-|terrain-sweep|route-line|Outfit|fonts.googleapis|font-black" src index.html
-npm run preview
-```
+*(Ensure you change these credentials before any production deployment)*
