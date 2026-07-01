@@ -1,6 +1,6 @@
 # Panduan Pengguna (User Guide) - Tinggal Jalan Admin Panel
 
-Selamat datang di Panduan Pengguna untuk panel administrasi **Tinggal Jalan**. Dokumen ini akan membantu Anda memahami cara mengelola konten, pesanan, dan pengaturan website menggunakan Filament Admin Panel.
+Selamat datang di Panduan Pengguna untuk panel administrasi **Tinggal Jalan**. Platform ini dibangun khusus untuk memudahkan Anda mengatur operasional agen perjalanan Anda, mulai dari pembuatan paket wisata (seperti *Bromo Sunrise* atau *Tumpak Sewu*), manajemen pesanan, hingga integrasi pembayaran otomatis.
 
 ---
 
@@ -8,76 +8,75 @@ Selamat datang di Panduan Pengguna untuk panel administrasi **Tinggal Jalan**. D
 
 Untuk masuk ke panel admin, buka URL berikut di browser Anda:
 ```txt
-URL: http://localhost:8000/admin (atau domain utama saat di-hosting)
+URL: http://localhost:8000/admin (Ganti localhost dengan domain Anda jika sudah online)
 ```
-Gunakan Email dan Password yang telah diberikan oleh tim developer (contoh lokal: `admin@tinggaljalan.test`).
+Gunakan kredensial default dari developer untuk login pertama kali (Email: `admin@tinggaljalan.test`).
 
-Setelah login, Anda akan diarahkan ke **Dashboard**. Di sini, Anda dapat melihat ringkasan (widget) metrik penting seperti total pesanan bulan ini, jumlah paket wisata aktif, dan lainnya.
+Setelah login, **Dashboard** akan menampilkan widget analitik ringkas. Anda bisa melihat statistik berapa pesanan bulan ini, jumlah destinasi aktif, dan lain sebagainya.
 
 ---
 
 ## 2. Manajemen Paket Wisata (Tour Packages)
 
-Modul ini adalah pusat utama untuk layanan Anda. Pengisian data paket wisata dibagi menjadi beberapa tahapan (Wizard):
+Ini adalah fitur utama website Anda. Pembuatan paket wisata menggunakan sistem tahapan (Wizard) agar Anda tidak pusing melihat form yang terlalu panjang.
 
-1. **Detail Dasar:** Nama paket, deskripsi singkat, kategori (Open Trip / Private Trip), dan harga dasar.
-2. **Media & Galeri:** Mengunggah foto utama (thumbnail) dan foto-foto galeri tambahan.
-3. **Itinerary (Rencana Perjalanan):** Mengatur jadwal hari per hari atau jam per jam untuk paket tersebut.
-4. **Ketersediaan (Jadwal Keberangkatan):** Menentukan tanggal berapa saja paket wisata ini tersedia.
-5. **Add-ons (Layanan Tambahan):** Menambahkan opsi ekstra seperti dokumentasi drone, penjemputan khusus, atau sewa alat yang dapat dibeli saat pemesanan.
-
-> **Tips:** Pastikan Anda mengisi kolom yang bertanda bintang merah (*) karena itu adalah data wajib (Required).
-
----
-
-## 3. Manajemen Pemesanan (Bookings)
-
-Setiap pesanan yang masuk dari pelanggan (baik dari website maupun WhatsApp) akan dicatat di menu **Bookings**.
-
-- **Status Pesanan:** Pesanan memiliki siklus hidup seperti `New` (Baru), `Confirmed` (Terkonfirmasi), `Completed` (Selesai), dan `Cancelled` (Dibatalkan).
-- **Detail Harga & Add-ons:** Anda dapat melihat rincian tamu, tanggal perjalanan, dan layanan tambahan yang dipilih oleh pelanggan.
-- **Pembayaran (Booking Payments):** Setiap pesanan terhubung ke menu pembayaran yang mencatat status Midtrans (Pending/Paid/Expired/Failed) serta catatan log notifikasi WhatsApp/Email ke pelanggan.
+1. **Detail Dasar (Basic Details):** Tulis nama paket wisata Anda (misal: *Jogja 3 Hari 2 Malam*). Atur harga dasar dalam IDR maupun USD.
+2. **Media & Galeri:** Unggah foto utama (thumbnail) dan tambahkan foto-foto pendukung ke dalam galeri.
+3. **Itinerary (Rencana Perjalanan):** Di sini Anda bisa membuat jadwal terperinci dari Hari 1 hingga Hari terakhir, atau jadwal per jam (misal jam 03:00 menuju titik kumpul Jeep Bromo).
+4. **Ketersediaan (Availabilities):** Kapan paket ini tersedia? Anda bisa menambahkan tanggal keberangkatan khusus.
+5. **Add-ons (Layanan Tambahan):** Anda dapat membuat opsi layanan ekstra, seperti:
+   - *Drone Documentation*
+   - *Airport Pickup (Penjemputan Bandara)*
+   - *Sewa Jaket Tebal*
+   Pelanggan dapat menambahkan (dan membayar) opsi ini saat melakukan checkout.
 
 ---
 
-## 4. Manajemen Berita & Artikel (News Articles)
+## 3. Destinasi (Destinations)
 
-Menu ini digunakan untuk membuat blog, artikel promosi, atau pengumuman.
-Pembuatan artikel kini dibagi dalam **4 langkah (Wizard)**:
-
-1. **Informasi Utama:** Mengisi judul artikel dan memilih Kategori.
-2. **Konten Artikel:** Menulis isi artikel menggunakan Rich Text Editor (Trix/Quill) agar mudah diformat (tebal, miring, list).
-3. **Gambar Sampul (Media):** Mengunggah gambar thumbnail yang akan tampil di halaman depan website.
-4. **Penerbitan & SEO (Publishing & Meta):** Menentukan status aktif (Is Active), fitur highlight (Is Featured), mengatur urutan (Sort Order), dan menulis SEO Meta Title/Description agar artikel mudah dicari di Google.
-
-> **Catatan:** Jangan lupa mencentang `Is Active` agar artikel langsung tayang di website umum.
+Sebelum membuat paket wisata, pastikan Anda telah mendaftarkan **Destinasi** (misal: *Bromo*, *Jogja*, *Medan*, *Tumpak Sewu*).
+Setiap destinasi memiliki kolom gambar, wilayah (Region), provinsi, dan deskripsi singkat. Seluruh data wisata akan dihubungkan (di-tag) ke destinasi-destinasi ini.
 
 ---
 
-## 5. Mengelola Pengaturan Situs (Site Settings)
+## 4. Manajemen Pemesanan & Pembayaran (Bookings & Payments)
 
-Segala informasi global perusahaan Anda dikelola melalui menu **Site Settings**.
+Setiap pesanan pelanggan yang masuk akan muncul di menu **Bookings**.
 
-- **Informasi Kontak:** Nomor WhatsApp, Email Utama, dan Alamat Bisnis.
-- **Tautan Eksternal:** Link Google Maps untuk memudahkan pelanggan mencari lokasi kantor.
-- **Jam Operasional & Area Layanan:** Detail waktu buka kantor dan wilayah cakupan wisata.
-- **Logo & Trust Badges:** Mengunggah logo perusahaan dan lencana keamanan.
-
----
-
-## 6. Fitur Pendukung Lainnya
-
-- **Destinations (Destinasi):** Mengelola daftar kota/lokasi wisata. Paket wisata akan dihubungkan ke lokasi-lokasi ini.
-- **FAQs (Tanya Jawab):** Mengatur pertanyaan yang sering diajukan oleh pelanggan agar tampil di halaman informasi website.
-- **Reviews (Ulasan):** Anda dapat menampilkan ulasan terbaik dari pelanggan. Centang `Is Featured` agar ulasan tersebut muncul di halaman utama website.
-- **Why Choose Us:** Mengelola poin-poin alasan mengapa pelanggan harus memilih Tinggal Jalan, lengkap dengan ikon dan penjelasannya.
+- **Workflow Status:** Anda dapat memantau pesanan mulai dari berstatus `New`, `Confirmed`, hingga `Completed`.
+- **Riwayat Kontak & Konfirmasi:** Panel ini mencatat waktu persis (timestamp) kapan pesanan dikonfirmasi (`confirmed_at`) atau dibatalkan (`cancelled_at`).
+- **Integrasi Midtrans:** Jika pesanan dibuat melalui website, link pembayaran (Snap URL Midtrans) otomatis di-generate. Status pembayaran (`Pending`, `Paid`, `Expired`) akan berubah secara otomatis saat pelanggan membayar (melalui webhook).
+- **Log Notifikasi:** Terdapat pelacakan pesan otomatis. Anda bisa melihat apakah notifikasi receipt/invoice melalui Email dan WhatsApp sudah sukses dikirim (`sent_at`), dibuka pelanggan (`opened_at`), atau gagal (`failed_at`).
 
 ---
 
-## Panduan Pengisian Data (Helper Text)
-Pada setiap kolom isian (form) di panel admin, perhatikan teks kecil berwarna abu-abu (Helper Text) di bawah kolom tersebut. Teks itu akan memandu Anda mengenai:
-- Format penulisan yang benar.
-- Batasan jumlah karakter (contoh: maksimal 255 karakter).
-- Kapan data tersebut akan ditampilkan ke pelanggan.
+## 5. Berita & Artikel Promosi (News Articles)
 
-Jika Anda mengalami kesulitan, hubungi tim developer melalui dokumentasi teknis atau issue tracker repositori.
+Buat artikel blog, tips wisata (seperti *Tips Menikmati Sunrise di Bromo*), atau pengumuman melalui fitur berita ini.
+Sama seperti Tour Packages, pembuatan artikel dibagi dalam 4 tahapan (Wizard) meliputi: Informasi Dasar, Konten Editor (Rich Text), Media Gambar Sampul, dan Pengaturan SEO (Meta Description untuk Google).
+
+---
+
+## 6. Mengelola Pengaturan Situs (Site Settings & Landing Page)
+
+Anda tidak perlu menghubungi programmer untuk mengganti informasi dasar website Anda. Akses menu di bagian pengaturan untuk:
+
+- **Site Settings:** Mengubah Nomor WhatsApp admin, Email Kontak, Alamat Kantor, Jam Layanan, Link Google Maps, dan Logo Perusahaan.
+- **Why Choose Us:** Mengelola 3 atau 4 poin keunggulan Tinggal Jalan yang muncul di halaman depan (Home).
+- **Trust Stats:** Mengubah metrik reputasi Anda (misalnya: *100+ Happy Customers*, *50+ Destinations*).
+- **Reviews (Ulasan):** Masukkan ulasan terbaik dari pelanggan Anda. Centang opsi `Is Featured` agar ulasan tersebut tampil menonjol di halaman depan.
+- **FAQs:** Kelola daftar pertanyaan umum (Tanya Jawab) untuk membantu pelanggan yang masih bingung.
+
+---
+
+## 💡 Tips Penting: Perhatikan "Helper Text" (Teks Abu-Abu)
+
+Saat Anda mengisi form apapun di panel admin (mulai dari membuat paket hingga mengisi pengaturan web), selalu baca teks kecil berwarna abu-abu yang ada di bawah setiap kolom isian.
+
+Teks ini dibuat khusus untuk memandu Anda:
+- Batasan karakter (misal: "Maksimal 255 karakter").
+- Format gambar yang disarankan.
+- Peringatan agar format SEO tetap rapi.
+- Cara mengisi harga agar konversi mata uang sesuai.
+
+Ikuti petunjuk tersebut agar data yang ditampilkan ke publik di website Tinggal Jalan terlihat sempurna!
