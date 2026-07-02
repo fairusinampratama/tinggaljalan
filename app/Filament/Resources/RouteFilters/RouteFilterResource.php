@@ -38,6 +38,15 @@ class RouteFilterResource extends Resource
         return RouteFilterForm::configure($schema);
     }
 
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListRouteFilters::route('/'),
+            'create' => CreateRouteFilter::route('/create'),
+            'edit' => EditRouteFilter::route('/{record}/edit'),
+        ];
+    }
+
     private static function ensureRouteFiltersTable(): void
     {
         try {

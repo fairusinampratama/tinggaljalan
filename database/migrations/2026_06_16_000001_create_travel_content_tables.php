@@ -162,8 +162,8 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('email')->nullable();
             $table->string('whatsapp')->nullable();
-            $table->string('whatsapp_country_code')->nullable();
-            $table->string('communication_language', 2)->default('en');
+            $table->string('whatsapp_country', 2)->nullable();
+            $table->string('communication_language', 2)->default('us');
             $table->date('travel_date')->nullable();
             $table->unsignedInteger('pax')->default(1);
             $table->string('pickup')->nullable();

@@ -205,7 +205,6 @@ class FilamentAdminResourcesTest extends TestCase
             '/admin/destinations/create',
             "/admin/destinations/{$destination->getKey()}/edit",
             '/admin/route-filters/create',
-            '/admin/route-filters/'.RouteFilter::firstOrFail()->getKey(),
             '/admin/route-filters/'.RouteFilter::firstOrFail()->getKey().'/edit',
             '/admin/tour-packages/create',
             '/admin/trust-stats/create',
