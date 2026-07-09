@@ -1,4 +1,10 @@
 @import 'tailwindcss';
+@import '@fontsource/manrope/latin-400.css';
+@import '@fontsource/manrope/latin-500.css';
+@import '@fontsource/manrope/latin-600.css';
+@import '@fontsource/manrope/latin-700.css';
+@import '@fontsource/manrope/latin-800.css';
+@import '@fontsource/dm-serif-display/latin-400.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -7,17 +13,20 @@
 @source '../**/*.jsx';
 
 @theme {
-    --font-sans: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
-    --font-display: Outfit, 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+    --font-sans: Manrope, Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
 
-    --color-brandBlue: #ef7d58;
-    --color-brandDark: #201d1a;
-    --color-brandMuted: #6f625a;
-    --color-brandLight: #f7efe8;
-    --color-brandSoft: #efe1d5;
-    --color-brandLine: #dfd0c4;
+    --color-primary: #102a36;
+    --color-secondary: #2f6f6d;
+    --color-accent: #b99a5e;
+    --color-canvas: #ffffff;
+    --color-surface: #ffffff;
+    --color-ink: #172126;
+    --color-muted: #667277;
+    --color-line: #e3e8e6;
+    --color-subtle: #f5f7f6;
 
-    --shadow-soft: 0 14px 34px rgba(32, 29, 26, 0.08);
+    --shadow-soft: 0 10px 30px rgba(16, 42, 54, 0.07);
 }
 
 html {
@@ -26,9 +35,15 @@ html {
 
 body {
     margin: 0;
-    background: #f7efe8;
-    color: #201d1a;
-    font-family: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+    background: #ffffff;
+    color: #172126;
+    font-family: Manrope, Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+    text-rendering: optimizeLegibility;
+}
+
+::selection {
+    background: #b99a5e;
+    color: #102a36;
 }
 
 .section-wave {
@@ -37,8 +52,8 @@ body {
     left: 0;
     right: 0;
     z-index: 10;
-    color: #f7efe8;
-    height: 132px;
+    color: #ffffff;
+    height: 104px;
     pointer-events: none;
 }
 
@@ -60,4 +75,91 @@ body {
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
     overflow: hidden;
+}
+
+
+@layer components {
+    .public-container {
+        width: min(100%, 80rem);
+        margin-inline: auto;
+    }
+
+    .public-section {
+        padding-block: clamp(3rem, 6vw, 4.5rem);
+        padding-inline: clamp(1rem, 4vw, 2.5rem);
+    }
+
+    .public-section-compact {
+        padding-block: clamp(2rem, 4vw, 3rem);
+        padding-inline: clamp(1rem, 4vw, 2.5rem);
+    }
+
+    .home-page .public-section {
+        padding-block: clamp(2.5rem, 4.5vw, 4rem);
+    }
+
+    .home-page #faq {
+        padding-bottom: clamp(2.5rem, 4vw, 3rem);
+    }
+
+    .public-eyebrow {
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        line-height: 1.5;
+        text-transform: uppercase;
+    }
+
+    .public-heading-hero {
+        max-width: 14ch;
+        font-family: var(--font-display);
+        font-size: clamp(2.75rem, 7vw, 4.75rem);
+        font-weight: 400;
+        letter-spacing: -0.025em;
+        line-height: 0.98;
+        text-wrap: balance;
+    }
+
+    .public-heading-section {
+        font-family: var(--font-display);
+        font-size: clamp(2rem, 4.5vw, 3rem);
+        font-weight: 400;
+        letter-spacing: -0.015em;
+        line-height: 1.08;
+        text-wrap: balance;
+        overflow-wrap: anywhere;
+    }
+
+    .public-heading-card {
+        font-family: var(--font-display);
+        font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+        font-weight: 400;
+        line-height: 1.12;
+        text-wrap: balance;
+        overflow-wrap: anywhere;
+    }
+
+    .public-copy {
+        color: var(--color-muted);
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.7;
+        text-wrap: pretty;
+        overflow-wrap: anywhere;
+    }
+}
+
+h1,
+h2,
+h3 {
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+}
+
+p,
+li,
+a,
+button,
+label {
+    overflow-wrap: anywhere;
 }

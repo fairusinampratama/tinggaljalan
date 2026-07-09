@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import { useSearchParams } from 'react-router-dom';
+import { SearchX } from 'lucide-react';
 import {
   FeaturedNewsPanel,
   NewsCardGrid,
@@ -8,8 +8,8 @@ import {
   NewsFilterBar,
 } from '../components/sections/NewsCardsSection';
 import { Seo } from '../components/seo/Seo';
+import { Pagination } from '../components/ui/Pagination';
 import { useBooking } from '../context/BookingContext';
-import { getLocalized } from '../utils/localization';
 
 const allValue = 'all';
 
@@ -17,49 +17,26 @@ function getQueryValue(searchParams, key, fallback = allValue) {
   return searchParams.get(key) || fallback;
 }
 
-function filterArticles(articles, { search, category, destination, language }) {
-  const normalizedSearch = search.trim().toLowerCase();
-
-  return articles.filter((article) => {
-    const matchesCategory = category === allValue || article.category === category;
-    const matchesDestination = destination === allValue || article.destinationId === destination;
-    const searchable = [
-      getLocalized(article.title, language),
-      getLocalized(article.excerpt, language),
-      article.destinationName,
-      ...(article.tags ?? []),
-    ].join(' ').toLowerCase();
-    const matchesSearch = !normalizedSearch || searchable.includes(normalizedSearch);
-
-    return matchesCategory && matchesDestination && matchesSearch;
-  });
-}
-
 export function NewsPage() {
   const { props } = usePage();
-  const { language, whatsappUrl, publicData } = useBooking();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { language, whatsappUrl, publicData, t } = useBooking();
+  const [searchParams] = useSearchParams();
+  
+  const paginatedArticles = props.articles ?? { data: [] };
+  const articles = paginatedArticles.data ?? [];
+  const totalArticles = paginatedArticles.total ?? articles.length;
+  const featured = props.featured ?? null;
+  const seo = props.seo ?? {};
+  const latest = articles.filter((article) => article.slug !== featured?.slug).slice(0, 2);
+  
   const searchTerm = getQueryValue(searchParams, 'search', '');
   const categoryFilter = getQueryValue(searchParams, 'category');
   const destinationFilter = getQueryValue(searchParams, 'destination');
-  const serverArticles = props.articles ?? publicData.articles ?? [];
-  const serverFeatured = props.featured ?? serverArticles?.find((article) => article.isFeatured) ?? serverArticles?.[0];
-  const featured = serverFeatured ?? null;
-  const latest = serverArticles?.filter((article) => article.slug !== featured?.slug).slice(0, 2) ?? [];
-
-  const filteredArticles = useMemo(
-    () =>
-      filterArticles(serverArticles, {
-        search: searchTerm,
-        category: categoryFilter,
-        destination: destinationFilter,
-        language,
-      }),
-    [categoryFilter, destinationFilter, language, searchTerm, serverArticles],
-  );
+  
   const hasActiveFilters = Boolean(searchTerm) || categoryFilter !== allValue || destinationFilter !== allValue;
-  const firstRowArticles = filteredArticles.slice(0, 3);
-  const remainingArticles = filteredArticles.slice(3);
+
+  const firstRowArticles = articles.slice(0, 3);
+  const remainingArticles = articles.slice(3);
 
   function updateQuery(nextValues) {
     const nextParams = new URLSearchParams(searchParams);
@@ -71,52 +48,59 @@ export function NewsPage() {
         nextParams.set(key, String(value));
       }
     });
+    
+    nextParams.delete('page'); // Reset to page 1 on new filter
 
-    setSearchParams(nextParams, { replace: true });
+    router.get('/news', Object.fromEntries(nextParams.entries()), {
+      preserveState: true,
+      preserveScroll: true,
+      replace: true,
+    });
   }
 
   function clearFilters() {
-    setSearchParams({}, { replace: true });
+    router.get('/news', {}, {
+      preserveState: true,
+      preserveScroll: true,
+      replace: true,
+    });
   }
 
   return (
     <>
       <Seo
-        title="Berita & Panduan Wisata | Tinggal Jalan"
-        description="Baca berita, tips perjalanan, itinerary, dan panduan destinasi untuk Bromo, Jogja, Tumpak Sewu, Medan, dan private trip Indonesia."
+        title={seo.title ?? 'Travel Guides & News | Tinggal Jalan'}
+        description={seo.description ?? 'Travel guides, itinerary ideas, and route updates from Tinggal Jalan for Indonesia private trips.'}
         path="/news"
-        image="/images/hero-bromo.jpg"
+        image={seo.image ?? '/images/hero-bromo.jpg'}
+        jsonLd={seo.json_ld}
         language={language}
       />
       <section className="px-4 pb-16 pt-28 sm:px-8 sm:pt-32 lg:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] lg:items-end">
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">Berita & Panduan</p>
-              <h1 className="font-display text-3xl font-bold leading-tight text-brandDark sm:text-5xl">
-                {language === 'id'
-                  ? 'Panduan wisata untuk memilih rute dengan lebih yakin'
-                  : 'Travel guides for choosing routes with more confidence'}
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.newsEyebrow}</p>
+              <h1 className="font-display text-3xl font-normal leading-tight text-primary sm:text-5xl">
+                {t.newsTitle}
               </h1>
-              <p className="mt-5 max-w-3xl text-base font-semibold leading-7 text-brandMuted">
-                {language === 'id'
-                  ? 'Baca tips destinasi, ide itinerary, kabar rute, dan panduan booking sebelum lanjut ke paket atau chat WhatsApp.'
-                  : 'Read destination tips, itinerary ideas, route updates, and booking guides before moving into packages or WhatsApp.'}
+              <p className="mt-5 max-w-3xl text-base font-medium leading-7 text-muted">
+                {t.newsDescription}
               </p>
             </div>
-            <div className="rounded-2xl border border-brandLine bg-white p-5 shadow-soft">
-              <p className="text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">
-                {language === 'id' ? 'Mulai dari sini' : 'Start here'}
+            <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">
+                {t.newsStartHere}
               </p>
               <div className="mt-4 grid grid-cols-3 gap-3 text-center">
                 {[
-                  { value: (publicData.articles ?? []).length, label: language === 'id' ? 'Artikel' : 'Articles' },
-                  { value: (publicData.destinations ?? []).length, label: language === 'id' ? 'Destinasi' : 'Destinations' },
-                  { value: 3, label: language === 'id' ? 'Aksi cepat' : 'Quick paths' },
+                  { value: (publicData.articles ?? []).length, label: t.newsArticlesCount },
+                  { value: (publicData.destinations ?? []).length, label: t.newsDestinationsCount },
+                  { value: 3, label: t.newsQuickPaths },
                 ].map((item) => (
-                  <div key={item.label} className="rounded-xl bg-brandLight p-3">
-                    <p className="text-2xl font-extrabold text-brandDark">{item.value}</p>
-                    <p className="mt-1 text-xs font-bold text-brandMuted">{item.label}</p>
+                  <div key={item.label} className="rounded-xl bg-canvas p-3">
+                    <p className="text-2xl font-bold text-ink">{item.value}</p>
+                    <p className="mt-1 text-xs font-semibold text-muted">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -132,7 +116,7 @@ export function NewsPage() {
               categoryFilter={categoryFilter}
               destinationFilter={destinationFilter}
               hasActiveFilters={hasActiveFilters}
-              resultCount={filteredArticles.length}
+              resultCount={totalArticles}
               totalCount={(publicData.articles ?? []).length}
               onUpdate={updateQuery}
               onReset={clearFilters}
@@ -140,27 +124,31 @@ export function NewsPage() {
           </div>
 
           <div className="mt-8">
-            {filteredArticles.length ? (
-              <div className="grid gap-8">
-                <NewsCardGrid articles={firstRowArticles} language={language} variant="standard" />
-                <NewsCtaBand language={language} whatsappUrl={whatsappUrl} />
-                {remainingArticles.length ? (
-                  <NewsCardGrid articles={remainingArticles} language={language} variant="standard" />
-                ) : null}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-brandLine bg-brandLight p-8 text-center">
-                <p className="text-2xl font-bold text-brandDark">
-                  {language === 'id' ? 'Belum ada artikel yang cocok' : 'No matching articles yet'}
-                </p>
-                <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-brandMuted">
-                  {language === 'id'
-                    ? 'Coba kata kunci, kategori, atau destinasi lain.'
-                    : 'Try another keyword, category, or destination.'}
-                </p>
-                <div className="mt-6">
+            {articles.length ? (
+              <>
+                <div className="grid gap-8">
+                  <NewsCardGrid articles={firstRowArticles} language={language} variant="standard" />
                   <NewsCtaBand language={language} whatsappUrl={whatsappUrl} />
+                  {remainingArticles.length ? (
+                    <NewsCardGrid articles={remainingArticles} language={language} variant="standard" />
+                  ) : null}
                 </div>
+                <Pagination links={paginatedArticles.links} />
+              </>
+            ) : (
+              <div className="grid gap-8">
+                <div className="rounded-2xl border border-dashed border-line bg-canvas/50 px-8 py-16 text-center">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
+                    <SearchX className="h-6 w-6 text-secondary" />
+                  </div>
+                  <p className="text-xl font-bold text-ink">
+                    {t.newsNoMatchTitle}
+                  </p>
+                  <p className="mx-auto mt-2 max-w-sm text-sm font-semibold leading-6 text-muted">
+                    {t.newsNoMatchText}
+                  </p>
+                </div>
+                <NewsCtaBand language={language} whatsappUrl={whatsappUrl} />
               </div>
             )}
           </div>

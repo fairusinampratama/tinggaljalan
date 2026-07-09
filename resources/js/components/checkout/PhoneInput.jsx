@@ -56,8 +56,8 @@ export function PhoneInput({
         menuClassName="w-[min(20rem,calc(100vw-3rem))]"
         onChange={changeCountry}
       />
-      <div className={`flex min-w-0 rounded-xl border bg-brandLight transition focus-within:bg-white ${
-        invalid ? 'border-red-400 focus-within:border-red-500' : 'border-brandLine hover:border-brandBlue/40 focus-within:border-brandBlue'
+      <div className={`flex min-w-0 rounded-xl border bg-canvas transition focus-within:bg-surface ${
+        invalid ? 'border-red-400 focus-within:border-red-500' : 'border-line hover:border-secondary/40 focus-within:border-secondary'
       }`}>
         <PhoneNumberInput
           country={selectedCountry}

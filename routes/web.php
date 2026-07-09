@@ -41,3 +41,4 @@ Route::get('/admin/payment-handoffs/{payment}/whatsapp', BookingPaymentWhatsappC
     ->middleware('auth')
     ->name('admin.booking-payments.whatsapp');
 Route::get('/checkout/confirmation', [BookingController::class, 'confirmation'])->name('checkout.confirmation');
+Route::get('/test-articles', function () { return count(App\Support\InertiaPublicData::shared(request())['articles']); });

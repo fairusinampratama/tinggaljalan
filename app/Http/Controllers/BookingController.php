@@ -37,7 +37,7 @@ class BookingController extends Controller
             'booking' => InertiaPublicData::bookingPayload($request, $package, $draft),
             'seo' => Seo::noindex([
                 'title' => 'Booking Request | Tinggal Jalan',
-                'description' => 'Send a Tinggal Jalan tour booking request with route, date, guests, pickup point, currency, and add-ons.',
+                'description' => 'Send a Tinggal Jalan tour booking request with route, date, guests, pickup point, and add-ons.',
                 'canonical' => Seo::canonical('/booking'),
             ]),
         ]);
@@ -47,6 +47,18 @@ class BookingController extends Controller
     {
         $data = $request->validate($this->draftRules());
         $data['add_ons'] = $data['add_ons'] ?? [];
+        $data['voucher_applied'] = false;
+
+        $package = PublicSite::packageFromDraft($data);
+        $summary = PublicSite::bookingSummary($package, $data);
+
+        if ($summary['quote_required']) {
+            $request->session()->put('booking_draft', $data);
+            $request->session()->forget('errors');
+
+            return redirect()->route('booking.create')->withErrors(['pax' => $this->largeGroupMessage()]);
+        }
+
         $request->session()->put('booking_draft', $data);
 
         return redirect()->route('checkout.review');
@@ -56,6 +68,7 @@ class BookingController extends Controller
     {
         $data = $request->validate($this->draftRules());
         $data['add_ons'] = $data['add_ons'] ?? [];
+        $data['voucher_applied'] = filled($data['voucher'] ?? null);
         $request->session()->put('booking_draft', $data);
 
         return back();
@@ -102,10 +115,19 @@ class BookingController extends Controller
         $availability = PublicSite::availability($package, $draft['date']);
 
         if (in_array($availability['status'], ['booked', 'blocked'], true)) {
-            return back()->withErrors(['date' => 'Selected date is not available.']);
+            $message = 'Selected date is not available.'.(filled($availability['reason']) ? ' '.$availability['reason'] : '');
+
+            return back()->withErrors(['date' => $message]);
         }
 
         $summary = PublicSite::bookingSummary($package, $draft);
+
+        if ($summary['quote_required']) {
+            $request->session()->put('booking_draft', $draft);
+
+            return redirect()->route('booking.create')->with('large_group_message', $this->largeGroupMessage());
+        }
+
         $booking = Booking::create([
             'booking_code' => PublicSite::bookingCode(),
             'tour_package_id' => $package?->id,
@@ -120,7 +142,14 @@ class BookingController extends Controller
             'pickup' => $draft['pickup'] ?? null,
             'traveler_type' => $draft['traveler_type'] ?? 'international',
             'currency' => $summary['currency'],
-            'selected_add_ons' => $summary['addOns']->map(fn ($packageAddOn) => [
+            'pricing_mode' => $summary['pricing_mode'],
+            'pricing_status' => $summary['pricing_status'],
+            'price_tier_id' => data_get($summary, 'selected_tier.id'),
+            'tier_min_pax' => data_get($summary, 'selected_tier.min_pax'),
+            'tier_max_pax' => data_get($summary, 'selected_tier.max_pax'),
+            'unit_price' => $summary['unit_price'],
+            'package_subtotal' => $summary['package_subtotal'],
+            'selected_add_ons' => collect($summary['addOns'])->map(fn ($packageAddOn) => [
                 'id' => $packageAddOn->id,
                 'slug' => (string) $packageAddOn->id,
                 'title' => $packageAddOn->title,
@@ -128,11 +157,11 @@ class BookingController extends Controller
                 'price_idr' => $packageAddOn->price_idr,
                 'price_usd' => $packageAddOn->price_usd,
                 'pricing_type' => $packageAddOn->pricing_type,
-            ])->all(),
+            ])->values()->toArray(),
             'voucher_code' => $summary['voucher']?->code,
-            'subtotal' => $summary['subtotal'],
+            'subtotal' => $summary['subtotal'] ?? 0,
             'discount_total' => $summary['discount'],
-            'total' => $summary['total'],
+            'total' => $summary['total'] ?? 0,
             'payment_gateway' => $summary['payment_gateway'],
             'notes' => $draft['notes'] ?? null,
             'status' => 'new',
@@ -166,7 +195,11 @@ class BookingController extends Controller
             BookingLanguage::translate('booking.travel_date', [], $language).': '.BookingLanguage::date($booking->travel_date, $language),
             BookingLanguage::translate('booking.guests', [], $language).": {$booking->pax}",
             BookingLanguage::translate('booking.pickup', [], $language).": {$booking->pickup}",
-            BookingLanguage::translate('booking.total', [], $language).': '.PublicSite::formatMoney($booking->total, $booking->currency),
+            BookingLanguage::translate('booking.total', [], $language).': '.(
+                $booking->pricing_status === 'quote_required'
+                    ? BookingLanguage::translate('booking.to_be_confirmed', [], $language)
+                    : PublicSite::formatMoney($booking->total, $booking->currency)
+            ),
         ]);
 
         $draft = PublicSite::bookingDraft($request);
@@ -193,6 +226,11 @@ class BookingController extends Controller
         ]);
     }
 
+    private function largeGroupMessage(): string
+    {
+        return 'This group size needs manual vehicle, guide, and schedule confirmation. Please contact our team before booking.';
+    }
+
     private function draftRules(): array
     {
         return [
@@ -201,7 +239,6 @@ class BookingController extends Controller
             'pax' => ['required', 'integer', 'min:'.config('booking.minimum_guests'), 'max:'.config('booking.maximum_guests')],
             'pickup' => ['nullable', 'string', 'max:255'],
             'traveler_type' => ['required', Rule::in(['local', 'international'])],
-            'currency' => ['required', Rule::in(['IDR', 'USD'])],
             'add_ons' => ['array'],
             'add_ons.*' => ['string'],
             'voucher' => ['nullable', 'string', 'max:255'],

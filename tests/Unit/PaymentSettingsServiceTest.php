@@ -62,6 +62,7 @@ class PaymentSettingsServiceTest extends TestCase
             'publicLabel' => 'Configured Midtrans link',
             'bookingNote' => 'Configured booking note.',
             'usdNote' => 'Configured USD note.',
+            'manualBankAccounts' => [],
         ], $settings->publicPayload());
     }
 

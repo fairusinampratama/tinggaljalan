@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\Faq;
+use App\Models\HeroSlide;
 use App\Models\NewsArticle;
 use App\Models\PackageAvailability;
 use App\Models\PackageAddOn;
 use App\Models\RouteFilter;
+use App\Models\SiteSetting;
 use App\Models\TourPackage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -38,6 +40,84 @@ class PublicPagesTest extends TestCase
                 ->has('publicData.trustStats')
                 ->has('publicData.platformLinks')
                 ->where('seo.robots', 'index,follow'));
+    }
+
+    public function test_homepage_serializes_only_the_first_five_ordered_current_hero_slides(): void
+    {
+        $this->travelTo(now()->setDate(2026, 7, 7)->setTime(12, 0));
+
+        SiteSetting::create([
+            'hero_autoplay_enabled' => true,
+            'hero_autoplay_interval' => 12000,
+        ]);
+
+        foreach (range(1, 6) as $index) {
+            HeroSlide::create([
+                'desktop_image' => "admin/hero/desktop-{$index}.jpg",
+                'mobile_image' => $index === 1 ? 'admin/hero/mobile-1.jpg' : null,
+                'image_alt' => ['us' => "Slide {$index}", 'id' => "Slide ID {$index}"],
+                'heading' => ['us' => "Heading {$index}"],
+                'sort_order' => $index,
+                'is_active' => true,
+                'start_date' => $index === 1 ? now() : now()->subDay(),
+                'end_date' => $index === 1 ? now() : now()->addDay(),
+            ]);
+        }
+
+        HeroSlide::create([
+            'desktop_image' => 'admin/hero/inactive.jpg',
+            'image_alt' => ['us' => 'Inactive'],
+            'sort_order' => 0,
+            'is_active' => false,
+        ]);
+        HeroSlide::create([
+            'desktop_image' => 'admin/hero/future.jpg',
+            'image_alt' => ['us' => 'Future'],
+            'sort_order' => 0,
+            'is_active' => true,
+            'start_date' => now()->addMinute(),
+        ]);
+        HeroSlide::create([
+            'desktop_image' => 'admin/hero/ended.jpg',
+            'image_alt' => ['us' => 'Ended'],
+            'sort_order' => 0,
+            'is_active' => true,
+            'end_date' => now()->subMinute(),
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('publicData.home.heroSlides', 5)
+                ->where('publicData.home.heroSlides.0.desktopImage', '/storage/admin/hero/desktop-1.jpg')
+                ->where('publicData.home.heroSlides.0.mobileImage', '/storage/admin/hero/mobile-1.jpg')
+                ->where('publicData.home.heroSlides.0.imageAlt.cn', 'Slide 1')
+                ->where('publicData.home.heroSlides.4.heading.us', 'Heading 5')
+                ->where('publicData.home.heroSettings.autoplayEnabled', true)
+                ->where('publicData.home.heroSettings.autoplayInterval', 12000));
+    }
+
+    public function test_homepage_exposes_empty_hero_slides_and_safe_default_settings_for_frontend_fallback(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('publicData.home.heroSlides', 0)
+                ->where('publicData.home.heroSettings.autoplayEnabled', false)
+                ->where('publicData.home.heroSettings.autoplayInterval', 8000));
+    }
+
+    public function test_homepage_clamps_out_of_range_hero_autoplay_interval(): void
+    {
+        SiteSetting::create([
+            'hero_autoplay_enabled' => true,
+            'hero_autoplay_interval' => 25000,
+        ]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('publicData.home.heroSettings.autoplayInterval', 15000));
     }
 
     public function test_homepage_only_promotes_active_featured_destinations(): void
@@ -356,6 +436,21 @@ class PublicPagesTest extends TestCase
                 ->where('article.coverImage', '/storage/admin/news/covers/uploaded-news.jpg'));
     }
 
+    public function test_booking_starts_without_an_automatically_applied_voucher(): void
+    {
+        $this->seed();
+
+        $this->withSession(['booking_draft' => [
+            'voucher' => 'BROMO10',
+        ]])
+            ->get('/booking')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('booking.draft.voucher', '')
+                ->where('booking.summary.voucher', null)
+                ->where('booking.summary.discount', 0));
+    }
+
     public function test_booking_draft_persists_and_submission_creates_booking(): void
     {
         $this->seed();
@@ -456,6 +551,9 @@ class PublicPagesTest extends TestCase
         $this->seed();
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['pricing_mode' => 'flat']);
+        $package->priceTiers()->delete();
+
         $payload = [
             'route' => $package->slug,
             'date' => '2026-08-01',
@@ -472,6 +570,40 @@ class PublicPagesTest extends TestCase
         $this->post('/booking', [...$payload, 'pax' => 1000])
             ->assertSessionHasErrors('pax');
     }
+    public function test_public_booking_stops_when_group_exceeds_final_price_tier(): void
+    {
+        $this->seed();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['pricing_mode' => 'tiered']);
+        $package->priceTiers()->delete();
+        $package->priceTiers()->createMany([
+            ['min_pax' => 1, 'max_pax' => 2, 'price_idr' => 500000, 'price_usd' => 35, 'sort_order' => 1],
+            ['min_pax' => 3, 'max_pax' => 5, 'price_idr' => 450000, 'price_usd' => 32, 'sort_order' => 2],
+        ]);
+
+        $payload = [
+            'route' => $package->slug,
+            'date' => '2026-08-01',
+            'pax' => 6,
+            'pickup' => 'Malang Hotel',
+            'traveler_type' => 'international',
+            'currency' => 'USD',
+            'add_ons' => [],
+        ];
+
+        $this->post('/booking', $payload)
+            ->assertRedirect('/booking')
+            ->assertSessionHasErrors('pax');
+
+        $this->assertDatabaseMissing('bookings', [
+            'tour_package_id' => $package->id,
+            'pax' => 6,
+        ]);
+
+    }
+
     public function test_booking_submission_requires_valid_email_and_whatsapp(): void
     {
         $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
@@ -526,6 +658,51 @@ class PublicPagesTest extends TestCase
                 ->has('booking.summary.addOns.0')
                 ->where('booking.summary.addOns.0.priceIdr', $packageAddOn->price_idr)
                 ->where('booking.summary.currency', 'IDR'));
+    }
+
+    public function test_traveler_type_selects_price_list_and_ignores_submitted_currency(): void
+    {
+        $this->seed();
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $basePayload = [
+            'route' => $package->slug,
+            'date' => '2030-08-01',
+            'pax' => 2,
+            'pickup' => 'Malang Hotel',
+            'add_ons' => [],
+            'voucher' => '',
+        ];
+
+        $this->post('/booking/recalculate', $basePayload + [
+            'traveler_type' => 'local',
+            'currency' => 'USD',
+        ])->assertRedirect();
+
+        $this->get('/booking')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->missing('publicData.bookingOptions.currencyOptions')
+                ->where('booking.draft.travelerType', 'local')
+                ->where('booking.draft.currency', 'IDR')
+                ->where('booking.summary.currency', 'IDR')
+                ->where('booking.summary.base', $package->base_price_idr)
+                ->where('booking.summary.total', $package->base_price_idr * 2));
+
+        $this->post('/booking/recalculate', $basePayload + [
+            'traveler_type' => 'international',
+            'currency' => 'IDR',
+        ])->assertRedirect();
+
+        $this->get('/booking')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('booking.draft.travelerType', 'international')
+                ->where('booking.draft.currency', 'USD')
+                ->where('booking.summary.currency', 'USD')
+                ->where('booking.summary.base', $package->base_price_usd)
+                ->where('booking.summary.total', $package->base_price_usd * 2));
     }
 
     public function test_booking_uses_route_specific_add_on_prices_for_the_same_add_on(): void

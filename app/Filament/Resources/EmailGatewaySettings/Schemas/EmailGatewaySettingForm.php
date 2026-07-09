@@ -28,8 +28,9 @@ class EmailGatewaySettingForm
                     TextInput::make('host')->default('smtp-relay.brevo.com')->maxLength(255),
                     TextInput::make('port')->numeric()->minValue(1)->maxValue(65535)->default(587),
                     Select::make('scheme')->options(['smtp' => 'smtp', 'smtps' => 'smtps'])->default('smtp'),
-                    TextInput::make('username')->maxLength(255),
+                    TextInput::make('username')->label('SMTP Username')->maxLength(255),
                     TextInput::make('password')
+                        ->label('SMTP Password')
                         ->password()
                         ->revealable()
                         ->helperText('Leave blank on edit to keep the existing encrypted password.')

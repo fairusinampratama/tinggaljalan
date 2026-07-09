@@ -21,41 +21,46 @@ class NewsController extends Controller
         $category = $request->query('category', 'all');
         $destination = $request->query('destination', 'all');
 
-        $articles = NewsArticle::query()
+        $query = NewsArticle::query()
             ->with(['destination', 'articleCategory', 'tourPackages'])
             ->published()
-            ->when($category !== 'all', fn ($query) => $query->whereHas('articleCategory', fn ($categoryQuery) => $categoryQuery->where('slug', $category)))
-            ->when($destination !== 'all', fn ($query) => $query->whereHas('destination', fn ($destinationQuery) => $destinationQuery->where('slug', $destination)))
-            ->latest('published_at')
-            ->get()
-            ->filter(function (NewsArticle $article) use ($search, $language) {
-                if ($search === '') {
-                    return true;
-                }
-
-                $haystack = strtolower(implode(' ', [
-                    $article->slug,
-                    $article->destination?->name,
-                    $article->articleCategory?->slug,
-                    PublicSite::localized($article->title, $language),
-                    PublicSite::localized($article->excerpt, $language),
-                    implode(' ', $article->tags ?? []),
-                ]));
-
-                return str_contains($haystack, strtolower($search));
+            ->when($category !== 'all', fn ($q) => $q->whereHas('articleCategory', fn ($cq) => $cq->where('slug', $category)))
+            ->when($destination !== 'all', fn ($q) => $q->whereHas('destination', fn ($dq) => $dq->where('slug', $destination)))
+            ->when($search !== '', function ($q) use ($search, $language) {
+                $q->where(function ($inner) use ($search, $language) {
+                    $inner->where('slug', 'like', "%{$search}%")
+                        ->orWhere("title->{$language}", 'like', "%{$search}%")
+                        ->orWhere('title->us', 'like', "%{$search}%")
+                        ->orWhere("excerpt->{$language}", 'like', "%{$search}%")
+                        ->orWhere('excerpt->us', 'like', "%{$search}%")
+                        ->orWhere('sections', 'like', "%{$search}%")
+                        ->orWhere('tags', 'like', "%{$search}%")
+                        ->orWhereHas('destination', fn ($dq) => $dq->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('articleCategory', fn ($cq) => $cq
+                            ->where('slug', 'like', "%{$search}%")
+                            ->orWhere("label->{$language}", 'like', "%{$search}%")
+                            ->orWhere('label->us', 'like', "%{$search}%"));
+                });
             })
-            ->values();
+            ->latest('published_at');
+
+        $featuredModel = (clone $query)->where('is_featured', true)->first() ?? (clone $query)->first();
+
+        $articles = $query->paginate(12)->withQueryString();
+        $seo = Seo::newsIndex($articles->getCollection(), $search !== '', $language);
+        
+        $articles->getCollection()->transform(fn ($article) => InertiaPublicData::article($article));
 
         return Inertia::render('NewsPage', [
             'language' => $language,
-            'articles' => InertiaPublicData::articles($articles),
-            'featured' => ($featured = $articles->firstWhere('is_featured', true) ?? $articles->first()) ? InertiaPublicData::article($featured) : null,
+            'articles' => $articles,
+            'featured' => $featuredModel ? InertiaPublicData::article($featuredModel) : null,
             'categories' => ArticleCategory::query()->active()->ordered()->get(),
             'destinations' => Destination::query()->active()->ordered()->get()->map(fn (Destination $destination) => InertiaPublicData::destination($destination))->values(),
             'search' => $search,
             'categoryFilter' => $category,
             'destinationFilter' => $destination,
-            'seo' => Seo::newsIndex($articles, $search !== ''),
+            'seo' => $seo,
         ]);
     }
 

@@ -12,6 +12,7 @@ use App\Payments\BookingPaymentService;
 use App\Payments\ExchangeRates\ExchangeRateService;
 use App\Payments\PaymentReceiptService;
 use App\Support\BookingLanguage;
+use App\Support\BookingQuoteService;
 use App\Support\PhoneNumber;
 use App\Support\PublicSite;
 use Filament\Actions\Action;
@@ -160,11 +161,27 @@ class BookingsTable
                     ->color('info')
                     ->button(),
                 ActionGroup::make([
+                    Action::make('set_final_quote')
+                        ->label('Set final group quote')
+                        ->icon('heroicon-o-calculator')
+                        ->color('warning')
+                        ->visible(fn (Booking $record): bool => $record->pricing_status === 'quote_required')
+                        ->schema([
+                            TextInput::make('unit_price')
+                                ->label(fn (Booking $record): string => "Final package price per person ({$record->currency})")
+                                ->numeric()
+                                ->minValue(1)
+                                ->required(),
+                        ])
+                        ->action(function (Booking $record, array $data): void {
+                            app(BookingQuoteService::class)->apply($record, (int) $data['unit_price']);
+                            Notification::make()->title('Final group quote saved')->success()->send();
+                        }),
                     Action::make('create_payment_request')
                         ->label('Create payment request')
                         ->icon('heroicon-o-credit-card')
                         ->color('success')
-                        ->visible(fn (Booking $record): bool => $record->status === 'confirmed' && ! $record->activePayment)
+                        ->visible(fn (Booking $record): bool => !app(\App\Payments\PaymentSettingsService::class)->isManualActive() && $record->status === 'confirmed' && in_array($record->pricing_status, ['priced', 'quoted'], true) && $record->total > 0 && ! $record->activePayment)
                         ->schema([
                             TextInput::make('exchange_rate')
                                 ->label('USD to IDR exchange rate')
@@ -192,6 +209,60 @@ class BookingsTable
                                 ->body('Send it by email or WhatsApp when you are ready.')
                                 ->success()
                                 ->send();
+                        }),
+                    Action::make('create_manual_payment_request')
+                        ->label('Create manual payment request')
+                        ->icon('heroicon-o-banknotes')
+                        ->color('success')
+                        ->visible(fn (Booking $record): bool => app(\App\Payments\PaymentSettingsService::class)->isManualActive() && $record->status === 'confirmed' && in_array($record->pricing_status, ['priced', 'quoted'], true) && $record->total > 0 && ! $record->activePayment)
+                        ->schema([
+                            TextInput::make('exchange_rate')
+                                ->label('USD to IDR exchange rate')
+                                ->helperText(fn (Booking $record): string => self::exchangeRateHelperText($record))
+                                ->default(fn (Booking $record): ?int => self::suggestedExchangeRate($record))
+                                ->numeric()
+                                ->minValue(1)
+                                ->visible(fn (Booking $record): bool => ($record->currency ?: 'IDR') === 'USD'),
+                        ])
+                        ->action(function (Booking $record, array $data): void {
+                            try {
+                                app(BookingPaymentService::class)->createManualPaymentRequest($record, filled($data['exchange_rate'] ?? null) ? (int) $data['exchange_rate'] : null);
+                            } catch (\Throwable $exception) {
+                                Notification::make()
+                                    ->title('Manual payment request failed')
+                                    ->body($exception->getMessage())
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title('Manual payment request created')
+                                ->body('Send it by email or WhatsApp when you are ready.')
+                                ->success()
+                                ->send();
+                        }),
+                    Action::make('mark_manual_payment_as_paid')
+                        ->label('Mark as paid (Manual Transfer)')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->visible(fn (Booking $record): bool => $record->activePayment?->provider === 'manual' && self::isPayable($record->activePayment))
+                        ->action(function (Booking $record): void {
+                            try {
+                                app(BookingPaymentService::class)->markManualPaymentAsPaid($record->activePayment);
+                            } catch (\Throwable $exception) {
+                                Notification::make()
+                                    ->title('Failed to mark as paid')
+                                    ->body($exception->getMessage())
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            Notification::make()->title('Payment marked as paid')->success()->send();
                         }),
                     Action::make('send_invoice_email')
                         ->label(fn (Booking $record): string => $record->activePayment?->sent_at ? 'Resend payment request email' : 'Send payment request email')

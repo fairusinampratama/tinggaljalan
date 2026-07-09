@@ -27,34 +27,31 @@ class RouteController extends Controller
             ->active()
             ->when($destination !== 'all', fn ($query) => $query->whereHas('destination', fn ($destinationQuery) => $destinationQuery->where('slug', $destination)))
             ->when($style !== 'recommended', fn ($query) => $query->whereJsonContains('styles', $style))
-            ->ordered()
-            ->get()
-            ->filter(function (TourPackage $package) use ($search, $language) {
-                if ($search === '') {
-                    return true;
-                }
-
-                $haystack = strtolower(implode(' ', [
-                    $package->slug,
-                    $package->destination?->name,
-                    PublicSite::localized($package->title, $language),
-                    PublicSite::localized($package->excerpt, $language),
-                    PublicSite::localized($package->category, $language),
-                ]));
-
-                return str_contains($haystack, strtolower($search));
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('slug', 'like', "%{$search}%")
+                        ->orWhere('title', 'like', "%{$search}%")
+                        ->orWhere('excerpt', 'like', "%{$search}%")
+                        ->orWhereHas('destination', fn ($dq) => $dq->where('name', 'like', "%{$search}%"));
+                });
             })
-            ->values();
+            ->ordered()
+            ->paginate(12)
+            ->withQueryString();
+
+        $seo = Seo::routesIndex($packages->getCollection(), $search !== '');
+
+        $packages->getCollection()->transform(fn ($package) => InertiaPublicData::route($package));
 
         return Inertia::render('RoutesPage', [
             'language' => $language,
-            'routes' => InertiaPublicData::routes($packages),
+            'routes' => $packages,
             'destinations' => Destination::query()->active()->ordered()->get()->map(fn (Destination $destination) => InertiaPublicData::destination($destination))->values(),
             'search' => $search,
             'destinationFilter' => $destination,
             'styleFilter' => $style,
             'styles' => array_column(RouteFilterOptions::publicOptions(), 'value'),
-            'seo' => Seo::routesIndex($packages, $search !== ''),
+            'seo' => $seo,
         ]);
     }
 

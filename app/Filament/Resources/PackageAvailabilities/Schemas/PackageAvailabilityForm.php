@@ -70,9 +70,29 @@ class PackageAvailabilityForm
                             ->preload()
                             ->required(fn (Get $get): bool => $get('scope_type') === 'package')
                             ->visible(fn (Get $get): bool => $get('scope_type') === 'package'),
-                        DatePicker::make('date')
-                            ->required()
-                            ->native(false),
+                        \Filament\Schemas\Components\Grid::make(3)
+                            ->schema([
+                                DatePicker::make('date')
+                                    ->label('Start date')
+                                    ->required()
+                                    ->native(false),
+                                DatePicker::make('end_date')
+                                    ->label('End date')
+                                    ->required(fn (Get $get): bool => ! $get('is_open_ended'))
+                                    ->visible(fn (Get $get): bool => ! $get('is_open_ended'))
+                                    ->afterOrEqual('date')
+                                    ->native(false),
+                                \Filament\Forms\Components\Toggle::make('is_open_ended')
+                                    ->label('Open-ended')
+                                    ->default(false)
+                                    ->live()
+                                    ->afterStateUpdated(function (bool $state, Set $set): void {
+                                        if ($state) {
+                                            $set('end_date', null);
+                                        }
+                                    }),
+                            ])
+                            ->columnSpanFull(),
                         Select::make('status')
                             ->options([
                                 'available' => 'Available',

@@ -7,7 +7,7 @@ import { cardHoverClass, primaryButtonClass, secondaryButtonClass, whatsappButto
 import { formatCurrency } from '../utils/currency';
 
 const toneStyles = {
-  info: 'border-brandBlue/30 bg-brandBlue/10 text-brandDark',
+  info: 'border-secondary/30 bg-secondary/10 text-ink',
   success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
   warning: 'border-amber-200 bg-amber-50 text-amber-900',
   danger: 'border-red-200 bg-red-50 text-red-900',
@@ -22,9 +22,9 @@ const timelineIcon = {
 
 const timelineStyles = {
   complete: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  current: 'border-brandBlue bg-brandBlue text-brandDark',
+  current: 'border-secondary bg-secondary text-white',
   problem: 'border-amber-200 bg-amber-50 text-amber-900',
-  upcoming: 'border-brandLine bg-white text-brandMuted',
+  upcoming: 'border-line bg-surface text-muted',
 };
 
 export function CheckoutPaymentStatusPage() {
@@ -45,15 +45,15 @@ export function CheckoutPaymentStatusPage() {
       />
       <PageShell eyebrow={copy.eyebrow ?? 'Payment'} title={copy.pay_securely ?? `Pay securely with ${payment.providerLabel ?? 'Midtrans'}`}>
         <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
-          <section className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
-            <div className={`rounded-2xl border p-4 ${toneStyles[payment.tone] ?? toneStyles.info}`}>
+          <section className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
+            <div className={`rounded-xl border p-4 ${toneStyles[payment.tone] ?? toneStyles.info}`}>
               <div className="flex items-start gap-3">
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white/70">
+                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface/70">
                   <StatusIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-extrabold uppercase tracking-wide">{payment.statusLabel}</p>
-                  <h2 className="mt-1 text-2xl font-extrabold">{booking.code}</h2>
+                  <p className="text-sm font-bold uppercase tracking-wide">{payment.statusLabel}</p>
+                  <h2 className="mt-1 text-2xl font-bold">{booking.code}</h2>
                   <p className="mt-2 text-sm font-semibold leading-6">{payment.body}</p>
                 </div>
               </div>
@@ -72,44 +72,59 @@ export function CheckoutPaymentStatusPage() {
               })}
             </div>
 
-            <dl className="mt-5 grid gap-3 rounded-2xl bg-brandLight p-4 text-sm font-semibold sm:grid-cols-2">
+            <dl className="mt-5 grid gap-3 rounded-xl bg-canvas p-4 text-sm font-semibold sm:grid-cols-2">
               <div>
-                <dt className="text-brandMuted">{copy.charge ?? `${payment.providerLabel ?? 'Midtrans'} charge`}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{formatCurrency(payment.chargeAmount, 'IDR')}</dd>
+                <dt className="text-muted">{copy.charge ?? `${payment.providerLabel ?? 'Midtrans'} charge`}</dt>
+                <dd className="mt-1 font-bold text-ink">{formatCurrency(payment.chargeAmount, 'IDR')}</dd>
               </div>
               <div>
-                <dt className="text-brandMuted">{copy.original_quote ?? 'Original quote'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{formatCurrency(payment.quoteAmount, payment.quoteCurrency)}</dd>
+                <dt className="text-muted">{copy.original_quote ?? 'Original quote'}</dt>
+                <dd className="mt-1 font-bold text-ink">{formatCurrency(payment.quoteAmount, payment.quoteCurrency)}</dd>
               </div>
               <div>
-                <dt className="text-brandMuted">{copy.expires ?? 'Payment expires'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{payment.expiresAt ?? '-'}</dd>
+                <dt className="text-muted">{copy.expires ?? 'Payment expires'}</dt>
+                <dd className="mt-1 font-bold text-ink">{payment.expiresAt ?? '-'}</dd>
               </div>
               <div>
-                <dt className="text-brandMuted">{copy.paid_at ?? 'Paid at'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{payment.paidAt ?? '-'}</dd>
+                <dt className="text-muted">{copy.paid_at ?? 'Paid at'}</dt>
+                <dd className="mt-1 font-bold text-ink">{payment.paidAt ?? '-'}</dd>
               </div>
               {isUsdQuote ? (
                 <div className="sm:col-span-2">
-                  <dt className="text-brandMuted">{copy.exchange_rate ?? 'Exchange rate'}</dt>
-                  <dd className="mt-1 font-extrabold text-brandDark">1 USD = {formatCurrency(payment.exchangeRate, 'IDR')}</dd>
-                  <p className="mt-2 text-xs font-semibold leading-5 text-brandMuted">
+                  <dt className="text-muted">{copy.exchange_rate ?? 'Exchange rate'}</dt>
+                  <dd className="mt-1 font-bold text-ink">1 USD = {formatCurrency(payment.exchangeRate, 'IDR')}</dd>
+                  <p className="mt-2 text-xs font-semibold leading-5 text-muted">
                     {copy.usd_note ?? payment.usdNote ?? 'Midtrans charges in IDR.'}
                   </p>
                 </div>
               ) : null}
             </dl>
 
-            <PaymentStatusMonitor payment={payment} />
+            {payment.provider !== 'manual' ? <PaymentStatusMonitor payment={payment} /> : null}
 
             {!payment.canPay && ['pending', 'invoice_sent'].includes(payment.status) ? (
-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
+              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
                 {copy.missing_link ?? 'This payment request is missing a payment link. Please contact our team.'}
               </div>
             ) : null}
 
+            {payment.canPay && payment.provider === 'manual' && payment.manualBankAccounts?.length ? (
+              <div className="mt-6 rounded-xl border border-line bg-canvas p-5 text-sm font-semibold leading-relaxed">
+                <h3 className="mb-4 font-bold text-ink">{copy.bank_accounts ?? 'Bank Accounts'}</h3>
+                <div className="grid gap-3">
+                  {payment.manualBankAccounts.map((account, idx) => (
+                    <div key={idx} className="rounded-lg bg-surface p-4 border border-line shadow-sm">
+                      <div className="text-base font-bold text-ink mb-1">{account.bank_name}</div>
+                      <div className="text-muted">{copy.account_name ?? 'Account Name'}: <span className="text-ink font-semibold">{account.account_name}</span></div>
+                      <div className="text-muted">{copy.account_number ?? 'Account Number'}: <span className="text-ink font-semibold">{account.account_number}</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             <div className="mt-6 flex flex-wrap gap-3">
-              {payment.canPay ? (
+              {payment.canPay && payment.provider !== 'manual' ? (
                 <a href={payment.snapUrl} className={primaryButtonClass}>
                   <CreditCard className="h-4 w-4" /> {copy.pay_securely ?? `Pay securely with ${payment.providerLabel ?? 'Midtrans'}`}
                 </a>
@@ -121,24 +136,24 @@ export function CheckoutPaymentStatusPage() {
             </div>
           </section>
 
-          <aside className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
+          <aside className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
             <h2 className="text-xl font-bold">{copy.booking_summary ?? 'Booking summary'}</h2>
             <dl className="mt-5 space-y-4 text-sm font-semibold">
               <div>
-                <dt className="text-brandMuted">{copy.package ?? 'Package'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{booking.packageTitle}</dd>
+                <dt className="text-muted">{copy.package ?? 'Package'}</dt>
+                <dd className="mt-1 font-bold text-ink">{booking.packageTitle}</dd>
               </div>
               <div>
-                <dt className="text-brandMuted">{copy.travel_date ?? 'Travel date'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{booking.travelDate ?? '-'}</dd>
+                <dt className="text-muted">{copy.travel_date ?? 'Travel date'}</dt>
+                <dd className="mt-1 font-bold text-ink">{booking.travelDate ?? '-'}</dd>
               </div>
               <div>
-                <dt className="text-brandMuted">{copy.customer ?? 'Customer'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{booking.name}</dd>
+                <dt className="text-muted">{copy.customer ?? 'Customer'}</dt>
+                <dd className="mt-1 font-bold text-ink">{booking.name}</dd>
               </div>
               <div>
-                <dt className="text-brandMuted">{copy.guests ?? 'Guests'}</dt>
-                <dd className="mt-1 font-extrabold text-brandDark">{booking.pax}</dd>
+                <dt className="text-muted">{copy.guests ?? 'Guests'}</dt>
+                <dd className="mt-1 font-bold text-ink">{booking.pax}</dd>
               </div>
             </dl>
           </aside>

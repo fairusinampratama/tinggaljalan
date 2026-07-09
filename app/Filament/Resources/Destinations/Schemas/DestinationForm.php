@@ -25,7 +25,6 @@ class DestinationForm
                     ])
                     ->columns(2),
                 AdminForm::localized('short_description', 'Short description', textarea: true),
-                AdminForm::localized('description', 'Long description', textarea: true),
                 Section::make('Publishing')
                     ->schema([
                         TextInput::make('sort_order')->required()->numeric()->default(0),
@@ -33,10 +32,6 @@ class DestinationForm
                         Toggle::make('is_active')->required(),
                     ])
                     ->columns(3),
-                AdminForm::imageUpload('gallery', 'Gallery images', 'admin/destinations/gallery', multiple: true)
-                    ->columnSpanFull(),
-                AdminForm::json('source_refs', 'Source references'),
-                AdminForm::json('seo', 'SEO metadata'),
             ]);
     }
 }

@@ -99,7 +99,7 @@ export function PaymentStatusMonitor({ payment }) {
   return (
     <div className={`mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${
       check.succeeded
-        ? 'border-brandBlue/20 bg-brandSoft text-brandMuted'
+        ? 'border-secondary/20 bg-subtle text-muted'
         : 'border-amber-200 bg-amber-50 text-amber-900'
     }`}>
       <RefreshCw className={`mt-0.5 h-4 w-4 shrink-0 ${check.checking ? 'animate-spin' : ''}`} />

@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
@@ -79,6 +80,23 @@ class SiteDetails extends Page implements HasForms
                             ->url()
                             ->helperText('URL linking to the business location on Google Maps.'),
                     ]),
+
+                Section::make('Homepage Hero')
+                    ->schema([
+                        Toggle::make('hero_autoplay_enabled')
+                            ->label('Enable hero autoplay')
+                            ->default(false)
+                            ->helperText('When enabled, visitors can still pause the carousel. Reduced-motion preferences always disable autoplay.'),
+                        TextInput::make('hero_autoplay_interval')
+                            ->label('Autoplay interval (milliseconds)')
+                            ->numeric()
+                            ->default(8000)
+                            ->minValue(5000)
+                            ->maxValue(15000)
+                            ->required()
+                            ->helperText('Allowed range: 5,000 to 15,000 milliseconds.'),
+                    ])
+                    ->columns(2),
 
                 Section::make('Service Settings')
                     ->schema([

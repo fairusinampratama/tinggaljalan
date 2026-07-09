@@ -4,13 +4,12 @@ namespace App\Models;
 
 use App\Models\Concerns\HasTravelScopes;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['destination_id', 'slug', 'title', 'category', 'tag', 'excerpt', 'intro', 'best_for', 'duration', 'difficulty', 'base_price_idr', 'base_price_usd', 'price_note', 'cover_image', 'cover_alt', 'gallery', 'pickup_areas', 'pickup_label', 'group_type', 'highlights', 'includes', 'excludes', 'notes', 'details', 'good_to_know', 'policies', 'testimonials', 'rating', 'review_count', 'review_source', 'styles', 'sort_order', 'is_featured', 'is_active'])]
+#[Fillable(['destination_id', 'slug', 'title', 'category', 'tag', 'excerpt', 'intro', 'best_for', 'duration', 'difficulty', 'pricing_mode', 'base_price_idr', 'base_price_usd', 'price_note', 'cover_image', 'cover_alt', 'gallery', 'pickup_areas', 'pickup_label', 'group_type', 'highlights', 'includes', 'excludes', 'notes', 'details', 'good_to_know', 'policies', 'testimonials', 'rating', 'review_count', 'review_source', 'styles', 'sort_order', 'is_featured', 'is_active'])]
 class TourPackage extends Model
 {
     use HasTravelScopes;
@@ -25,6 +24,7 @@ class TourPackage extends Model
             'intro' => 'array',
             'best_for' => 'array',
             'difficulty' => 'array',
+            'pricing_mode' => 'string',
             'base_price_idr' => 'integer',
             'base_price_usd' => 'integer',
             'cover_alt' => 'array',
@@ -63,6 +63,11 @@ class TourPackage extends Model
     public function packageAddOns(): HasMany
     {
         return $this->hasMany(PackageAddOn::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function priceTiers(): HasMany
+    {
+        return $this->hasMany(PackagePriceTier::class)->orderBy('min_pax')->orderBy('id');
     }
 
     public function newsArticles(): BelongsToMany

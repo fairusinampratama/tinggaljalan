@@ -21,8 +21,6 @@ class DestinationSeeder extends Seeder
                     'province' => $destination['province'] ?? null,
                     'short_description' => $this->localized($destination['copy'] ?? null),
                     'cover_image' => $destination['image'] ?? null,
-                    'gallery' => array_filter([$destination['image'] ?? null]),
-                    'source_refs' => $destination['sourceRefs'] ?? [],
                     'sort_order' => $index + 1,
                     'is_featured' => true,
                     'is_active' => true,

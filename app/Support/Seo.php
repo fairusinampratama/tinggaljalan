@@ -107,19 +107,30 @@ class Seo
         ]);
     }
 
-    public static function newsIndex(Collection $articles, bool $hasSearch): array
+    public static function newsIndex(Collection $articles, bool $hasSearch, string $language = 'us'): array
     {
+        $title = match ($language) {
+            'id' => 'Berita & Panduan Wisata | Tinggal Jalan',
+            'cn' => '旅游攻略与动态 | Tinggal Jalan',
+            default => 'Travel Guides & News | Tinggal Jalan',
+        };
+        $description = match ($language) {
+            'id' => 'Baca berita, tips perjalanan, itinerary, dan panduan destinasi untuk Bromo, Jogja, Tumpak Sewu, Medan, dan private trip Indonesia.',
+            'cn' => '阅读 Tinggal Jalan 的印尼私人旅行攻略、路线更新、行程建议和目的地指南。',
+            default => 'Travel guides, itinerary ideas, and route updates from Tinggal Jalan for Indonesia private trips.',
+        };
+
         return self::page([
-            'title' => 'Berita & Panduan | Tinggal Jalan',
-            'description' => 'Travel guides, itinerary ideas, and route updates from Tinggal Jalan for Indonesia private trips.',
+            'title' => $title,
+            'description' => $description,
             'canonical' => self::canonical('/news'),
             'robots' => $hasSearch ? 'noindex,follow' : 'index,follow',
             'json_ld' => [
-                self::collectionJsonLd('Berita & Panduan Tinggal Jalan', '/news', $articles->map(fn (NewsArticle $article) => [
+                self::collectionJsonLd($title, '/news', $articles->map(fn (NewsArticle $article) => [
                     '@type' => 'ListItem',
                     'position' => $articles->search($article) + 1,
                     'url' => self::canonical('/news/'.$article->slug),
-                    'name' => PublicSite::localized($article->title, 'us'),
+                    'name' => PublicSite::localized($article->title, $language),
                 ])->values()->all(), 'Blog'),
             ],
         ]);

@@ -25,7 +25,7 @@ return [
  'thank_you'=>'谢谢！','view_status'=>'查看实时付款状态','contact_support'=>'联系 WhatsApp 客服',
  'preheader_invoice'=>'您的 Tinggal Jalan 预订已确认。请通过 :provider 安全完成付款。','preheader_receipt'=>'已收到您的 Tinggal Jalan 付款。',
  'amount_to_pay'=>'应付金额','midtrans_charge'=>'Midtrans 收款金额（IDR）','rate_used'=>'使用汇率',
- 'confirmation_help'=>'您好 Tinggal Jalan，我想确认我的预订：','total'=>'总计','pay_before'=>'请于此时间前付款',
+ 'confirmation_help'=>'您好 Tinggal Jalan，我想确认我的预订：','total'=>'总计','to_be_confirmed'=>'待确认','pay_before'=>'请于此时间前付款',
  'payment_page'=>[
   'checking'=>'正在自动检查付款状态…','checked'=>'系统会自动检查付款状态。','refresh_failed'=>'暂时无法刷新，我们会自动重试。','last_checked'=>'上次检查时间：:time',
   'usd_note'=>'Midtrans 以 IDR 收款。如果您的账户使用其他货币，银行可能采用自己的汇率。',
@@ -39,5 +39,6 @@ return [
   'pending_headline'=>'预订已确认，请完成付款','pending_body'=>'您申请的行程已有空位。请通过 :provider 安全付款以锁定预订。',
   'preparing_headline'=>'正在准备付款链接','preparing_body'=>'预订已确认，但付款链接尚未就绪。请联系我们重新发送有效链接。',
   'request_sent'=>'请求已发送','availability_confirmed'=>'可用性已确认','payment'=>'付款','trip_confirmed'=>'预订已锁定',
+  'bank_accounts'=>'银行账户','account_name'=>'账户名称','account_number'=>'账号','manual_pending_body'=>'请将以下确切金额转入我们的银行账户。',
  ],
 ];

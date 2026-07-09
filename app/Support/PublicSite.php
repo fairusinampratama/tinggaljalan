@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Booking;
 use App\Models\NewsArticle;
+use App\Models\SiteSetting;
 use App\Models\TourPackage;
 use App\Models\Voucher;
 use App\Payments\PaymentSettingsService;
@@ -80,11 +81,9 @@ class PublicSite
         return '/'.ltrim($path, '/');
     }
 
-
-
     public static function whatsappBase(): string
     {
-        $number = \App\Models\SiteSetting::first()?->whatsapp_number;
+        $number = SiteSetting::first()?->whatsapp_number;
         $number = preg_replace('/\D+/', '', $number ?? '6281234567890');
 
         return "https://wa.me/{$number}";
@@ -144,7 +143,7 @@ class PublicSite
     {
         $package = $fallbackPackage ?? TourPackage::query()->active()->ordered()->first();
 
-        return array_merge([
+        $draft = array_merge([
             'route' => $package?->slug,
             'date' => now()->addDays(9)->toDateString(),
             'pax' => 2,
@@ -156,9 +155,17 @@ class PublicSite
             'email' => '',
             'whatsapp' => '',
             'whatsapp_country' => 'ID',
-            'voucher' => 'BROMO10',
+            'voucher' => '',
             'notes' => '',
         ], $request->session()->get('booking_draft', []));
+
+        $draft['currency'] = self::bookingCurrency($draft['traveler_type'] ?? null);
+
+        if (! ($draft['voucher_applied'] ?? false)) {
+            $draft['voucher'] = '';
+        }
+
+        return $draft;
     }
 
     public static function packageFromDraft(array $draft): ?TourPackage
@@ -179,7 +186,6 @@ class PublicSite
 
         $availability = app(PackageAvailabilityResolver::class)->resolve($package, $date);
 
-
         return [
             'status' => $availability?->status ?? 'available',
             'seats_left' => $availability?->seats_left,
@@ -187,11 +193,17 @@ class PublicSite
         ];
     }
 
+    public static function bookingCurrency(?string $travelerType): string
+    {
+        return $travelerType === 'local' ? 'IDR' : 'USD';
+    }
+
     public static function bookingSummary(?TourPackage $package, array $draft): array
     {
-        $currency = $draft['currency'] ?? 'USD';
+        $currency = self::bookingCurrency($draft['traveler_type'] ?? $draft['travelerType'] ?? null);
         $pax = max(1, (int) ($draft['pax'] ?? 1));
-        $base = $currency === 'USD' ? (int) $package?->base_price_usd : (int) $package?->base_price_idr;
+        $pricing = app(TierPricingResolver::class)->resolve($package, $pax, $currency);
+        $base = $pricing['unit_price'] ?? 0;
         $selected = collect($draft['add_ons'] ?? []);
         $addOns = $package?->packageAddOns
             ->filter(fn ($packageAddOn) => $packageAddOn->is_active)
@@ -203,21 +215,30 @@ class PublicSite
 
             return $packageAddOn->pricing_type === 'per_pax' ? $price * $pax : $price;
         });
-        $subtotal = ($base * $pax) + $addOnTotal;
+        $packageSubtotal = $pricing['package_subtotal'];
+        $subtotal = $pricing['quote_required'] ? null : $packageSubtotal + $addOnTotal;
         $voucher = self::activeVoucher($draft['voucher'] ?? null, $currency);
         $discount = 0;
 
-        if ($voucher) {
+        if ($voucher && $subtotal !== null) {
             $discount = $voucher->discount_type === 'percent'
                 ? (int) floor($subtotal * ((float) $voucher->discount_value / 100))
                 : (int) $voucher->discount_value;
         }
 
-        $total = max(0, $subtotal - $discount);
+        $total = $subtotal === null ? null : max(0, $subtotal - $discount);
 
         $paymentSettings = app(PaymentSettingsService::class);
 
         return compact('currency', 'pax', 'base', 'addOns', 'subtotal', 'voucher', 'discount', 'total') + [
+            'pricing' => $pricing,
+            'pricing_status' => $pricing['status'],
+            'pricing_mode' => $pricing['mode'],
+            'unit_price' => $pricing['unit_price'],
+            'package_subtotal' => $packageSubtotal,
+            'selected_tier' => $pricing['tier'],
+            'savings_per_person' => $pricing['savings_per_person'],
+            'quote_required' => $pricing['quote_required'],
             'payment_gateway' => $paymentSettings->publicLabel(),
             'payment_note' => $paymentSettings->bookingNote(),
             'usd_payment_note' => $paymentSettings->usdNote(),

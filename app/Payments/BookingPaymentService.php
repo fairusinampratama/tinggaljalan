@@ -18,10 +18,18 @@ class BookingPaymentService
         private readonly ExchangeRateService $exchangeRates,
         private readonly PaymentSettingsService $settings,
         private readonly PaymentReceiptService $receipts,
-    ) {
-    }
+    ) {}
 
     public function createPaymentRequest(Booking $booking, ?int $exchangeRate = null): BookingPayment
+    {
+        if ($this->settings->isManualActive()) {
+            return $this->createManualPaymentRequest($booking, $exchangeRate);
+        }
+
+        return $this->createMidtransPaymentRequest($booking, $exchangeRate);
+    }
+
+    public function createMidtransPaymentRequest(Booking $booking, ?int $exchangeRate = null): BookingPayment
     {
         $booking->loadMissing('tourPackage.destination', 'activePayment');
 
@@ -31,6 +39,10 @@ class BookingPaymentService
 
         if ($booking->status !== 'confirmed') {
             throw new InvalidArgumentException('Only confirmed bookings can receive payment requests.');
+        }
+
+        if (! in_array((string) ($booking->pricing_status ?: 'priced'), ['priced', 'quoted'], true) || $booking->total <= 0) {
+            throw new InvalidArgumentException('A final booking price is required before creating a payment request.');
         }
 
         if ($booking->activePayment) {
@@ -84,6 +96,61 @@ class BookingPaymentService
         return $payment->refresh();
     }
 
+    public function createManualPaymentRequest(Booking $booking, ?int $exchangeRate = null): BookingPayment
+    {
+        $booking->loadMissing('tourPackage.destination', 'activePayment');
+
+        if (! $this->settings->isManualActive()) {
+            throw new InvalidArgumentException('Manual payments are disabled in Payment Settings.');
+        }
+
+        if ($booking->status !== 'confirmed') {
+            throw new InvalidArgumentException('Only confirmed bookings can receive payment requests.');
+        }
+
+        if (! in_array((string) ($booking->pricing_status ?: 'priced'), ['priced', 'quoted'], true) || $booking->total <= 0) {
+            throw new InvalidArgumentException('A final booking price is required before creating a payment request.');
+        }
+
+        if ($booking->activePayment) {
+            throw new InvalidArgumentException('This booking already has an active payment request.');
+        }
+
+        [$chargeAmount, $rate, $rateSnapshot] = $this->chargeSnapshot($booking, $exchangeRate);
+        $payment = BookingPayment::create([
+            'booking_id' => $booking->id,
+            'provider' => 'manual',
+            'order_id' => $this->orderId($booking),
+            'public_token' => Str::random(40),
+            'quote_currency' => $booking->currency ?: 'IDR',
+            'quote_amount' => (int) $booking->total,
+            'charge_currency' => 'IDR',
+            'exchange_rate' => $rate,
+            'exchange_rate_snapshot' => $rateSnapshot,
+            'charge_amount' => $chargeAmount,
+            'status' => 'pending',
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        return $payment->refresh();
+    }
+
+    public function markManualPaymentAsPaid(BookingPayment $payment): BookingPayment
+    {
+        if ($payment->provider !== 'manual' || $payment->status === 'paid') {
+            return $payment;
+        }
+
+        $payment->forceFill([
+            'status' => 'paid',
+            'paid_at' => now(),
+        ])->save();
+
+        $this->receipts->sendAutomatically($payment);
+
+        return $payment->refresh();
+    }
+
     public function sendInvoice(BookingPayment $payment): BookingPayment
     {
         $payment->loadMissing('booking.tourPackage.destination');
@@ -96,7 +163,7 @@ class BookingPaymentService
             throw new InvalidArgumentException('Booking email is required before sending invoice email.');
         }
 
-        if (! filled($payment->snap_url)) {
+        if ($payment->provider === 'midtrans' && ! filled($payment->snap_url)) {
             throw new InvalidArgumentException('A Midtrans Snap URL is required before sending invoice email.');
         }
 
@@ -105,7 +172,6 @@ class BookingPaymentService
 
         return $payment->refresh();
     }
-
 
     public function markWhatsappOpened(BookingPayment $payment): BookingPayment
     {
@@ -141,7 +207,7 @@ class BookingPaymentService
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     public function handleNotification(array $payload): ?BookingPayment
     {

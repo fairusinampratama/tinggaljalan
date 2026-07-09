@@ -491,6 +491,65 @@ class BookingPaymentWorkflowTest extends TestCase
         Mail::assertNothingSent();
         $this->assertNull($payment->refresh()->sent_at);
     }
+
+    public function test_manual_payment_request_can_be_created_without_midtrans_api(): void
+    {
+        \App\Models\PaymentSetting::midtrans()->update(['is_enabled' => false]);
+        \App\Models\PaymentSetting::where('gateway', 'manual')->update([
+            'is_enabled' => true,
+        ]);
+
+        $payment = app(BookingPaymentService::class)->createManualPaymentRequest($this->booking());
+
+        $this->assertSame('manual', $payment->provider);
+        $this->assertSame('pending', $payment->status);
+        $this->assertNull($payment->snap_token);
+        $this->assertNull($payment->snap_url);
+    }
+
+    public function test_manual_payment_can_be_marked_as_paid_and_triggers_receipts(): void
+    {
+        Mail::fake();
+        $payment = $this->paymentForStatus('pending');
+        $payment->update(['provider' => 'manual', 'snap_url' => null, 'snap_token' => null]);
+
+        $paid = app(BookingPaymentService::class)->markManualPaymentAsPaid($payment);
+
+        $this->assertSame('paid', $paid->status);
+        $this->assertNotNull($paid->paid_at);
+        Mail::assertSent(\App\Mail\BookingPaymentReceiptMail::class);
+    }
+
+    public function test_manual_payment_renders_bank_details_on_public_page(): void
+    {
+        \App\Models\PaymentSetting::midtrans()->update(['is_enabled' => false]);
+        \App\Models\PaymentSetting::where('gateway', 'manual')->update([
+            'is_enabled' => true,
+            'manual_bank_accounts' => [
+                [
+                    'bank_name' => 'Test Bank',
+                    'account_name' => 'Test Name',
+                    'account_number' => '123',
+                ],
+            ],
+        ]);
+
+        $payment = $this->paymentForStatus('pending');
+        $payment->update(['provider' => 'manual', 'snap_url' => null, 'snap_token' => null]);
+
+        $this->get("/checkout/payment/{$payment->public_token}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('CheckoutPaymentStatusPage')
+                ->where('payment.provider', 'manual')
+                ->where('payment.manualBankAccounts', fn (\Illuminate\Support\Collection $accounts) => 
+                    $accounts->count() === 1 &&
+                    $accounts->first()['bank_name'] === 'Test Bank' &&
+                    $accounts->first()['account_name'] === 'Test Name' &&
+                    $accounts->first()['account_number'] === '123'
+                )
+                ->etc());
+    }
     private function booking(array $overrides = []): Booking
     {
         $destination = Destination::firstOrCreate([

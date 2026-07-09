@@ -13,28 +13,28 @@ export function Navbar({ language, setLanguage, t }) {
   const logoUrl = publicData.site?.logoUrl ?? '/images/logo-tj.png';
 
   return (
-    <nav className="fixed inset-x-0 top-0 z-50 border-b border-brandLine bg-white/95 backdrop-blur-xl">
+    <nav className="fixed inset-x-0 top-0 z-50 border-b border-line bg-surface/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-10">
-        <Link to="/" className="flex items-center gap-3 transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue" aria-label="Tinggal Jalan home">
+        <Link to="/" className="flex items-center gap-3 transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary" aria-label="Tinggal Jalan home">
           <img src={logoUrl} alt="Tinggal Jalan" className="h-9 w-auto object-contain sm:h-10" />
         </Link>
 
         <div className="hidden items-center gap-5 text-sm font-bold lg:flex">
           {t.nav.map((item, index) => (
-            <NavLink key={item} to={navRoutes[index]} className="border-b-2 border-transparent py-2 transition duration-200 hover:-translate-y-0.5 hover:border-brandBlue hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue">
+            <NavLink key={item} to={navRoutes[index]} className="border-b-2 border-transparent py-2 transition duration-200 hover:border-secondary hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary">
               {item}
             </NavLink>
           ))}
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden rounded-full border border-brandLine bg-white p-1 sm:flex">
+          <div className="hidden rounded-full border border-line bg-surface p-1 sm:flex">
             {languages.map((item) => (
               <button
                 key={item.id}
                 type="button"
-                className={`rounded-full px-3 py-1.5 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
-                  language === item.id ? 'bg-brandBlue text-brandDark shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandDark'
+                className={`rounded-full px-3 py-1.5 text-xs font-bold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                  language === item.id ? 'bg-secondary text-white shadow-sm shadow-secondary/20' : 'text-muted hover:bg-subtle hover:text-ink'
                 }`}
                 onClick={() => setLanguage(item.id)}
               >
@@ -54,19 +54,19 @@ export function Navbar({ language, setLanguage, t }) {
       </div>
 
       {isMenuOpen ? (
-        <div className="border-t border-brandLine bg-white px-4 py-4 lg:hidden">
+        <div className="border-t border-line bg-surface px-4 py-4 lg:hidden">
           <div className="grid gap-2">
             {t.nav.map((item, index) => (
-              <Link key={item} to={navRoutes[index]} className="rounded-xl px-3 py-3 text-sm font-bold transition duration-200 hover:-translate-y-0.5 hover:bg-brandSoft hover:text-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue" onClick={() => setIsMenuOpen(false)}>
+              <Link key={item} to={navRoutes[index]} className="rounded-xl px-3 py-3 text-sm font-bold transition duration-200 hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary" onClick={() => setIsMenuOpen(false)}>
                 {item}
               </Link>
             ))}
-            <div className="mt-2 flex rounded-full border border-brandLine p-1">
+            <div className="mt-2 flex rounded-full border border-line p-1">
               {languages.map((item) => (
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${language === item.id ? 'bg-brandBlue text-brandDark shadow-sm shadow-brandBlue/20' : 'text-brandMuted hover:bg-brandSoft hover:text-brandDark'}`}
+                  className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${language === item.id ? 'bg-secondary text-white shadow-sm shadow-secondary/20' : 'text-muted hover:bg-subtle hover:text-ink'}`}
                   onClick={() => setLanguage(item.id)}
                 >
                   {item.label}

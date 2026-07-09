@@ -80,6 +80,13 @@ Untuk setiap add-on, tentukan:
 
 Kolom readiness menunjukkan apakah paket sudah cukup lengkap untuk dijual. Paket yang masih memiliki data penting kosong sebaiknya tidak diaktifkan atau dijadikan featured.
 
+### Traveler Price Tiers (Tier Harga Berdasarkan Jumlah Peserta)
+
+Paket dapat dikonfigurasi menggunakan harga berjenjang (tiered pricing) berdasarkan jumlah peserta (Guests):
+- **Rentang Berkelanjutan (Contiguous Ranges):** Rentang peserta harus dimulai dari 1 dan berlanjut secara berurutan (misal: Tier 1: 1-2 orang, Tier 2: 3-4 orang).
+- **Batas Terbuka (Open-Ended Tiers):** Untuk membuat batas atas terbuka (misalnya 5+ orang), kosongkan kolom **To travelers** pada jenjang terakhir. Sistem akan secara otomatis menganggapnya sebagai range tanpa batas atas (misal: 5+).
+- **Triger Kuotasi (Quote Trigger):** Jika jenjang terakhir memiliki batas atas tetap (misalnya berakhir di 6 orang), pemesanan yang melebihi jumlah tersebut (misalnya 7+ orang) akan otomatis dianggap sebagai **"Quote Required" (Butuh Pengaturan Grup Khusus)**. Sistem akan memblokir alur checkout langsung dan mengarahkan pelanggan untuk menghubungi admin via WhatsApp.
+
 ## 4. Destinations dan Route Filters
 
 ### Destinations
@@ -169,11 +176,19 @@ Jika jadwal tidak dapat dipenuhi, hubungi pelanggan terlebih dahulu lalu gunakan
 
 Pada booking yang sudah confirmed:
 
-1. Buka menu tindakan **Payment**.
-2. Pilih **Create payment request**.
-3. Untuk IDR, nominal charge mengikuti total booking.
-4. Untuk USD, sistem mengambil kurs USD-IDR, menambahkan buffer, lalu menampilkan nominal charge IDR.
-5. Periksa kurs dan nominal sebelum menyimpan.
+- **Alur Standar:**
+  1. Buka menu tindakan **Payment**.
+  2. Pilih **Create payment request**.
+  3. Untuk IDR, nominal charge mengikuti total booking.
+  4. Untuk USD, sistem mengambil kurs USD-IDR, menambahkan buffer, lalu menampilkan nominal charge IDR.
+  5. Periksa kurs dan nominal sebelum menyimpan.
+
+- **Alur Pemesanan Grup Khusus (Quote Required):**
+  Jika pemesanan melebihi tier harga (status pricing `quote_required`), Anda tidak dapat langsung membuat request pembayaran. Alurnya adalah:
+  1. Hubungi pelanggan terlebih dahulu via WhatsApp dengan menekan tombol **Open customer WhatsApp**. Diskusikan kebutuhan armada/pemandu tambahan dan sepakati harga per orang.
+  2. Klik tindakan **Set final group quote** pada tabel booking.
+  3. Masukkan harga per orang yang disepakati, lalu simpan. Sistem akan menghitung ulang total harga secara otomatis dan mengubah status pricing menjadi `quoted`.
+  4. Lanjutkan dengan menekan tombol **Create payment request** untuk mengirim tagihan akhir.
 
 Midtrans menerima pembayaran dalam IDR. Quote USD asli tetap disimpan dan ditampilkan kepada pelanggan.
 

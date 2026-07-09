@@ -22,6 +22,7 @@ export function Dropdown({
   invalid = false,
   searchable = false,
   searchPlaceholder = 'Search',
+  emptyMessage = 'No options found',
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -79,12 +80,12 @@ export function Dropdown({
 
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
-      {label ? <span className="mb-2 block text-sm font-semibold text-brandDark">{label}</span> : null}
+      {label ? <span className="mb-2 block text-sm font-semibold text-ink">{label}</span> : null}
       <button
         type="button"
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-brandLight px-4 py-3 text-left text-sm font-semibold outline-none transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-lg hover:shadow-brandBlue/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
-          invalid ? 'border-red-400 focus:border-red-500 focus-visible:outline-red-500' : 'border-brandLine hover:border-brandBlue/40 focus:border-brandBlue'
-        } ${isOpen ? 'bg-white shadow-lg shadow-brandBlue/10' : ''} ${triggerClassName}`}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-4 py-3 text-left text-sm font-semibold outline-none transition duration-200 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+          invalid ? 'border-red-400 focus:border-red-500 focus-visible:outline-red-500' : 'border-line hover:border-secondary/40 focus:border-secondary'
+        } ${isOpen ? 'bg-surface shadow-lg shadow-secondary/10' : ''} ${triggerClassName}`}
         aria-label={ariaLabel}
         aria-invalid={invalid || undefined}
         aria-expanded={isOpen}
@@ -99,22 +100,22 @@ export function Dropdown({
         }}
       >
         <span className="min-w-0">
-          <span className="block truncate text-brandDark">{selectedOption?.selectedLabel ?? selectedOption?.label ?? placeholder}</span>
+          <span className="block truncate text-ink">{selectedOption?.selectedLabel ?? selectedOption?.label ?? placeholder}</span>
           {selectedOption?.meta && !selectedOption?.selectedLabel ? (
-            <span className="mt-0.5 block truncate text-xs font-semibold text-brandMuted">{selectedOption.meta}</span>
+            <span className="mt-0.5 block truncate text-xs font-semibold text-muted">{selectedOption.meta}</span>
           ) : null}
         </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-brandMuted transition ${isOpen ? 'rotate-180 text-brandBlue' : ''}`} />
+        <ChevronDown className={`h-4 w-4 shrink-0 text-muted transition ${isOpen ? 'rotate-180 text-secondary' : ''}`} />
       </button>
 
       {isOpen ? (
         <div
-          className={`absolute left-0 ${menuClassName ? '' : 'right-0'} top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-brandLine bg-white shadow-2xl shadow-black/12 ${menuClassName}`}
+          className={`absolute left-0 ${menuClassName ? '' : 'right-0'} top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/12 ${menuClassName}`}
         >
           {searchable ? (
-            <div className="sticky top-0 z-10 border-b border-brandLine bg-white p-2">
-              <label className="flex items-center gap-2 rounded-lg border border-brandLine bg-brandLight px-3 focus-within:border-brandBlue focus-within:bg-white">
-                <Search className="h-4 w-4 shrink-0 text-brandMuted" />
+            <div className="sticky top-0 z-10 border-b border-line bg-surface p-2">
+              <label className="flex items-center gap-2 rounded-lg border border-line bg-canvas px-3 focus-within:border-secondary focus-within:bg-surface">
+                <Search className="h-4 w-4 shrink-0 text-muted" />
                 <input
                   ref={searchRef}
                   type="search"
@@ -137,8 +138,8 @@ export function Dropdown({
                   type="button"
                   role="option"
                   aria-selected={selected}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition duration-200 hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
-                    selected ? 'bg-brandSoft text-brandBlue' : 'text-brandDark hover:bg-brandLight hover:text-brandBlue'
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                    selected ? 'bg-subtle text-secondary' : 'text-ink hover:bg-canvas hover:text-secondary'
                   }`}
                   onClick={() => {
                     onChange(option.value);
@@ -147,13 +148,13 @@ export function Dropdown({
                 >
                   <span className="min-w-0">
                     <span className="block truncate">{option.label}</span>
-                    {option.meta ? <span className="mt-0.5 block truncate text-xs font-semibold text-brandMuted">{option.meta}</span> : null}
+                    {option.meta ? <span className="mt-0.5 block truncate text-xs font-semibold text-muted">{option.meta}</span> : null}
                   </span>
                   {selected ? <CheckCircle className="h-4 w-4 shrink-0" /> : null}
                 </button>
               );
             }) : (
-              <p className="px-3 py-6 text-center text-sm font-semibold text-brandMuted">No countries found</p>
+              <p className="px-3 py-6 text-center text-sm font-semibold text-muted">{emptyMessage}</p>
             )}
           </div>
         </div>

@@ -88,7 +88,7 @@ class NewsArticleReadiness
 
         return collect($items ?? [])->contains(function ($item): bool {
             if (is_array($item)) {
-                return filled($item['us'] ?? $item['id'] ?? $item['cn'] ?? $item['heading']['us'] ?? $item['body']['us'] ?? null);
+                return filled($item['us'] ?? $item['id'] ?? $item['cn'] ?? $item['heading']['us'] ?? $item['body']['us'] ?? $item['content']['us'] ?? null);
             }
 
             return filled($item);

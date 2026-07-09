@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Providers\Filament;
+use Filament\FontProviders\LocalFontProvider;
 
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -28,9 +29,12 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Tinggal Jalan Admin')
+            ->favicon(asset('images/logo-tj.png'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#102A36'),
             ])
+            ->font('Manrope', provider: LocalFontProvider::class)
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->navigationGroups([
                 'Operations',
                 'Travel Products',

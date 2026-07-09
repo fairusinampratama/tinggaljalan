@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CreditCard, Minus, Plus } from 'lucide-react';
+import { ArrowRight, MessageCircle, Minus, Plus } from 'lucide-react';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { DateField } from '../components/ui/DateField';
@@ -30,12 +30,12 @@ export function BookingPage() {
     bookingSummary,
     bookingBlock,
     dateAvailability,
+    whatsappUrl,
     publicData,
     updateBooking,
   } = useBooking();
   const bookingOptions = publicData.bookingOptions ?? {};
   const travelerTypeOptions = bookingOptions.travelerTypeOptions ?? [];
-  const currencyOptions = bookingOptions.currencyOptions ?? [];
   const paxMin = bookingOptions.paxMin ?? 1;
   const paxMax = bookingOptions.paxMax ?? 999;
   const largeGroupThreshold = bookingOptions.largeGroupThreshold ?? 10;
@@ -44,13 +44,36 @@ export function BookingPage() {
     label: getLocalized(option.label, language),
     meta: getLocalized(option.meta, language),
   }));
-  const localizedCurrencyOptions = currencyOptions.map((option) => ({
-    ...option,
-    label: getLocalized(option.label, language),
-    meta: getLocalized(option.meta, language),
-  }));
+  const destinationOptions = Array.from(new Map(
+    routes
+      .filter((route) => route.destinationId)
+      .map((route) => [route.destinationId, {
+        value: route.destinationId,
+        label: getLocalized(route.destinationName, language),
+      }])
+  ).values());
+  const selectedDestinationId = selectedRoute?.destinationId ?? destinationOptions[0]?.value ?? '';
+  const filteredRoutes = routes.filter((route) => route.destinationId === selectedDestinationId);
   const availabilityByDate = selectedRoute?.availabilityByDate ?? {};
+  const availabilityRules = selectedRoute?.availabilityRules ?? [];
   const availabilityLabel = t[dateAvailability.status] ?? dateAvailability.status;
+  const quoteRequired = Boolean(bookingSummary.quoteRequired);
+  const maxTierGuests = selectedRoute?.pricing?.mode === 'tiered'
+    ? Math.max(
+        ...((selectedRoute.pricing.tiers ?? [])
+          .map((tier) => Number(tier.maxPax))
+          .filter((value) => Number.isFinite(value))),
+        paxMin,
+      )
+    : paxMax;
+
+  function changeDestination(destinationId) {
+    const firstRoute = routes.find((route) => route.destinationId === destinationId);
+
+    if (firstRoute) {
+      setSelectedRouteId(firstRoute.id);
+    }
+  }
 
   function toggleAddOn(addOnId) {
     const selectedAddOns = booking.addOns.includes(addOnId)
@@ -77,15 +100,18 @@ export function BookingPage() {
   function submitDraft(event) {
     event.preventDefault();
 
+    if (quoteRequired) {
+      return;
+    }
+
     router.post('/booking', {
       route: selectedRouteId,
       date: booking.date,
       pax: booking.pax,
       pickup: booking.pickup,
       traveler_type: booking.travelerType,
-      currency: booking.currency,
       add_ons: booking.addOns,
-      voucher: booking.voucher ?? 'BROMO10',
+      voucher: booking.voucher ?? '',
     });
   }
 
@@ -93,7 +119,7 @@ export function BookingPage() {
     <>
       <Seo
         title="Booking Request | Tinggal Jalan"
-        description="Send a Tinggal Jalan tour booking request with route, date, guests, pickup point, currency, and add-ons."
+        description="Send a Tinggal Jalan tour booking request with route, date, guests, pickup point, and add-ons."
         path="/booking"
         language={language}
         noindex
@@ -103,42 +129,40 @@ export function BookingPage() {
         <div className="relative">
           <CheckoutSteps current={0} />
         </div>
-        <div className="mt-5 rounded-2xl border border-brandBlue/15 bg-brandSoft px-4 py-3 text-sm font-bold leading-6 text-brandMuted">
-          <p className="flex items-start gap-2 text-brandDark">
-            <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-brandBlue" />
-            <span>{t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}</span>
-          </p>
-          {bookingSummary.paymentNote ? <p className="mt-2 text-xs leading-5">{bookingSummary.paymentNote}</p> : null}
-          {bookingSummary.currency === 'USD' && bookingSummary.usdPaymentNote ? <p className="mt-2 text-xs leading-5 text-amber-800">{bookingSummary.usdPaymentNote}</p> : null}
-        </div>
       </div>
       <div className="relative grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-        <form className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
-          <p className="mb-5 text-sm font-semibold leading-6 text-brandMuted">{t.tripSetupText}</p>
+        <form className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
+          <p className="mb-5 text-sm font-semibold leading-6 text-muted">{t.tripSetupText}</p>
           <div className="grid gap-4 sm:grid-cols-2">
+            <Field label={t.destinationFilterLabel}>
+              <Dropdown
+                value={selectedDestinationId}
+                options={destinationOptions}
+                onChange={changeDestination}
+              />
+            </Field>
             <Field label={t.route}>
               <Dropdown
                 value={selectedRouteId}
-                options={routes.map((route) => ({
+                options={filteredRoutes.map((route) => ({
                   label: getLocalized(route.title, language),
                   value: route.id,
                   meta: `${localizeDuration(route.duration, language)} - ${formatCurrency(getRoutePrice(route, booking.currency), bookingSummary.currency)}${t.perPax}`,
                 }))}
                 onChange={setSelectedRouteId}
+                searchable={filteredRoutes.length >= 8}
+                searchPlaceholder={t.searchRoutesPlaceholder}
+                emptyMessage={t.noRoutesFound}
               />
             </Field>
             <Field label={t.travelerType}>
               <Dropdown
                 value={booking.travelerType}
                 options={localizedTravelerTypeOptions}
-                onChange={(travelerType) => updateBooking({ travelerType }, { recalculate: true })}
-              />
-            </Field>
-            <Field label={t.currency}>
-              <Dropdown
-                value={booking.currency}
-                options={localizedCurrencyOptions}
-                onChange={(currency) => updateBooking({ currency }, { recalculate: true })}
+                onChange={(travelerType) => updateBooking({
+                  travelerType,
+                  currency: travelerType === 'local' ? 'IDR' : 'USD',
+                }, { recalculate: true })}
               />
             </Field>
             <Field label={t.date}>
@@ -146,18 +170,19 @@ export function BookingPage() {
                 value={booking.date}
                 language={language}
                 availabilityByDate={availabilityByDate}
+                availabilityRules={availabilityRules}
                 showLegend
                 onChange={(date) => updateBooking({ date }, { recalculate: true })}
               />
             </Field>
             <Field label={t.pax}>
               <div>
-                <div className="flex overflow-hidden rounded-xl border border-brandLine bg-brandLight transition focus-within:border-brandBlue hover:border-brandBlue/40 hover:bg-white">
+                <div className="flex overflow-hidden rounded-xl border border-line bg-canvas transition focus-within:border-secondary hover:border-secondary/40 hover:bg-surface">
                   <button
                     type="button"
                     aria-label={t.decreaseGuests}
                     disabled={Number(booking.pax) <= paxMin}
-                    className="grid w-12 shrink-0 place-items-center border-r border-brandLine text-brandDark transition hover:bg-brandSoft disabled:cursor-not-allowed disabled:opacity-35"
+                    className="grid w-12 shrink-0 place-items-center border-r border-line text-ink transition hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-35"
                     onClick={() => changePax(Number(booking.pax) - 1)}
                   >
                     <Minus className="h-4 w-4" />
@@ -169,7 +194,7 @@ export function BookingPage() {
                     max={paxMax}
                     step="1"
                     value={booking.pax}
-                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-sm font-extrabold text-brandDark outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-sm font-bold text-ink outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     onChange={(event) => {
                       const value = event.target.value;
                       updateBooking({ pax: value === '' ? '' : normalizePax(value) });
@@ -180,15 +205,12 @@ export function BookingPage() {
                     type="button"
                     aria-label={t.increaseGuests}
                     disabled={Number(booking.pax) >= paxMax}
-                    className="grid w-12 shrink-0 place-items-center border-l border-brandLine text-brandDark transition hover:bg-brandSoft disabled:cursor-not-allowed disabled:opacity-35"
+                    className="grid w-12 shrink-0 place-items-center border-l border-line text-ink transition hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-35"
                     onClick={() => changePax(Number(booking.pax) + 1)}
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
-                {Number(booking.pax) > largeGroupThreshold ? (
-                  <p className="mt-2 text-xs font-semibold leading-5 text-amber-800">{t.largeGroupNote}</p>
-                ) : null}
               </div>
             </Field>
             <Field label={t.pickup}>
@@ -196,14 +218,14 @@ export function BookingPage() {
                 type="text"
                 value={booking.pickup}
                 placeholder={t.pickupPlaceholder}
-                className="w-full rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+                className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
                 onChange={(event) => setBooking((current) => ({ ...current, pickup: event.target.value }))}
               />
             </Field>
           </div>
-          {selectedRoute.addOns?.length ? (
+          {selectedRoute?.addOns?.length ? (
             <div className="mt-5">
-              <p className="mb-3 text-sm font-semibold text-brandDark">{t.addOns}</p>
+              <p className="mb-3 text-sm font-semibold text-ink">{t.addOns}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {selectedRoute.addOns.map((addOn) => {
                   const checked = booking.addOns.includes(addOn.id);
@@ -214,20 +236,20 @@ export function BookingPage() {
                     <label
                       key={addOn.id}
                       className={`cursor-pointer rounded-xl border p-4 transition ${
-                        checked ? 'border-brandBlue bg-brandSoft' : 'border-brandLine bg-brandLight hover:border-brandBlue/40 hover:bg-white'
+                        checked ? 'border-secondary bg-subtle' : 'border-line bg-canvas hover:border-secondary/40 hover:bg-surface'
                       }`}
                     >
                       <span className="flex items-start gap-3">
                         <input
                           type="checkbox"
-                          className="mt-1 h-4 w-4 accent-brandBlue"
+                          className="mt-1 h-4 w-4 accent-secondary"
                           checked={checked}
                           onChange={() => toggleAddOn(addOn.id)}
                         />
                         <span>
-                          <span className="block text-sm font-bold text-brandDark">{getLocalized(addOn.title, language)}</span>
-                          <span className="mt-1 block text-xs font-semibold leading-5 text-brandMuted">{getLocalized(addOn.description, language)}</span>
-                          <span className="mt-2 block text-xs font-bold text-brandBlue">
+                          <span className="block text-sm font-bold text-ink">{getLocalized(addOn.title, language)}</span>
+                          <span className="mt-1 block text-xs font-semibold leading-5 text-muted">{getLocalized(addOn.description, language)}</span>
+                          <span className="mt-2 block text-xs font-bold text-secondary">
                             {formatCurrency(addOnPrice, booking.currency)} {pricingLabel}
                           </span>
                         </span>
@@ -243,7 +265,7 @@ export function BookingPage() {
               ? 'border-amber-200 bg-amber-50 text-amber-700'
               : dateAvailability.status === 'booked' || dateAvailability.status === 'blocked'
                 ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-brandBlue/15 bg-brandSoft text-brandBlue'
+                : 'border-secondary/15 bg-subtle text-secondary'
           }`}>
             {t.availability}: {availabilityLabel}
             {dateAvailability.seatsLeft ? ` · ${dateAvailability.seatsLeft} seats left` : ''}
@@ -252,11 +274,30 @@ export function BookingPage() {
               <span className="mt-1 block">{t.capacityWarning}</span>
             ) : null}
           </div>
-          <div className="mt-6 flex justify-end">
-            {bookingBlock.blocked || dateAvailability.status === 'booked' ? (
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            {quoteRequired ? (
+              <>
+                <button
+                  type="button"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-sm font-bold text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
+                  disabled
+                >
+                  {t.customGroupContactFirst}
+                </button>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1ebe5d] hover:text-white sm:min-h-11 sm:px-5 sm:py-2.5"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {t.chatOnWhatsapp}
+                </a>
+              </>
+            ) : bookingBlock.blocked || dateAvailability.status === 'booked' ? (
               <button
                 type="button"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-bold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-sm font-bold text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
                 disabled
               >
                 {dateAvailability.status === 'booked' ? t.booked : t.blockedTitle}
@@ -276,6 +317,8 @@ export function BookingPage() {
           summary={bookingSummary}
           bookingBlock={bookingBlock}
           dateAvailability={dateAvailability}
+          whatsappUrl={whatsappUrl}
+          onReduceGuests={() => changePax(Math.min(paxMax, Math.max(paxMin, maxTierGuests)))}
           language={language}
         />
       </div>

@@ -7,12 +7,21 @@ import { SectionHeader } from '../ui/SectionHeader';
 
 const allValue = 'all';
 
-function formatDate(date, language = 'id') {
-  return new Intl.DateTimeFormat(language === 'us' ? 'en-US' : 'id-ID', {
+function formatDate(date, locale = 'id-ID') {
+  return new Intl.DateTimeFormat(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   }).format(new Date(date));
+}
+
+
+function getTagLabel(tag, language) {
+  return typeof tag === 'string' ? tag : getLocalized(tag, language);
+}
+
+function getTagKey(tag, language, index) {
+  return `${getTagLabel(tag, language) || 'tag'}-${index}`;
 }
 
 function getDestinationLabel(destinationId, destinations = []) {
@@ -24,25 +33,25 @@ function getDestinationLabel(destinationId, destinations = []) {
 }
 
 function MetaRow({ article, language }) {
-  const { publicData } = useBooking();
+  const { publicData, regionConfig } = useBooking();
   const category = publicData.categories?.find((item) => item.value === article.category);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-brandMuted">
-      <span className="inline-flex items-center gap-1 rounded-full bg-brandBlue/10 px-3 py-1 text-brandBlue">
+    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
+      <span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-3 py-1 text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white">
         <Newspaper className="h-3.5 w-3.5" />
         {getLocalized(category?.label, language)}
       </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-brandLight px-3 py-1">
-        <Compass className="h-3.5 w-3.5 text-brandBlue" />
+      <span className="inline-flex items-center gap-1 rounded-full bg-subtle px-3 py-1">
+        <Compass className="h-3.5 w-3.5 text-secondary" />
         {getDestinationLabel(article.destinationId, publicData.destinations ?? [])}
       </span>
       <span className="inline-flex items-center gap-1">
-        <CalendarDays className="h-3.5 w-3.5 text-brandBlue" />
-        {formatDate(article.publishedDate, language)}
+        <CalendarDays className="h-3.5 w-3.5 text-secondary" />
+        {formatDate(article.publishedDate, regionConfig.locale)}
       </span>
       <span className="inline-flex items-center gap-1">
-        <Clock className="h-3.5 w-3.5 text-brandBlue" />
+        <Clock className="h-3.5 w-3.5 text-secondary" />
         {getLocalized(article.readingTime, language)}
       </span>
     </div>
@@ -50,7 +59,7 @@ function MetaRow({ article, language }) {
 }
 
 function RelatedRouteChip({ article, language, compact = false }) {
-  const { publicData } = useBooking();
+  const { publicData, t } = useBooking();
   const routeId = article.relatedRouteIds?.[0];
   const route = routeId ? publicData.routes?.find((item) => item.id === routeId || item.slug === routeId) : null;
 
@@ -61,19 +70,19 @@ function RelatedRouteChip({ article, language, compact = false }) {
   return (
     <Link
       to={`/routes/${route.id}`}
-      className={`inline-flex min-w-0 items-center gap-2 rounded-full border border-brandLine bg-white px-3 py-1.5 text-xs font-bold text-brandDark transition hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue ${
-        compact ? 'max-w-full' : ''
-      }`}
+      className={`inline-flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:border-secondary hover:bg-subtle hover:text-secondary ${compact ? 'max-w-full' : ''
+        }`}
       onClick={(event) => event.stopPropagation()}
     >
-      <RouteIcon className="h-3.5 w-3.5 shrink-0 text-brandBlue" />
-      <span className="shrink-0">{language === 'id' ? 'Terkait:' : 'Related:'}</span>
+      <RouteIcon className="h-3.5 w-3.5 shrink-0 text-secondary" />
+      <span className="shrink-0">{t.newsRelated}</span>
       <span className="truncate">{getLocalized(route.title, language)}</span>
     </Link>
   );
 }
 
 export function NewsCard({ article, language = 'id', variant = 'standard' }) {
+  const { t } = useBooking();
   const navigate = useNavigate();
   const isFeatured = variant === 'featured';
   const isCompact = variant === 'compact';
@@ -93,9 +102,8 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
     <article
       role="link"
       tabIndex={0}
-      className={`group cursor-pointer overflow-hidden rounded-2xl border border-brandLine bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brandBlue/40 hover:shadow-xl hover:shadow-brandBlue/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue ${
-        isHorizontal || isCompact ? 'grid grid-cols-[40%_1fr]' : ''
-      } ${isFeatured ? 'lg:grid lg:grid-cols-[1.08fr_0.92fr]' : ''}`}
+      className={`group h-full cursor-pointer overflow-hidden rounded-xl border border-line bg-surface shadow-soft transition duration-300 hover:border-secondary/40 hover:shadow-xl hover:shadow-secondary/10 focus-within:-translate-y-1 focus-within:border-secondary/40 focus-within:shadow-xl focus-within:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${isHorizontal || isCompact ? 'grid grid-cols-[40%_1fr]' : isFeatured ? 'flex flex-col lg:grid lg:grid-cols-[1.08fr_0.92fr]' : 'flex flex-col'
+        }`}
       onClick={openArticle}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -104,32 +112,40 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
         }
       }}
     >
-      <div className="overflow-hidden bg-brandSoft">
+      <div className="overflow-hidden bg-subtle">
         <img
           src={article.coverImage}
           alt={getLocalized(article.coverAlt, language)}
           className={`${imageClass} w-full object-cover transition duration-500 group-hover:scale-105 group-focus-visible:scale-105`}
         />
       </div>
-      <div className={`flex min-w-0 flex-col ${isFeatured ? 'p-6 sm:p-7' : isCompact ? 'p-4' : 'p-5'}`}>
+      <div className={`flex min-w-0 flex-1 flex-col ${isFeatured ? 'p-6 sm:p-7' : isCompact ? 'p-4' : 'p-5'}`}>
         <MetaRow article={article} language={language} />
-        <h3 className={`mt-4 line-clamp-3 font-bold leading-tight text-brandDark transition group-hover:text-brandBlue ${titleClass}`}>
+        <h3 className={`mt-4 line-clamp-3 font-display font-normal leading-tight text-primary transition duration-300 group-hover:text-secondary group-focus-within:text-secondary ${titleClass}`}>
           {getLocalized(article.title, language)}
         </h3>
-        <p className={`${isCompact ? 'mt-2 line-clamp-3 text-xs leading-5' : 'mt-4 line-clamp-3 text-sm leading-6'} font-semibold text-brandMuted`}>
+        <p className={`${isCompact ? 'mt-2 line-clamp-3 text-xs leading-5' : 'mt-4 line-clamp-3 text-sm leading-6'} font-medium text-muted`}>
           {getLocalized(article.excerpt, language)}
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {article.tags.slice(0, isFeatured ? 4 : 2).map((tag) => (
-            <span key={tag} className="rounded-full border border-brandLine bg-brandLight px-3 py-1 text-xs font-bold text-brandMuted">
-              {tag}
-            </span>
-          ))}
-        </div>
-        <div className="mt-auto pt-5">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {(article.tags ?? []).slice(0, isFeatured ? 4 : 2).map((tag, index) => {
+            const label = getTagLabel(tag, language);
+
+            if (!label) {
+              return null;
+            }
+
+            return (
+              <span key={getTagKey(tag, language, index)} className="rounded-full border border-line bg-subtle px-3 py-1 text-xs font-bold text-muted">
+                {label}
+              </span>
+            );
+          })}
           <RelatedRouteChip article={article} language={language} compact={isCompact || isHorizontal} />
-          <div className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-brandBlue transition group-hover:translate-x-1">
-            {language === 'id' ? 'Baca artikel' : 'Read article'} <ChevronRight className={iconSize} />
+        </div>
+        <div className="mt-auto flex pt-5">
+          <div className="ml-auto inline-flex shrink-0 items-center gap-2 text-sm font-bold text-secondary transition">
+            {t.newsReadArticle} <ChevronRight className={iconSize} />
           </div>
         </div>
       </div>
@@ -179,32 +195,32 @@ export function NewsFilterBar({
   onUpdate,
   onReset,
 }) {
-  const { publicData } = useBooking();
+  const { publicData, t } = useBooking();
   const categories = publicData.categories ?? [];
   const destinations = publicData.destinations ?? [];
 
   return (
-    <section className="rounded-2xl border border-brandLine bg-white p-4 shadow-soft sm:p-5">
+    <section className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="grid gap-4 lg:grid-cols-[1fr_320px] lg:items-center">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">
-            {language === 'id' ? 'Dashboard artikel' : 'Article dashboard'}
+          <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">
+            {t.newsFilterDashboard}
           </p>
-          <h2 className="mt-1 text-2xl font-bold leading-tight text-brandDark">
-            {language === 'id' ? 'Temukan panduan berdasarkan destinasi' : 'Find guides by destination'}
+          <h2 className="mt-1 font-display text-2xl font-normal leading-tight text-primary">
+            {t.newsFilterTitle}
           </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">
-            {resultCount} / {totalCount} {language === 'id' ? 'artikel ditampilkan' : 'articles shown'}
+          <p className="mt-2 text-sm font-semibold leading-6 text-muted">
+            {resultCount} / {totalCount} {t.newsArticlesShown}
           </p>
         </div>
         <label className="relative block">
           <span className="sr-only">Search articles</span>
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-brandBlue" />
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink" />
           <input
             value={searchTerm}
             onChange={(event) => onUpdate({ search: event.target.value })}
-            placeholder={language === 'id' ? 'Cari berita, rute, atau destinasi' : 'Search news, routes, or destination'}
-            className="min-h-12 w-full rounded-xl border border-brandLine bg-brandLight py-3 pl-11 pr-4 text-sm font-bold outline-none transition hover:border-brandBlue/40 focus:border-brandBlue focus:bg-white"
+            placeholder={t.newsSearchPlaceholder}
+            className="min-h-12 w-full rounded-xl border border-line bg-canvas py-3 pl-11 pr-4 text-sm font-bold text-ink outline-none transition hover:border-secondary/40 focus:border-secondary focus:bg-surface"
           />
         </label>
       </div>
@@ -218,11 +234,10 @@ export function NewsFilterBar({
               <button
                 key={category.value}
                 type="button"
-                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition ${
-                  isActive
-                    ? 'border-brandBlue bg-brandBlue text-brandDark shadow-soft'
-                    : 'border-brandLine bg-white text-brandDark hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue'
-                }`}
+                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition ${isActive
+                    ? 'border-secondary bg-secondary text-white'
+                    : 'border-line bg-surface text-ink hover:border-secondary hover:bg-subtle hover:text-secondary'
+                  }`}
                 onClick={() => onUpdate({ category: category.value })}
               >
                 <Newspaper className="h-4 w-4" />
@@ -232,18 +247,17 @@ export function NewsFilterBar({
           })}
         </div>
         <div className="flex flex-wrap gap-2">
-          {[{ label: 'Indonesia', value: allValue }, ...destinations.map((destination) => ({ label: destination.name, value: destination.slug ?? destination.id }))].map((destination) => {
+          {[{ label: getLocalized({ id: 'Semua Destinasi', us: 'All Destinations', cn: '\u5168\u90e8\u76ee\u7684\u5730' }, language), value: allValue }, ...destinations.filter(d => d.slug !== 'indonesia' && d.id !== 'indonesia').map((destination) => ({ label: destination.name, value: destination.slug ?? destination.id }))].map((destination) => {
             const isActive = destination.value === destinationFilter;
 
             return (
               <button
                 key={destination.value}
                 type="button"
-                className={`min-h-10 rounded-full border px-4 text-sm font-bold transition ${
-                  isActive
-                    ? 'border-brandDark bg-brandDark text-white'
-                    : 'border-brandLine bg-brandLight text-brandDark hover:border-brandBlue hover:bg-white hover:text-brandBlue'
-                }`}
+                className={`min-h-10 rounded-full border px-4 text-sm font-bold transition ${isActive
+                    ? 'border-secondary bg-secondary text-white'
+                    : 'border-line bg-surface text-ink hover:border-secondary hover:bg-subtle hover:text-secondary'
+                  }`}
                 onClick={() => onUpdate({ destination: destination.value })}
               >
                 {destination.label}
@@ -253,7 +267,7 @@ export function NewsFilterBar({
           {hasActiveFilters ? (
             <button
               type="button"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-brandLine bg-white px-4 text-sm font-bold text-brandDark transition hover:border-brandBlue hover:bg-brandSoft hover:text-brandBlue"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-bold text-ink transition hover:border-secondary hover:bg-subtle hover:text-secondary"
               onClick={onReset}
             >
               <X className="h-4 w-4" />
@@ -267,27 +281,26 @@ export function NewsFilterBar({
 }
 
 export function NewsCtaBand({ language = 'id', whatsappUrl }) {
+  const { t } = useBooking();
   return (
-    <section className="rounded-2xl border border-brandLine bg-brandDark p-6 text-white shadow-soft sm:p-7 lg:flex lg:items-center lg:justify-between lg:gap-8">
+    <section className="overflow-hidden rounded-2xl bg-primary p-6 text-white shadow-soft sm:p-7 lg:flex lg:items-center lg:justify-between lg:gap-8">
       <div className="max-w-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.04em] text-white/58">
-          {language === 'id' ? 'Butuh rekomendasi rute?' : 'Need route advice?'}
+        <p className="text-xs font-bold uppercase tracking-[0.04em] text-accent">
+          {t.newsNeedAdviceTitle}
         </p>
-        <h2 className="mt-2 text-2xl font-bold leading-tight">
-          {language === 'id' ? 'Pilih artikelnya, lalu cocokkan dengan paket yang paling masuk akal.' : 'Pick a guide, then match it with the most practical route.'}
+        <h2 className="mt-2 font-display text-3xl font-normal leading-tight">
+          {t.newsCtaHeading}
         </h2>
-        <p className="mt-3 text-sm font-semibold leading-6 text-white/68">
-          {language === 'id'
-            ? 'Tim Tinggal Jalan bisa bantu cek jadwal, pickup, dan opsi private trip sesuai artikel yang kamu baca.'
-            : 'The Tinggal Jalan team can help check schedule, pickup, and private trip options based on the article you read.'}
+        <p className="mt-3 text-sm font-medium leading-6 text-white/70">
+          {t.newsNeedAdviceText}
         </p>
       </div>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row lg:mt-0">
         <Link
           to="/routes"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-brandDark shadow-soft transition hover:-translate-y-0.5 hover:bg-brandSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          className={secondaryButtonClass}
         >
-          <RouteIcon className={iconSize} /> {language === 'id' ? 'Lihat rute' : 'View routes'}
+          <RouteIcon className={iconSize} /> {t.viewRoutes}
         </Link>
         <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
           <MessageCircle className={iconSize} /> WhatsApp
@@ -306,12 +319,14 @@ export function NewsCardsSection({
   showViewAll = false,
   variant = 'compact',
 }) {
+  const { t } = useBooking();
+
   if (!articles.length) {
     return null;
   }
 
   return (
-    <section className="bg-white px-4 py-16 sm:px-8 lg:px-10">
+    <section className="bg-canvas px-4 py-16 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
         {title ? (
           <SectionHeader eyebrow={eyebrow} title={title}>
@@ -322,7 +337,7 @@ export function NewsCardsSection({
         {showViewAll ? (
           <div className="mt-8 flex justify-center">
             <Link to="/news" className={secondaryButtonClass}>
-              {language === 'id' ? 'Lihat semua berita' : 'View all news'} <ChevronRight className={iconSize} />
+              {t.newsViewAll} <ChevronRight className={iconSize} />
             </Link>
           </div>
         ) : null}

@@ -25,15 +25,21 @@ export function CheckoutReviewPage() {
     bookingSummary,
     bookingBlock,
     dateAvailability,
+    whatsappUrl,
   } = useBooking();
   const { errors = {} } = usePage().props;
   const whatsappValid = booking.whatsapp ? isPossiblePhoneNumber(booking.whatsapp) : false;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email.trim());
   const contactComplete = booking.name.trim() && whatsappValid && emailValid;
   const dateUnavailable = bookingBlock.blocked || dateAvailability.status === 'booked';
+  const quoteRequired = Boolean(bookingSummary.quoteRequired);
 
   function submitBooking(event) {
     event.preventDefault();
+
+    if (quoteRequired) {
+      return;
+    }
 
     router.post('/checkout/review', {
       name: booking.name,
@@ -57,15 +63,15 @@ export function CheckoutReviewPage() {
       <PageShell eyebrow="Booking" title={t.contactTitle}>
       <CheckoutSteps current={1} />
       <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-        <form className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitBooking}>
+        <form className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitBooking}>
           <h2 className="text-2xl font-bold">{t.contactDetails}</h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">{t.contactText}</p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-muted">{t.contactText}</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Field label={`${t.fullName} *`}>
               <input
                 required
                 autoComplete="name"
-                className="w-full rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+                className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
                 value={booking.name}
                 onChange={(event) => setBooking((current) => ({ ...current, name: event.target.value }))}
                 placeholder={t.namePlaceholder}
@@ -81,7 +87,7 @@ export function CheckoutReviewPage() {
                 onChange={(whatsapp) => setBooking((current) => ({ ...current, whatsapp }))}
                 onCountryChange={(whatsappCountry) => setBooking((current) => ({ ...current, whatsappCountry }))}
               />
-              <p className="mt-1.5 text-xs font-semibold text-brandMuted">{t.whatsappHelp}</p>
+              <p className="mt-1.5 text-xs font-semibold text-muted">{t.whatsappHelp}</p>
               {errors.whatsapp ? <p className="mt-1 text-xs font-bold text-red-600">{errors.whatsapp}</p> : null}
               {!errors.whatsapp && booking.whatsapp && !whatsappValid ? <p className="mt-1 text-xs font-bold text-red-600">{t.whatsappInvalid}</p> : null}
             </Field>
@@ -91,42 +97,45 @@ export function CheckoutReviewPage() {
                 required
                 autoComplete="email"
                 aria-invalid={Boolean(errors.email || (booking.email && !emailValid))}
-                className={`w-full rounded-xl border bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:bg-white ${
+                className={`w-full rounded-xl border bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:bg-surface ${
                   errors.email || (booking.email && !emailValid)
                     ? 'border-red-400 focus:border-red-500'
-                    : 'border-brandLine hover:border-brandBlue/40 focus:border-brandBlue'
+                    : 'border-line hover:border-secondary/40 focus:border-secondary'
                 }`}
                 value={booking.email}
                 onChange={(event) => setBooking((current) => ({ ...current, email: event.target.value }))}
                 placeholder="name@example.com"
               />
-              <p className="mt-1.5 text-xs font-semibold text-brandMuted">{t.emailHelp}</p>
+              <p className="mt-1.5 text-xs font-semibold text-muted">{t.emailHelp}</p>
               {errors.email ? <p className="mt-1 text-xs font-bold text-red-600">{errors.email}</p> : null}
             </Field>
             <Field label={t.voucher}>
               <div className="flex gap-2">
                 <input
-                  className="min-w-0 flex-1 rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold uppercase outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+                  className="min-w-0 flex-1 rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold uppercase outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
                   value={voucherCode}
                   onChange={(event) => setVoucherCode(event.target.value)}
+                  placeholder={t.voucherPlaceholder}
                 />
                 <button
                   type="button"
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brandBlue text-brandDark transition duration-200 hover:-translate-y-0.5 hover:bg-[#dc6948] hover:shadow-lg hover:shadow-brandBlue/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue"
+                  className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-white transition duration-200 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-secondary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                   onClick={() => {
                     setAppliedVoucher(voucherCode);
                     recalculateBooking({ ...booking, voucher: voucherCode });
                   }}
-                  aria-label={t.voucher}
+                  aria-label={t.applyVoucher}
                 >
                   <Ticket className="h-4 w-4" />
+                  <span className="text-sm font-semibold">{t.applyVoucher}</span>
                 </button>
               </div>
+              <p className="mt-1.5 text-xs font-semibold text-muted">{t.voucherHelp}</p>
             </Field>
             <div className="sm:col-span-2">
               <Field label={t.notes}>
                 <textarea
-                  className="min-h-28 w-full resize-y rounded-xl border border-brandLine bg-brandLight px-4 py-3 text-sm font-bold outline-none transition hover:border-brandBlue/40 hover:bg-white focus:border-brandBlue"
+                  className="min-h-28 w-full resize-y rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
                   value={booking.notes}
                   onChange={(event) => setBooking((current) => ({ ...current, notes: event.target.value }))}
                   placeholder={t.notesPlaceholder}
@@ -138,13 +147,13 @@ export function CheckoutReviewPage() {
             <Link to="/booking" className={secondaryButtonClass}>
               {t.editTrip}
             </Link>
-            {dateUnavailable || !contactComplete ? (
+            {quoteRequired || dateUnavailable || !contactComplete ? (
               <button
                 type="button"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-brandMuted/30 px-4 py-2 text-sm font-bold text-brandMuted sm:min-h-11 sm:px-5 sm:py-2.5"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-sm font-bold text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
                 disabled
               >
-                {dateUnavailable ? (dateAvailability.status === 'booked' ? t.booked : t.blockedTitle) : t.completeContact}
+                {quoteRequired ? t.customGroupContactFirst : dateUnavailable ? (dateAvailability.status === 'booked' ? t.booked : t.blockedTitle) : t.completeContact}
               </button>
             ) : (
               <button type="submit" className={primaryButtonClass}>
@@ -160,6 +169,7 @@ export function CheckoutReviewPage() {
           summary={bookingSummary}
           bookingBlock={bookingBlock}
           dateAvailability={dateAvailability}
+          whatsappUrl={whatsappUrl}
           language={language}
         />
       </div>

@@ -14,6 +14,8 @@ class SiteSetting extends Model
             'service_hours' => 'array',
             'service_areas' => 'array',
             'trust_badges' => 'array',
+            'hero_autoplay_enabled' => 'boolean',
+            'hero_autoplay_interval' => 'integer',
         ];
     }
 }

@@ -16,9 +16,9 @@ Tinggal Jalan
 {{ __('booking.payment_required') }}
 
 {{ __('booking.greeting', ['name' => $booking->name ?: __('booking.traveler')]) }}
-{{ __('booking.invoice_intro', ['provider' => $paymentSettings->publicLabel()]) }}
+{{ __('booking.invoice_intro', ['provider' => $paymentSettings->publicLabel($payment->provider)]) }}
 
-{{ __('booking.pay_securely', ['provider' => $paymentSettings->publicLabel()]) }}:
+{{ __('booking.pay_securely', ['provider' => $paymentSettings->publicLabel($payment->provider)]) }}:
 {{ $paymentUrl }}
 
 {{ strtoupper(__('booking.booking_summary')) }}
@@ -34,8 +34,19 @@ Tinggal Jalan
 @if ($payment->quote_currency === 'USD')
 {{ __('booking.exchange_rate') }}: 1 USD = {{ PublicSite::formatMoney($payment->exchange_rate, 'IDR') }}
 @endif
-{{ __('booking.charge_label', ['provider' => $paymentSettings->publicLabel()]) }}: {{ PublicSite::formatMoney($payment->charge_amount, 'IDR') }}
+{{ __('booking.charge_label', ['provider' => $paymentSettings->publicLabel($payment->provider)]) }}: {{ PublicSite::formatMoney($payment->charge_amount, 'IDR') }}
 {{ __('booking.payment_expires') }}: {{ BookingLanguage::date($payment->expires_at?->timezone('Asia/Jakarta'), $language, true) }} WIB
+
+@if ($payment->provider === 'manual' && !empty($paymentSettings->manualBankAccounts($payment->provider)))
+
+BANK ACCOUNTS
+@foreach ($paymentSettings->manualBankAccounts($payment->provider) as $account)
+{{ $account['bank_name'] }}
+Account Name: {{ $account['account_name'] }}
+Account Number: {{ $account['account_number'] }}
+
+@endforeach
+@endif
 
 @if ($addOns->isNotEmpty())
 {{ strtoupper(__('booking.add_ons')) }}
@@ -45,7 +56,7 @@ Tinggal Jalan
 @endif
 
 {{ strtoupper(__('booking.what_next')) }}
-{{ __('booking.invoice_next', ['provider' => $paymentSettings->publicLabel()]) }}
+{{ __('booking.invoice_next', ['provider' => $paymentSettings->publicLabel($payment->provider)]) }}
 
 {{ __('booking.contact_whatsapp') }}:
 {{ $whatsappUrl }}

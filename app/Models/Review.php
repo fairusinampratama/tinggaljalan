@@ -12,7 +12,7 @@ class Review extends Model
 {
     use HasTravelScopes;
 
-    public const MAX_ACTIVE_FEATURED = 3;
+    public const MAX_ACTIVE_FEATURED = 6;
 
     protected static function booted(): void
     {
@@ -23,7 +23,7 @@ class Review extends Model
                 ->when($review->exists, fn ($query) => $query->whereKeyNot($review->getKey()))
                 ->count() >= self::MAX_ACTIVE_FEATURED) {
                 throw ValidationException::withMessages([
-                    'is_featured' => 'Only three active reviews can be featured. Unfeature another review first.',
+                    'is_featured' => 'Only six active reviews can be featured. Unfeature another review first.',
                 ]);
             }
         });

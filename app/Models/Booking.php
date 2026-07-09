@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['booking_code', 'tour_package_id', 'destination_id', 'name', 'email', 'whatsapp', 'whatsapp_country', 'communication_language', 'travel_date', 'pax', 'pickup', 'traveler_type', 'currency', 'selected_add_ons', 'voucher_code', 'subtotal', 'discount_total', 'total', 'payment_gateway', 'notes', 'status', 'confirmed_at', 'cancelled_at', 'completed_at'])]
+#[Fillable(['booking_code', 'tour_package_id', 'destination_id', 'name', 'email', 'whatsapp', 'whatsapp_country', 'communication_language', 'travel_date', 'pax', 'pickup', 'traveler_type', 'currency', 'pricing_mode', 'pricing_status', 'price_tier_id', 'tier_min_pax', 'tier_max_pax', 'unit_price', 'package_subtotal', 'quoted_at', 'selected_add_ons', 'voucher_code', 'subtotal', 'discount_total', 'total', 'payment_gateway', 'notes', 'status', 'confirmed_at', 'cancelled_at', 'completed_at'])]
 class Booking extends Model
 {
     protected function casts(): array
@@ -16,6 +16,13 @@ class Booking extends Model
         return [
             'travel_date' => 'date',
             'pax' => 'integer',
+            'pricing_mode' => 'string',
+            'pricing_status' => 'string',
+            'tier_min_pax' => 'integer',
+            'tier_max_pax' => 'integer',
+            'unit_price' => 'integer',
+            'package_subtotal' => 'integer',
+            'quoted_at' => 'datetime',
             'selected_add_ons' => 'array',
             'subtotal' => 'integer',
             'discount_total' => 'integer',
@@ -34,6 +41,11 @@ class Booking extends Model
     public function destination(): BelongsTo
     {
         return $this->belongsTo(Destination::class);
+    }
+
+    public function priceTier(): BelongsTo
+    {
+        return $this->belongsTo(PackagePriceTier::class);
     }
 
     public function payments(): HasMany

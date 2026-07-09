@@ -16,7 +16,7 @@ export function RatingDisplay({ rating = 5, reviewCount = 0, size = 'sm', classN
           />
         ))}
       </div>
-      {reviewCount ? <span className="text-sm font-semibold text-brandMuted">({reviewCount})</span> : null}
+      {reviewCount ? <span className="text-sm font-semibold text-muted">({reviewCount})</span> : null}
     </div>
   );
 }

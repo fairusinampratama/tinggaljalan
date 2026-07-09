@@ -1,47 +1,41 @@
 # Public Theme Tokens
 
-Use these values when configuring Laravel Tailwind and public Blade layouts.
+Use these values for the public browser experience. Filament and branded email surfaces retain their dedicated themes.
 
 ## Fonts
 
-Load in the base public layout:
+Fonts are bundled through `@fontsource` packages in the Vite entries. Do not add remote Google Fonts links.
 
-```html
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+```css
+font-family: Manrope, Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif;
 ```
+
+Use DM Serif Display only for public destination, editorial, and section headings. Use Manrope for body copy, prices, navigation, forms, buttons, and the entire admin panel.
 
 ## Tailwind Theme Values
 
-```js
-fontFamily: {
-  sans: ['Plus Jakarta Sans', 'Inter', 'Arial', 'Helvetica', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  display: ['Outfit', 'Plus Jakarta Sans', 'Inter', 'Arial', 'Helvetica', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-},
-colors: {
-  brandBlue: '#ef7d58',
-  brandDark: '#201d1a',
-  brandMuted: '#6f625a',
-  brandLight: '#f7efe8',
-  brandSoft: '#efe1d5',
-  brandLine: '#dfd0c4',
-},
-boxShadow: {
-  soft: '0 14px 34px rgba(32, 29, 26, 0.08)',
-},
-```
-
-## Global CSS Defaults
-
 ```css
-body {
-  margin: 0;
-  background: #f7efe8;
-  color: #201d1a;
-  font-family: 'Plus Jakarta Sans', Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
-}
+--font-sans: Manrope, Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+--font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+
+--color-primary: #102a36;
+--color-secondary: #2f6f6d;
+--color-accent: #b99a5e;
+--color-canvas: #ffffff;
+--color-surface: #ffffff;
+--color-ink: #172126;
+--color-muted: #667277;
+--color-line: #e3e8e6;
+--color-subtle: #f5f7f6;
+--shadow-soft: 0 10px 30px rgba(16, 42, 54, 0.07);
 ```
 
-Keep WhatsApp-specific actions green instead of converting them to the terracotta accent.
+## Usage
 
+- Navy is the primary action and high-emphasis surface color.
+- Teal is reserved for links, active navigation, and secondary emphasis.
+- Gold is a restrained accent for eyebrows, ratings, dividers, and premium details.
+- Pure white forms the page and primary card surfaces; subtle gray-green is reserved for controls and occasional grouping.
+- Keep WhatsApp actions green and preserve semantic success, warning, danger, and validation colors.
+- Transactional emails use Arial/Helvetica fallbacks while sharing the luxury palette.

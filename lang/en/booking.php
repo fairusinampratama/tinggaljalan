@@ -19,7 +19,7 @@ return [
  'booking_secured' => 'Your booking is secured. Our team will prepare your pickup and trip details.',
  'invoice_label'=>'Travel invoice and secure payment request','receipt_label'=>'Payment receipt','button_fallback'=>'If the button does not work, copy and paste this link into your browser:','voucher'=>'Voucher','discount'=>'Discount','add_ons'=>'Add-ons','charge_label'=>':provider IDR charge','usd_explanation'=>'Your original quote stays in USD. :provider processes the final charge in IDR using the exchange rate above. Your bank may apply its own conversion rate.','idr_explanation'=>':provider processes this payment in IDR. Your bank may apply its own conversion rate.','support_question'=>'Need help or want to confirm details?','payment_reference'=>'Payment reference: :reference','secure_link_note'=>'This email only links to your secure payment page. It does not contain sensitive payment credentials.','thank_you'=>'Thank you,','view_status'=>'View live payment status','contact_support'=>'Contact WhatsApp support','preheader_invoice'=>'Your Tinggal Jalan booking is confirmed. Complete payment securely with :provider.','preheader_receipt'=>'Your Tinggal Jalan payment has been received.',
  'amount_to_pay'=>'Amount to pay','midtrans_charge'=>'Midtrans charge (IDR)','rate_used'=>'Rate used',
- 'confirmation_help'=>'Hello Tinggal Jalan, I would like to confirm my booking:','total'=>'Total',
+ 'confirmation_help'=>'Hello Tinggal Jalan, I would like to confirm my booking:','total'=>'Total','to_be_confirmed'=>'To be confirmed',
  'pay_before'=>'Pay before',
  'payment_page' => [
   'checking'=>'Checking payment status automatically...',
@@ -41,5 +41,6 @@ return [
   'pending_headline'=>'Booking confirmed, payment required','pending_body'=>'Your requested trip is available. Complete payment securely with :provider to lock in your booking.',
   'preparing_headline'=>'Payment link is being prepared','preparing_body'=>'This booking is confirmed, but the payment link is not ready. Please contact our team so we can resend a working link.',
   'request_sent'=>'Request sent','availability_confirmed'=>'Availability confirmed','payment'=>'Payment','trip_confirmed'=>'Booking secured',
+  'bank_accounts'=>'Bank Accounts','account_name'=>'Account Name','account_number'=>'Account Number','manual_pending_body'=>'Please transfer the exact amount below to our bank account.',
  ],
 ];

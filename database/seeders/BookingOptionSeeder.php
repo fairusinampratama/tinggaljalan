@@ -43,7 +43,9 @@ class BookingOptionSeeder extends Seeder
                     'status' => $rule['status'],
                 ],
                 [
+                    'end_date' => $rule['date'],
                     'seats_left' => $rule['seatsLeft'] ?? null,
+                    'end_date' => $rule['date'],
                     'reason' => $rule['reason'] ?? null,
                 ],
             );

@@ -5,14 +5,15 @@ namespace App\Support;
 use App\Models\ArticleCategory;
 use App\Models\Destination;
 use App\Models\Faq;
+use App\Models\HeroSlide;
 use App\Models\NewsArticle;
-use App\Models\PackageAvailability;
 use App\Models\PackageAddOn;
+use App\Models\PackageAvailability;
 use App\Models\PlatformLink;
 use App\Models\Review;
+use App\Models\SiteSetting;
 use App\Models\TourPackage;
 use App\Models\TrustStat;
-use App\Models\SiteSetting;
 use App\Models\WhyChooseItem;
 use App\Payments\PaymentSettingsService;
 use Illuminate\Http\Request;
@@ -87,12 +88,12 @@ class InertiaPublicData
         ];
 
         // Generate tel and mailto links automatically
-        if (!empty($site->contact_email)) {
-            $contact['email_url'] = 'mailto:' . $site->contact_email;
+        if (! empty($site->contact_email)) {
+            $contact['email_url'] = 'mailto:'.$site->contact_email;
         }
-        if (!empty($site->whatsapp_number)) {
+        if (! empty($site->whatsapp_number)) {
             $number = preg_replace('/\D+/', '', $site->whatsapp_number);
-            $contact['whatsapp_url'] = 'tel:+' . $number;
+            $contact['whatsapp_url'] = 'tel:+'.$number;
         }
 
         return [
@@ -106,7 +107,29 @@ class InertiaPublicData
 
     public static function home(): array
     {
+        $site = SiteSetting::query()->first();
+
         return [
+            'heroSettings' => [
+                'autoplayEnabled' => (bool) ($site?->hero_autoplay_enabled ?? false),
+                'autoplayInterval' => min(15000, max(5000, (int) ($site?->hero_autoplay_interval ?? 8000))),
+            ],
+            'heroSlides' => HeroSlide::query()->activeScheduled()->ordered()->limit(5)->get()->map(fn ($slide) => [
+                'id' => $slide->id,
+                'desktopImage' => self::assetPath($slide->desktop_image),
+                'mobileImage' => self::assetPath($slide->mobile_image ?? $slide->desktop_image),
+                'imageAlt' => self::localizedArray($slide->image_alt),
+                'eyebrow' => self::localizedArray($slide->eyebrow),
+                'heading' => self::localizedArray($slide->heading),
+                'description' => self::localizedArray($slide->description),
+                'primaryCtaLabel' => self::localizedArray($slide->primary_cta_label),
+                'primaryCtaUrl' => $slide->primary_cta_url,
+                'secondaryCtaLabel' => self::localizedArray($slide->secondary_cta_label),
+                'secondaryCtaUrl' => $slide->secondary_cta_url,
+                'textAlignment' => $slide->text_alignment,
+                'focalPosition' => $slide->focal_position,
+                'overlayStrength' => $slide->overlay_strength,
+            ])->values()->all(),
             'whyChooseItems' => WhyChooseItem::query()->active()->ordered()->limit(3)->get()->map(fn ($item) => [
                 'title' => self::localizedArray($item->title ?? []),
                 'text' => self::localizedArray($item->text ?? []),
@@ -123,7 +146,6 @@ class InertiaPublicData
             'paxMax' => (int) config('booking.maximum_guests'),
             'largeGroupThreshold' => (int) config('booking.large_group_threshold'),
             'travelerTypeOptions' => self::settingListConfig('booking.traveler_type_options'),
-            'currencyOptions' => config('booking.currency_options', ['IDR', 'USD']),
             'initialBooking' => PublicSite::bookingDraft($request),
         ];
     }
@@ -137,9 +159,7 @@ class InertiaPublicData
             'region' => $destination->region ?? $destination->province,
             'province' => $destination->province,
             'copy' => self::localizedArray($destination->short_description),
-            'description' => self::localizedArray($destination->description),
             'image' => self::assetPath($destination->cover_image),
-            'gallery' => collect($destination->gallery ?? [])->map(fn ($path) => self::assetPath($path))->values()->all(),
         ];
     }
 
@@ -157,6 +177,7 @@ class InertiaPublicData
             ];
         })->values()->all();
 
+        $pricingResolver = app(TierPricingResolver::class);
         $priceNote = self::localizedArray($package->price_note ?: [
             'id' => 'Harga masih estimasi sampai jadwal dan kebutuhan grup dikonfirmasi.',
             'us' => 'Estimated price until schedule and group needs are confirmed.',
@@ -182,9 +203,19 @@ class InertiaPublicData
             'bestFor' => self::localizedArray($package->best_for ?? $package->excerpt),
             'duration' => $package->duration,
             'difficulty' => PublicSite::localized($package->difficulty, 'us', 'Easy'),
-            'basePrice' => $package->base_price_idr,
-            'basePriceIdr' => $package->base_price_idr,
-            'basePriceUsd' => $package->base_price_usd,
+            'basePrice' => $pricingResolver->startingPrice($package, 'IDR'),
+            'basePriceIdr' => $pricingResolver->startingPrice($package, 'IDR'),
+            'basePriceUsd' => $pricingResolver->startingPrice($package, 'USD'),
+            'pricing' => [
+                'mode' => $package->pricing_mode ?? 'flat',
+                'tiers' => $package->priceTiers()->get()->map(fn ($tier) => [
+                    'id' => $tier->id,
+                    'minPax' => $tier->min_pax,
+                    'maxPax' => $tier->max_pax,
+                    'priceIdr' => $tier->price_idr,
+                    'priceUsd' => $tier->price_usd,
+                ])->values()->all(),
+            ],
             'priceNote' => $priceNote,
             'image' => self::assetPath($package->cover_image),
             'imageAlt' => self::localizedArray($package->cover_alt),
@@ -216,8 +247,8 @@ class InertiaPublicData
                 'id' => $package->slug,
                 'title' => self::localizedArray($package->title),
                 'description' => self::localizedArray($package->intro ?? $package->excerpt),
-                'basePriceIdr' => $package->base_price_idr,
-                'basePriceUsd' => $package->base_price_usd,
+                'basePriceIdr' => $pricingResolver->startingPrice($package, 'IDR'),
+                'basePriceUsd' => $pricingResolver->startingPrice($package, 'USD'),
                 'pickupLabel' => self::localizedArray($package->pickup_label),
                 'groupType' => self::localizedArray($package->group_type),
             ]],
@@ -228,6 +259,7 @@ class InertiaPublicData
             'featured' => (bool) $package->is_featured,
             'relatedArticleSlugs' => $package->newsArticles->pluck('slug')->values()->all(),
             'availabilityByDate' => self::availabilityByDate($package),
+            'availabilityRules' => self::availabilityRules($package),
         ];
     }
 
@@ -251,12 +283,9 @@ class InertiaPublicData
             'readingTime' => self::localizedArray($article->reading_time),
             'coverImage' => self::assetPath($article->cover_image),
             'coverAlt' => self::localizedArray($article->cover_alt),
-            'tags' => $article->tags ?? [],
+            'tags' => self::articleTags($article->tags),
             'seo' => self::localizedObject($article->seo),
-            'sections' => collect($article->sections ?? [])->map(fn ($section) => [
-                'heading' => self::localizedArray($section['heading'] ?? []),
-                'body' => self::localizedArray($section['body'] ?? []),
-            ])->values()->all(),
+            'sections' => self::articleSections($article->sections),
             'relatedRouteIds' => $article->tourPackages->pluck('slug')->values()->all(),
             'isFeatured' => (bool) $article->is_featured,
             'publishedTime' => optional($article->published_at)->toIso8601String(),
@@ -293,7 +322,7 @@ class InertiaPublicData
                 'pax' => (int) ($draft['pax'] ?? 2),
                 'pickup' => $draft['pickup'] ?? '',
                 'travelerType' => $draft['traveler_type'] ?? $draft['travelerType'] ?? 'international',
-                'currency' => $draft['currency'] ?? 'USD',
+                'currency' => PublicSite::bookingCurrency($draft['traveler_type'] ?? $draft['travelerType'] ?? null),
                 'addOns' => $draft['add_ons'] ?? $draft['addOns'] ?? [],
                 'name' => $draft['name'] ?? '',
                 'email' => $draft['email'] ?? '',
@@ -307,6 +336,13 @@ class InertiaPublicData
                 'pax' => $summary['pax'],
                 'base' => $summary['base'],
                 'basePrice' => $summary['base'],
+                'pricingStatus' => $summary['pricing_status'],
+                'pricingMode' => $summary['pricing_mode'],
+                'unitPrice' => $summary['unit_price'],
+                'packageSubtotal' => $summary['package_subtotal'],
+                'selectedTier' => $summary['selected_tier'],
+                'savingsPerPerson' => $summary['savings_per_person'],
+                'quoteRequired' => $summary['quote_required'],
                 'subtotal' => $summary['subtotal'],
                 'discount' => $summary['discount'],
                 'total' => $summary['total'],
@@ -372,6 +408,23 @@ class InertiaPublicData
             ->all();
     }
 
+    private static function availabilityRules(TourPackage $package): array
+    {
+        return app(PackageAvailabilityResolver::class)
+            ->rules($package)
+            ->map(fn (PackageAvailability $availability) => [
+                'scope' => $availability->tour_package_id ? 'package' : 'destination',
+                'startDate' => $availability->date->toDateString(),
+                'endDate' => $availability->end_date?->toDateString(),
+                'openEnded' => (bool) $availability->is_open_ended,
+                'status' => $availability->status,
+                'seatsLeft' => $availability->seats_left,
+                'reason' => $availability->reason,
+            ])
+            ->values()
+            ->all();
+    }
+
     private static function availabilityPayload(array $availability, ?int $pax = null): array
     {
         return [
@@ -383,6 +436,74 @@ class InertiaPublicData
                 && filled($pax)
                 && $pax > (int) ($availability['seats_left'] ?? $availability['seatsLeft']),
         ];
+    }
+
+    private static function articleTags(mixed $tags): array
+    {
+        if (! is_array($tags)) {
+            return [];
+        }
+
+        return collect($tags)
+            ->map(function ($tag) {
+                if (is_array($tag)) {
+                    return self::localizedArray($tag);
+                }
+
+                $value = trim((string) $tag);
+
+                return [
+                    'id' => $value,
+                    'us' => $value,
+                    'cn' => $value,
+                ];
+            })
+            ->filter(fn ($tag): bool => filled($tag['us'] ?? null) || filled($tag['id'] ?? null) || filled($tag['cn'] ?? null))
+            ->values()
+            ->all();
+    }
+
+    private static function articleSections(mixed $sections): array
+    {
+        if (! is_array($sections)) {
+            return [];
+        }
+
+        return collect($sections)
+            ->map(function ($section, int $index): ?array {
+                if (! is_array($section)) {
+                    return null;
+                }
+
+                $heading = self::localizedPlainArray($section['heading'] ?? $section['title'] ?? []);
+                $body = self::localizedPlainArray($section['body'] ?? $section['content'] ?? $section['text'] ?? []);
+
+                if (! filled($heading['us'] ?? null) && filled($body['us'] ?? null)) {
+                    $heading = self::localizedPlainArray(['us' => 'Section '.($index + 1)]);
+                }
+
+                return [
+                    'heading' => $heading,
+                    'body' => $body,
+                ];
+            })
+            ->filter(fn (?array $section): bool => is_array($section)
+                && (filled($section['heading']['us'] ?? null) || filled($section['body']['us'] ?? null)))
+            ->values()
+            ->all();
+    }
+
+    private static function localizedPlainArray(mixed $value): array
+    {
+        $localized = self::localizedArray($value);
+
+        if (! is_array($localized)) {
+            $localized = self::localizedArray(['us' => $localized]);
+        }
+
+        return collect($localized)
+            ->map(fn ($item): string => trim(strip_tags((string) $item)))
+            ->all();
     }
 
     private static function localizedArray(mixed $value): array|string|null

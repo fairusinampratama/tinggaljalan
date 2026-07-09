@@ -1,6 +1,6 @@
 import { useBooking } from '../../context/BookingContext';
 
-const stepHoverClass = 'transition duration-300 hover:border-brandBlue/20';
+const stepHoverClass = 'transition duration-300 hover:border-secondary/20';
 
 export function CheckoutSteps({ current }) {
   const { t } = useBooking();
@@ -16,7 +16,7 @@ export function CheckoutSteps({ current }) {
         <div
           key={step.path}
           className={`rounded-xl border px-4 py-3 text-sm font-bold ${stepHoverClass} ${
-            index <= current ? 'border-brandBlue bg-brandBlue text-brandDark' : 'border-brandLine bg-white text-brandMuted'
+            index <= current ? 'border-secondary bg-secondary text-white' : 'border-line bg-surface text-muted'
           }`}
         >
           {index + 1}. {step.label}

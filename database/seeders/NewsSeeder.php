@@ -48,14 +48,14 @@ class NewsSeeder extends Seeder
                     'excerpt' => $this->localized($articleData['excerpt']),
                     'cover_image' => $articleData['coverImage'] ?? null,
                     'cover_alt' => $this->localized($articleData['coverAlt'] ?? null),
-                    'tags' => $articleData['tags'] ?? [],
-                    'sections' => $articleData['sections'] ?? [],
+                    'tags' => $this->localizedTags($articleData['tags'] ?? []),
+                    'sections' => $this->localizedSections($articleData['sections'] ?? []),
                     'reading_time' => $this->localized($articleData['readingTime'] ?? null),
                     'published_at' => $articleData['publishedDate'] ?? null,
                     'content_updated_at' => $articleData['updatedDate'] ?? null,
                     'status' => 'published',
                     'is_featured' => $index === 0,
-                    'seo' => $articleData['seo'] ?? null,
+                    'seo' => $this->localizedSeo($articleData['seo'] ?? null),
                 ],
             );
 
@@ -66,5 +66,59 @@ class NewsSeeder extends Seeder
 
             $article->tourPackages()->sync($relatedPackageIds);
         }
+    }
+
+    private function localizedTags(mixed $tags): array
+    {
+        if (! is_array($tags)) {
+            return [];
+        }
+
+        return collect($tags)
+            ->map(fn ($tag) => $this->localized($tag))
+            ->filter(fn ($tag): bool => filled($tag['us'] ?? null) || filled($tag['id'] ?? null) || filled($tag['cn'] ?? null))
+            ->values()
+            ->all();
+    }
+
+    private function localizedSections(mixed $sections): array
+    {
+        if (! is_array($sections)) {
+            return [];
+        }
+
+        return collect($sections)
+            ->map(function ($section, int $index): ?array {
+                if (! is_array($section)) {
+                    return null;
+                }
+
+                $heading = $this->localized($section['heading'] ?? $section['title'] ?? ['us' => 'Section '.($index + 1)]);
+                $body = $this->localized($section['body'] ?? $section['content'] ?? $section['text'] ?? null);
+
+                if (! $body || (! filled($body['us'] ?? null) && ! filled($body['id'] ?? null) && ! filled($body['cn'] ?? null))) {
+                    return null;
+                }
+
+                return [
+                    'heading' => $heading,
+                    'body' => $body,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function localizedSeo(mixed $seo): ?array
+    {
+        if (! is_array($seo)) {
+            return null;
+        }
+
+        return [
+            'title' => $this->localized($seo['title'] ?? null),
+            'description' => $this->localized($seo['description'] ?? null),
+        ];
     }
 }

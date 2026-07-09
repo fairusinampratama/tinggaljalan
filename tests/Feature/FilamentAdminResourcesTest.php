@@ -2,26 +2,33 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Pages\SiteDetails;
 use App\Filament\Resources\Bookings\Pages\ListBookings;
+use App\Filament\Resources\HeroSlides\Pages\CreateHeroSlide;
+use App\Filament\Resources\HeroSlides\Pages\ListHeroSlides;
 use App\Filament\Resources\ItineraryItems\ItineraryItemResource;
 use App\Filament\Resources\PackageAvailabilities\Pages\ListPackageAvailabilities;
 use App\Filament\Resources\PlatformLinks\Pages\CreatePlatformLink;
+use App\Filament\Resources\TourPackages\Pages\CreateTourPackage;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\Faq;
+use App\Models\HeroSlide;
 use App\Models\NewsArticle;
 use App\Models\PackageAvailability;
 use App\Models\PlatformLink;
 use App\Models\Review;
 use App\Models\RouteFilter;
+use App\Models\SiteSetting;
 use App\Models\TourPackage;
 use App\Models\TrustStat;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Support\PublicSite;
 use Filament\Actions\Testing\TestAction;
+use Filament\Forms\Components\FileUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +42,218 @@ class FilamentAdminResourcesTest extends TestCase
     public function test_package_owned_itinerary_items_are_hidden_from_navigation(): void
     {
         $this->assertFalse(ItineraryItemResource::shouldRegisterNavigation());
+    }
+
+    public function test_tour_package_gallery_enforces_two_to_ten_images_when_used(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $this->actingAs($admin);
+
+        $gallery = Livewire::test(CreateTourPackage::class)
+            ->instance()
+            ->getSchema('form')
+            ?->getComponent('gallery', withHidden: true);
+
+        $this->assertInstanceOf(FileUpload::class, $gallery);
+        $this->assertSame(2, $gallery->getMinFiles());
+        $this->assertSame(10, $gallery->getMaxFiles());
+        $this->assertFalse($gallery->isRequired());
+    }
+
+    public function test_hero_slide_allows_image_only_content_with_required_alt_text(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+
+        $this->actingAs($admin);
+        Livewire::test(CreateHeroSlide::class)
+            ->set('data.admin_label', 'Image-only promotion')
+            ->set('data.desktop_image', [UploadedFile::fake()->create('hero.jpg', 20, 'image/jpeg')])
+            ->set('data.image_alt.us', 'Promotional Bromo landscape')
+            ->set('data.text_alignment', 'left')
+            ->set('data.focal_position', 'center')
+            ->set('data.overlay_strength', 0)
+            ->set('data.sort_order', 1)
+            ->set('data.is_active', true)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $slide = HeroSlide::query()->firstOrFail();
+        $this->assertSame(['us' => null, 'id' => null, 'cn' => null], $slide->heading);
+        $this->assertSame(0, $slide->overlay_strength);
+        $this->assertSame('Promotional Bromo landscape', $slide->image_alt['us']);
+    }
+
+    public function test_hero_slide_rejects_invalid_content_urls_and_schedule(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+
+        $this->actingAs($admin);
+        Livewire::test(CreateHeroSlide::class)
+            ->set('data.admin_label', 'Invalid promotion')
+            ->set('data.desktop_image', [UploadedFile::fake()->create('hero.jpg', 20, 'image/jpeg')])
+            ->set('data.image_alt.us', '')
+            ->set('data.heading.us', str_repeat('H', 91))
+            ->set('data.description.us', str_repeat('D', 241))
+            ->set('data.primary_cta_preset', 'custom')
+            ->set('data.primary_cta_label.us', 'Book now')
+            ->set('data.primary_cta_url', 'javascript:alert(1)')
+            ->set('data.has_secondary_cta', true)
+            ->set('data.secondary_cta_url', '/routes')
+            ->set('data.has_schedule', true)
+            ->set('data.start_date', '2026-07-10 12:00:00')
+            ->set('data.end_date', '2026-07-09 12:00:00')
+            ->set('data.text_alignment', 'left')
+            ->set('data.focal_position', 'center')
+            ->set('data.overlay_strength', 40)
+            ->set('data.sort_order', 1)
+            ->set('data.is_active', true)
+            ->call('create')
+            ->assertHasFormErrors([
+                'image_alt.us' => 'required',
+                'heading.us' => 'max',
+                'description.us' => 'max',
+                'primary_cta_url' => 'regex',
+                'secondary_cta_label.us' => 'required',
+                'end_date' => 'after_or_equal',
+            ]);
+    }
+
+    public function test_hero_slide_quick_preset_assigns_url_translations_and_next_order(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        HeroSlide::create([
+            'admin_label' => 'Existing',
+            'desktop_image' => 'admin/hero/existing.jpg',
+            'image_alt' => ['us' => 'Existing'],
+            'sort_order' => 40,
+            'is_active' => false,
+        ]);
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+
+        $this->actingAs($admin);
+        Livewire::test(CreateHeroSlide::class)
+            ->set('data.admin_label', 'Preset promotion')
+            ->set('data.desktop_image', [UploadedFile::fake()->create('hero.jpg', 20, 'image/jpeg')])
+            ->set('data.mobile_image', [UploadedFile::fake()->create('hero-mobile.jpg', 20, 'image/jpeg')])
+            ->set('data.image_alt.us', 'English description')
+            ->set('data.image_alt.id', 'Deskripsi Indonesia')
+            ->set('data.heading.cn', '????')
+            ->set('data.primary_cta_preset', 'routes')
+            ->set('data.text_alignment', 'left')
+            ->set('data.focal_position', 'center')
+            ->set('data.overlay_strength', 40)
+            ->set('data.is_active', true)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $slide = HeroSlide::query()->where('admin_label', 'Preset promotion')->firstOrFail();
+        $this->assertSame('/routes', $slide->primary_cta_url);
+        $this->assertSame('Explore routes', $slide->primary_cta_label['us']);
+        $this->assertSame('Deskripsi Indonesia', $slide->image_alt['id']);
+        $this->assertSame('????', $slide->heading['cn']);
+        $this->assertSame(50, $slide->sort_order);
+        $this->assertNotNull($slide->mobile_image);
+    }
+
+    public function test_hero_slide_preview_warns_when_copy_has_no_overlay(): void
+    {
+        Storage::fake('public');
+        $this->seed();
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+
+        $this->actingAs($admin);
+        Livewire::test(CreateHeroSlide::class)
+            ->set('data.admin_label', 'Preview promotion')
+            ->set('data.heading.us', 'Readable heading')
+            ->set('data.overlay_strength', 0)
+            ->assertSee('Text readability may be weak with no overlay');
+    }
+
+    public function test_hero_slide_duplicate_is_inactive_unscheduled_and_ordered_last(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $slide = HeroSlide::create([
+            'admin_label' => 'Summer promotion',
+            'desktop_image' => 'admin/hero/summer.jpg',
+            'image_alt' => ['us' => 'Summer'],
+            'heading' => ['us' => 'Summer'],
+            'sort_order' => 20,
+            'is_active' => true,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addDay(),
+        ]);
+
+        $this->actingAs($admin);
+        Livewire::test(ListHeroSlides::class)
+            ->callTableAction('replicate', $slide)
+            ->assertHasNoTableActionErrors();
+
+        $copy = HeroSlide::query()->whereKeyNot($slide->getKey())->firstOrFail();
+        $this->assertSame('Summer promotion - Copy', $copy->admin_label);
+        $this->assertFalse($copy->is_active);
+        $this->assertNull($copy->start_date);
+        $this->assertNull($copy->end_date);
+        $this->assertGreaterThan($slide->sort_order, $copy->sort_order);
+    }
+
+    public function test_hero_slide_listing_supports_legacy_labels_statuses_and_limit_warning(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+
+        foreach (range(1, 6) as $index) {
+            HeroSlide::create([
+                'admin_label' => $index === 1 ? null : "Promotion {$index}",
+                'desktop_image' => "admin/hero/{$index}.jpg",
+                'image_alt' => ['us' => "Slide {$index}"],
+                'heading' => ['us' => "Legacy heading {$index}"],
+                'focal_position' => $index === 1 ? 'top' : 'center',
+                'sort_order' => $index,
+                'is_active' => true,
+            ]);
+        }
+
+        $legacy = HeroSlide::query()->orderBy('id')->firstOrFail();
+        $this->assertSame('Legacy heading 1', $legacy->displayLabel());
+        $this->assertSame('Active', $legacy->publicationStatus());
+
+        $this->actingAs($admin)
+            ->get("/admin/hero-slides/{$legacy->getKey()}/edit")
+            ->assertOk();
+
+        Livewire::test(ListHeroSlides::class)
+            ->assertSee('Only the first five in this order appear publicly.');
+    }
+
+    public function test_site_details_validates_and_persists_hero_autoplay_settings(): void
+    {
+        $this->seed();
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $this->actingAs($admin);
+
+        Livewire::test(SiteDetails::class)
+            ->set('data.hero_autoplay_enabled', true)
+            ->set('data.hero_autoplay_interval', 4000)
+            ->call('save')
+            ->assertHasFormErrors(['hero_autoplay_interval' => 'min']);
+
+        Livewire::test(SiteDetails::class)
+            ->set('data.hero_autoplay_enabled', true)
+            ->set('data.hero_autoplay_interval', 9000)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $settings = SiteSetting::query()->firstOrFail();
+        $this->assertTrue($settings->hero_autoplay_enabled);
+        $this->assertSame(9000, $settings->hero_autoplay_interval);
     }
 
     public function test_availability_rules_have_row_and_bulk_delete_actions(): void
@@ -130,6 +349,7 @@ class FilamentAdminResourcesTest extends TestCase
         $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
 
         foreach ([
+            '/admin/hero-slides',
             '/admin/destinations',
             '/admin/route-filters',
             '/admin/tour-packages',
@@ -202,6 +422,7 @@ class FilamentAdminResourcesTest extends TestCase
         ]);
 
         foreach ([
+            '/admin/hero-slides/create',
             '/admin/destinations/create',
             "/admin/destinations/{$destination->getKey()}/edit",
             '/admin/route-filters/create',

@@ -15,7 +15,7 @@ class PaymentSettingsTable
         return $table
             ->columns([
                 TextColumn::make('gateway')->badge()->searchable(),
-                IconColumn::make('is_enabled')->boolean()->label('Enabled'),
+                \Filament\Tables\Columns\ToggleColumn::make('is_enabled')->label('Enabled'),
                 TextColumn::make('mode')->badge(),
                 TextColumn::make('public_label')->label('Public label')->wrap(),
                 TextColumn::make('exchange_rate_buffer_percent')->label('FX buffer %'),

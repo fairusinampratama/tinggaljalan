@@ -442,6 +442,27 @@
         "us": "Best Seller"
       },
       "duration": "1 Day",
+      "pricingMode": "tiered",
+      "priceTiers": [
+        {
+          "minPax": 1,
+          "maxPax": 2,
+          "priceIdr": 750000,
+          "priceUsd": 50
+        },
+        {
+          "minPax": 3,
+          "maxPax": 4,
+          "priceIdr": 500000,
+          "priceUsd": 35
+        },
+        {
+          "minPax": 5,
+          "maxPax": 6,
+          "priceIdr": 350000,
+          "priceUsd": 25
+        }
+      ],
       "basePrice": 350000,
       "intro": {
         "id": "Rute sunrise Bromo klasik dengan jeep, Lautan Pasir, dan area kawah untuk first timer.",
@@ -6320,28 +6341,32 @@
       "value": "panduan",
       "label": {
         "id": "Panduan",
-        "us": "Guide"
+        "us": "Guide",
+        "cn": "指南"
       }
     },
     {
       "value": "tips",
       "label": {
         "id": "Tips",
-        "us": "Tips"
+        "us": "Tips",
+        "cn": "贴士"
       }
     },
     {
       "value": "itinerary",
       "label": {
         "id": "Itinerary",
-        "us": "Itinerary"
+        "us": "Itinerary",
+        "cn": "行程"
       }
     },
     {
       "value": "kabar",
       "label": {
         "id": "Kabar",
-        "us": "News"
+        "us": "News",
+        "cn": "动态"
       }
     }
   ],
@@ -6350,11 +6375,13 @@
       "slug": "paket-wisata-bromo-dari-malang",
       "title": {
         "id": "Paket Wisata Bromo dari Malang: Rute, Harga, dan Tips Booking",
-        "us": "Bromo Tour Package from Malang: Route, Price, and Booking Tips"
+        "us": "Bromo Tour Package from Malang: Route, Price, and Booking Tips",
+        "cn": "Malang 出发的 Bromo 私人团：路线、价格和预订建议"
       },
       "excerpt": {
         "id": "Panduan singkat untuk memilih paket Bromo dari Malang, mulai dari jam pickup, rute jeep, sampai hal yang perlu dikonfirmasi sebelum bayar.",
-        "us": "A practical guide to choosing a Bromo package from Malang, from pickup timing and jeep routes to what to confirm before payment."
+        "us": "A practical guide to choosing a Bromo package from Malang, from pickup timing and jeep routes to what to confirm before payment.",
+        "cn": "适合首次前往 Bromo 的旅客：从 Malang 接送，看日出、坐 jeep，并了解预订前需要确认的要点。"
       },
       "category": "panduan",
       "destinationId": "bromo",
@@ -6362,18 +6389,36 @@
       "updatedDate": "2026-06-14",
       "readingTime": {
         "id": "5 menit baca",
-        "us": "5 min read"
+        "us": "5 min read",
+        "cn": "5 分钟阅读"
       },
       "coverImage": "/images/routes/bromo-jeep.jpg",
       "coverAlt": {
         "id": "Jeep di area Bromo saat perjalanan sunrise",
-        "us": "Jeep in the Bromo area during a sunrise trip"
+        "us": "Jeep in the Bromo area during a sunrise trip",
+        "cn": "Bromo 日出和火山景观"
       },
       "tags": [
-        "Bromo",
-        "Malang",
-        "Sunrise",
-        "Private Trip"
+        {
+          "us": "Bromo",
+          "id": "Bromo",
+          "cn": "Bromo"
+        },
+        {
+          "us": "Malang",
+          "id": "Malang",
+          "cn": "Malang"
+        },
+        {
+          "us": "Sunrise",
+          "id": "Sunrise",
+          "cn": "日出"
+        },
+        {
+          "us": "Private Trip",
+          "id": "Private Trip",
+          "cn": "私人团"
+        }
       ],
       "relatedRouteIds": [
         "bromo-sunrise",
@@ -6383,42 +6428,50 @@
       "seo": {
         "title": {
           "id": "Paket Wisata Bromo dari Malang | Harga & Itinerary | Tinggal Jalan",
-          "us": "Bromo Tour Package from Malang | Price & Itinerary | Tinggal Jalan"
+          "us": "Bromo Tour Package from Malang | Price & Itinerary | Tinggal Jalan",
+          "cn": "Malang 出发 Bromo 旅行团 | Tinggal Jalan"
         },
         "description": {
           "id": "Cari paket wisata Bromo dari Malang? Pelajari rute, estimasi harga, jam pickup, fasilitas, dan tips booking private trip Bromo.",
-          "us": "Looking for a Bromo tour package from Malang? Learn routes, price estimates, pickup timing, inclusions, and private trip booking tips."
+          "us": "Looking for a Bromo tour package from Malang? Learn routes, price estimates, pickup timing, inclusions, and private trip booking tips.",
+          "cn": "了解从 Malang 前往 Bromo 的路线、价格、接送和预订建议。"
         }
       },
       "sections": [
         {
           "heading": {
             "id": "Kenapa mulai dari Malang?",
-            "us": "Why start from Malang?"
+            "us": "Why start from Malang?",
+            "cn": "为什么从 Malang 出发？"
           },
           "body": {
             "id": "Malang sering jadi titik mulai yang nyaman karena jaraknya lebih dekat ke area Bromo dibanding banyak kota besar lain. Untuk sunrise, pickup biasanya dilakukan tengah malam agar masih ada waktu transfer ke jeep dan viewpoint.",
-            "us": "Malang is often a comfortable starting point because it is closer to the Bromo area than many larger cities. For sunrise trips, pickup usually happens around midnight so there is enough time for the jeep transfer and viewpoint stop."
+            "us": "Malang is often a comfortable starting point because it is closer to the Bromo area than many larger cities. For sunrise trips, pickup usually happens around midnight so there is enough time for the jeep transfer and viewpoint stop.",
+            "cn": "Malang 距离 Bromo 路线较顺，适合清晨看日出。私人团可以更好安排接送时间、jeep 和导游节奏。"
           }
         },
         {
           "heading": {
             "id": "Apa yang perlu dicek sebelum booking?",
-            "us": "What should you check before booking?"
+            "us": "What should you check before booking?",
+            "cn": "预订前需要确认什么？"
           },
           "body": {
             "id": "Pastikan titik pickup, tipe jeep, estimasi tiket masuk, durasi stop, dan apakah harga sudah termasuk dokumentasi dasar. Untuk grup keluarga, tanyakan juga opsi rute yang minim jalan kaki.",
-            "us": "Confirm the pickup point, jeep type, entrance ticket estimate, stop duration, and whether basic documentation is included. For family groups, also ask for a route with less walking."
+            "us": "Confirm the pickup point, jeep type, entrance ticket estimate, stop duration, and whether basic documentation is included. For family groups, also ask for a route with less walking.",
+            "cn": "建议先确认接送地点、行程包含项、门票、人数价格和支付方式。这样到出发当天会更安心。"
           }
         },
         {
           "heading": {
             "id": "Kapan rute ini cocok?",
-            "us": "When is this route a good fit?"
+            "us": "When is this route a good fit?",
+            "cn": "这条路线适合谁？"
           },
           "body": {
             "id": "Rute Bromo dari Malang cocok untuk first timer, traveler yang ingin sunrise klasik, dan grup yang butuh jadwal ringkas. Jika ingin perjalanan lebih santai, pilih paket private agar stop bisa disesuaikan.",
-            "us": "A Bromo route from Malang works well for first timers, travelers chasing the classic sunrise, and groups needing a compact schedule. Choose a private package if you want the stops to stay flexible."
+            "us": "A Bromo route from Malang works well for first timers, travelers chasing the classic sunrise, and groups needing a compact schedule. Choose a private package if you want the stops to stay flexible.",
+            "cn": "如果你想看经典日出、希望有明确接送和较轻松的节奏，这个行程很合适。"
           }
         }
       ]
@@ -6427,11 +6480,13 @@
       "slug": "tips-ke-tumpak-sewu-untuk-pemula",
       "title": {
         "id": "Tips ke Tumpak Sewu untuk Pemula: Trek, Waktu Terbaik, dan Persiapan",
-        "us": "Tumpak Sewu Tips for First Timers: Trek, Best Time, and Preparation"
+        "us": "Tumpak Sewu Tips for First Timers: Trek, Best Time, and Preparation",
+        "cn": "Tumpak Sewu 初次旅行指南：徒步、时间和准备"
       },
       "excerpt": {
         "id": "Tumpak Sewu indah, tapi aksesnya perlu persiapan. Ini hal yang perlu diketahui sebelum memilih rute panorama atau lower trek.",
-        "us": "Tumpak Sewu is beautiful, but access needs preparation. Here is what to know before choosing the panorama route or lower trek."
+        "us": "Tumpak Sewu is beautiful, but access needs preparation. Here is what to know before choosing the panorama route or lower trek.",
+        "cn": "Tumpak Sewu 非常壮观，但需要合适的鞋子、节奏和安全安排。这份指南帮你更顺利准备。"
       },
       "category": "tips",
       "destinationId": "tumpak-sewu",
@@ -6439,18 +6494,36 @@
       "updatedDate": "2026-06-13",
       "readingTime": {
         "id": "4 menit baca",
-        "us": "4 min read"
+        "us": "4 min read",
+        "cn": "4 分钟阅读"
       },
       "coverImage": "/images/routes/tumpak-sewu.jpg",
       "coverAlt": {
         "id": "Panorama Air Terjun Tumpak Sewu",
-        "us": "Tumpak Sewu waterfall panorama"
+        "us": "Tumpak Sewu waterfall panorama",
+        "cn": "Tumpak Sewu 瀑布和绿色峡谷"
       },
       "tags": [
-        "Tumpak Sewu",
-        "Waterfall",
-        "Trekking",
-        "East Java"
+        {
+          "us": "Tumpak Sewu",
+          "id": "Tumpak Sewu",
+          "cn": "Tumpak Sewu"
+        },
+        {
+          "us": "Waterfall",
+          "id": "Waterfall",
+          "cn": "瀑布"
+        },
+        {
+          "us": "Trekking",
+          "id": "Trekking",
+          "cn": "徒步"
+        },
+        {
+          "us": "East Java",
+          "id": "East Java",
+          "cn": "东爪哇"
+        }
       ],
       "relatedRouteIds": [
         "tumpak-sewu-daytrip",
@@ -6460,42 +6533,50 @@
       "seo": {
         "title": {
           "id": "Tips ke Tumpak Sewu untuk Pemula | Tinggal Jalan",
-          "us": "Tumpak Sewu Tips for First Timers | Tinggal Jalan"
+          "us": "Tumpak Sewu Tips for First Timers | Tinggal Jalan",
+          "cn": "Tumpak Sewu 初次旅行攻略 | Tinggal Jalan"
         },
         "description": {
           "id": "Panduan Tumpak Sewu untuk pemula: pilihan rute, persiapan trekking, waktu terbaik, dan tips memilih private trip air terjun.",
-          "us": "A first-timer guide to Tumpak Sewu: route options, trekking preparation, best timing, and tips for choosing a waterfall private trip."
+          "us": "A first-timer guide to Tumpak Sewu: route options, trekking preparation, best timing, and tips for choosing a waterfall private trip.",
+          "cn": "查看 Tumpak Sewu 瀑布的徒步难度、最佳时间和准备建议。"
         }
       },
       "sections": [
         {
           "heading": {
             "id": "Pilih rute sesuai kondisi grup",
-            "us": "Choose the route around your group"
+            "us": "Choose the route around your group",
+            "cn": "根据团队状态选路线"
           },
           "body": {
             "id": "Tidak semua traveler perlu turun sampai area bawah air terjun. Panorama point lebih ringan, sementara lower trek memberi pengalaman lebih dekat tetapi membutuhkan tenaga, sepatu nyaman, dan kesiapan melewati jalur basah.",
-            "us": "Not every traveler needs to descend to the lower waterfall area. The panorama point is easier, while the lower trek feels more immersive but requires energy, proper shoes, and comfort with wet paths."
+            "us": "Not every traveler needs to descend to the lower waterfall area. The panorama point is easier, while the lower trek feels more immersive but requires energy, proper shoes, and comfort with wet paths.",
+            "cn": "如果有小孩或长辈，建议先讨论难度和停留时间。私人行程可以按体力调整节奏。"
           }
         },
         {
           "heading": {
             "id": "Bawa perlengkapan yang tepat",
-            "us": "Bring the right gear"
+            "us": "Bring the right gear",
+            "cn": "带上合适装备"
           },
           "body": {
             "id": "Gunakan sandal gunung atau sepatu yang grip-nya kuat, bawa dry bag kecil, dan siapkan pakaian ganti. Hindari membawa barang terlalu banyak karena beberapa jalur cukup sempit.",
-            "us": "Use trekking sandals or shoes with strong grip, bring a small dry bag, and prepare spare clothes. Avoid carrying too much because parts of the trail can be narrow."
+            "us": "Use trekking sandals or shoes with strong grip, bring a small dry bag, and prepare spare clothes. Avoid carrying too much because parts of the trail can be narrow.",
+            "cn": "防滑鞋、防水袋、替换衣物和轻便雨具都很实用。峡谷地面可能湿滑，安全比拍照更重要。"
           }
         },
         {
           "heading": {
             "id": "Kenapa private trip membantu?",
-            "us": "Why private trips help"
+            "us": "Why private trips help",
+            "cn": "为什么私人团更有帮助？"
           },
           "body": {
             "id": "Private trip membuat jam berangkat, ritme trekking, dan kombinasi stop lebih mudah disesuaikan. Ini penting bila grup punya anak, senior, atau traveler yang belum terbiasa trekking.",
-            "us": "A private trip makes departure timing, trekking pace, and stop combinations easier to adjust. This matters for groups with children, seniors, or travelers who are not used to trekking."
+            "us": "A private trip makes departure timing, trekking pace, and stop combinations easier to adjust. This matters for groups with children, seniors, or travelers who are not used to trekking.",
+            "cn": "私人团可以提前协调车辆、当地向导和发车时间，对第一次来的旅客更友好。"
           }
         }
       ]
@@ -6504,11 +6585,13 @@
       "slug": "itinerary-jogja-3-hari-2-malam",
       "title": {
         "id": "Itinerary Jogja 3 Hari 2 Malam: Heritage, Kuliner, dan Merapi",
-        "us": "Jogja 3D2N Itinerary: Heritage, Food, and Merapi"
+        "us": "Jogja 3D2N Itinerary: Heritage, Food, and Merapi",
+        "cn": "Jogja 3天2夜行程：文化遗产、美食和 Merapi"
       },
       "excerpt": {
         "id": "Contoh alur perjalanan Jogja yang seimbang untuk keluarga atau grup kecil: candi, kota, kuliner, dan outdoor ringan.",
-        "us": "A balanced Jogja travel flow for families or small groups: temples, city stops, local food, and light outdoor moments."
+        "us": "A balanced Jogja travel flow for families or small groups: temples, city stops, local food, and light outdoor moments.",
+        "cn": "一个节奏舒服的 Jogja 行程，适合家庭或小团体：城市美食、寺庙文化和 Merapi 体验。"
       },
       "category": "itinerary",
       "destinationId": "jogja",
@@ -6516,18 +6599,36 @@
       "updatedDate": "2026-06-12",
       "readingTime": {
         "id": "6 menit baca",
-        "us": "6 min read"
+        "us": "6 min read",
+        "cn": "6 分钟阅读"
       },
       "coverImage": "/images/routes/jogja.jpg",
       "coverAlt": {
         "id": "Area heritage Jogja saat perjalanan budaya",
-        "us": "Jogja heritage area during a cultural trip"
+        "us": "Jogja heritage area during a cultural trip",
+        "cn": "Jogja 文化遗产景点"
       },
       "tags": [
-        "Jogja",
-        "Itinerary",
-        "Heritage",
-        "Family Trip"
+        {
+          "us": "Jogja",
+          "id": "Jogja",
+          "cn": "Jogja"
+        },
+        {
+          "us": "Itinerary",
+          "id": "Itinerary",
+          "cn": "行程"
+        },
+        {
+          "us": "Heritage",
+          "id": "Heritage",
+          "cn": "文化遗产"
+        },
+        {
+          "us": "Family Trip",
+          "id": "Family Trip",
+          "cn": "家庭旅行"
+        }
       ],
       "relatedRouteIds": [
         "jogja-heritage",
@@ -6537,42 +6638,50 @@
       "seo": {
         "title": {
           "id": "Itinerary Jogja 3 Hari 2 Malam | Heritage & Kuliner",
-          "us": "Jogja 3D2N Itinerary | Heritage & Culinary Travel"
+          "us": "Jogja 3D2N Itinerary | Heritage & Culinary Travel",
+          "cn": "Jogja 3天2夜行程 | Tinggal Jalan"
         },
         "description": {
           "id": "Contoh itinerary Jogja 3 hari 2 malam untuk heritage, kuliner, Prambanan, Merapi, dan trip keluarga dengan tempo fleksibel.",
-          "us": "A sample Jogja 3D2N itinerary for heritage, food, Prambanan, Merapi, and family travel with a flexible pace."
+          "us": "A sample Jogja 3D2N itinerary for heritage, food, Prambanan, Merapi, and family travel with a flexible pace.",
+          "cn": "了解 Jogja 3D2N 私人行程，包含文化遗产、美食和 Merapi 建议。"
         }
       },
       "sections": [
         {
           "heading": {
             "id": "Hari pertama: adaptasi dan kuliner kota",
-            "us": "Day one: settle in and taste the city"
+            "us": "Day one: settle in and taste the city",
+            "cn": "第一天：适应和城市美食"
           },
           "body": {
             "id": "Mulai dengan pickup, check-in, lalu rute kota yang ringan. Sore dan malam bisa dipakai untuk kuliner lokal agar traveler tidak langsung lelah setelah perjalanan masuk Jogja.",
-            "us": "Start with pickup, check-in, then a light city route. Late afternoon and evening can focus on local food so travelers do not get tired immediately after arriving in Jogja."
+            "us": "Start with pickup, check-in, then a light city route. Late afternoon and evening can focus on local food so travelers do not get tired immediately after arriving in Jogja.",
+            "cn": "抵达后不建议排得太满。可以先去市区、尝试当地美食，让团队慢慢进入旅行节奏。"
           }
         },
         {
           "heading": {
             "id": "Hari kedua: heritage dan Prambanan",
-            "us": "Day two: heritage and Prambanan"
+            "us": "Day two: heritage and Prambanan",
+            "cn": "第二天：文化遗产和 Prambanan"
           },
           "body": {
             "id": "Hari kedua cocok untuk candi, cerita budaya, dan spot foto. Jika membawa anak atau senior, atur durasi stop lebih pendek dan sisakan waktu istirahat di tengah hari.",
-            "us": "Day two works well for temples, cultural context, and photo stops. If traveling with children or seniors, keep stops shorter and leave rest time in the middle of the day."
+            "us": "Day two works well for temples, cultural context, and photo stops. If traveling with children or seniors, keep stops shorter and leave rest time in the middle of the day.",
+            "cn": "把主要文化景点放在第二天会更稳。早出发可以避开部分热点时段，也有更多拍照时间。"
           }
         },
         {
           "heading": {
             "id": "Hari ketiga: Merapi atau belanja ringan",
-            "us": "Day three: Merapi or easy shopping"
+            "us": "Day three: Merapi or easy shopping",
+            "cn": "第三天：Merapi 或轻松购物"
           },
           "body": {
             "id": "Sebelum pulang, pilih Merapi Jeep untuk outdoor ringan atau rute belanja oleh-oleh. Pilihan terbaik tergantung jam kereta, penerbangan, dan energi grup.",
-            "us": "Before departure, choose a Merapi Jeep route for light outdoor activity or an easy souvenir stop. The best option depends on train time, flight time, and group energy."
+            "us": "Before departure, choose a Merapi Jeep route for light outdoor activity or an easy souvenir stop. The best option depends on train time, flight time, and group energy.",
+            "cn": "离开前可以选择 Merapi jeep 体验，或者留在城市买手信。选择取决于航班或火车时间。"
           }
         }
       ]
@@ -6581,11 +6690,13 @@
       "slug": "liburan-keluarga-medan-danau-toba",
       "title": {
         "id": "Liburan Keluarga Medan dan Danau Toba: Cara Membuat Rute Lebih Nyaman",
-        "us": "Medan and Lake Toba Family Trip: How to Make the Route More Comfortable"
+        "us": "Medan and Lake Toba Family Trip: How to Make the Route More Comfortable",
+        "cn": "Medan 和多巴湖家庭旅行：如何让路线更舒服"
       },
       "excerpt": {
         "id": "Lake Toba punya jarak tempuh panjang. Untuk keluarga, itinerary perlu dibuat realistis agar perjalanan tetap menyenangkan.",
-        "us": "Lake Toba involves longer road time. For families, the itinerary should stay realistic so the trip remains enjoyable."
+        "us": "Lake Toba involves longer road time. For families, the itinerary should stay realistic so the trip remains enjoyable.",
+        "cn": "多巴湖路程较长，家庭出行需要把车程、餐食和休息停留安排得更清楚。"
       },
       "category": "panduan",
       "destinationId": "medan",
@@ -6593,18 +6704,36 @@
       "updatedDate": "2026-06-11",
       "readingTime": {
         "id": "5 menit baca",
-        "us": "5 min read"
+        "us": "5 min read",
+        "cn": "5 分钟阅读"
       },
       "coverImage": "/images/routes/medan.jpg",
       "coverAlt": {
         "id": "Pemandangan rute Medan dan Danau Toba",
-        "us": "Scenery on the Medan and Lake Toba route"
+        "us": "Scenery on the Medan and Lake Toba route",
+        "cn": "Medan 和多巴湖家庭旅行"
       },
       "tags": [
-        "Medan",
-        "Lake Toba",
-        "Family Trip",
-        "Sumatra"
+        {
+          "us": "Medan",
+          "id": "Medan",
+          "cn": "Medan"
+        },
+        {
+          "us": "Lake Toba",
+          "id": "Lake Toba",
+          "cn": "多巴湖"
+        },
+        {
+          "us": "Family Trip",
+          "id": "Family Trip",
+          "cn": "家庭旅行"
+        },
+        {
+          "us": "Sumatra",
+          "id": "Sumatra",
+          "cn": "苏门答腊"
+        }
       ],
       "relatedRouteIds": [
         "medan-lake-toba",
@@ -6614,42 +6743,50 @@
       "seo": {
         "title": {
           "id": "Liburan Keluarga Medan dan Danau Toba | Tinggal Jalan",
-          "us": "Medan and Lake Toba Family Trip | Tinggal Jalan"
+          "us": "Medan and Lake Toba Family Trip | Tinggal Jalan",
+          "cn": "Medan 和多巴湖家庭旅行 | Tinggal Jalan"
         },
         "description": {
           "id": "Tips membuat rute Medan dan Danau Toba lebih nyaman untuk keluarga: durasi perjalanan, stop istirahat, dan pilihan private trip.",
-          "us": "Tips for a more comfortable Medan and Lake Toba family route: road time, rest stops, and private trip options."
+          "us": "Tips for a more comfortable Medan and Lake Toba family route: road time, rest stops, and private trip options.",
+          "cn": "了解 Medan 和多巴湖家庭旅行的路线节奏、停靠和车辆建议。"
         }
       },
       "sections": [
         {
           "heading": {
             "id": "Jangan terlalu padat di hari pertama",
-            "us": "Do not overload the first day"
+            "us": "Do not overload the first day",
+            "cn": "第一天不要太满"
           },
           "body": {
             "id": "Setelah tiba di Medan, hindari langsung mengisi terlalu banyak stop. Rute menuju Toba butuh waktu, jadi lebih baik memilih beberapa stop yang benar-benar penting.",
-            "us": "After arriving in Medan, avoid packing too many stops immediately. The route toward Toba takes time, so it is better to choose a few stops that truly matter."
+            "us": "After arriving in Medan, avoid packing too many stops immediately. The route toward Toba takes time, so it is better to choose a few stops that truly matter.",
+            "cn": "到达 Medan 后，建议先保留休息时间。不要把长车程和太多景点放在同一天。"
           }
         },
         {
           "heading": {
             "id": "Atur stop makan dan toilet dengan jelas",
-            "us": "Plan food and restroom stops clearly"
+            "us": "Plan food and restroom stops clearly",
+            "cn": "明确安排用餐和卫生间停靠"
           },
           "body": {
             "id": "Untuk keluarga, kenyamanan sering ditentukan oleh stop kecil: makan, toilet, camilan, dan waktu stretching. Komunikasikan kebutuhan ini sejak awal dengan tim trip.",
-            "us": "For families, comfort often depends on small stops: meals, restrooms, snacks, and stretching time. Communicate these needs with the trip team from the start."
+            "us": "For families, comfort often depends on small stops: meals, restrooms, snacks, and stretching time. Communicate these needs with the trip team from the start.",
+            "cn": "带小孩或长辈时，这些停靠点会影响整体体验。提前说清楚可以让司机更好规划。"
           }
         },
         {
           "heading": {
             "id": "Gunakan kendaraan yang cukup lega",
-            "us": "Use a vehicle with enough room"
+            "us": "Use a vehicle with enough room",
+            "cn": "使用足够舒适的车辆"
           },
           "body": {
             "id": "Rute Sumatra Utara akan terasa lebih nyaman jika bagasi, stroller, dan ruang kaki sudah dipikirkan. Untuk grup keluarga, upgrade unit sering lebih penting daripada menambah banyak destinasi.",
-            "us": "North Sumatra routes feel more comfortable when luggage, strollers, and legroom are considered. For family groups, a vehicle upgrade is often more valuable than adding extra destinations."
+            "us": "North Sumatra routes feel more comfortable when luggage, strollers, and legroom are considered. For family groups, a vehicle upgrade is often more valuable than adding extra destinations.",
+            "cn": "家庭行程不只是看景点，车上时间也很重要。根据行李和人数选车会更舒服。"
           }
         }
       ]
@@ -6658,11 +6795,13 @@
       "slug": "cara-memilih-private-trip-indonesia",
       "title": {
         "id": "Cara Memilih Private Trip Indonesia yang Aman dan Jelas",
-        "us": "How to Choose a Safe and Clear Indonesia Private Trip"
+        "us": "How to Choose a Safe and Clear Indonesia Private Trip",
+        "cn": "如何选择安全、清楚的印尼私人团"
       },
       "excerpt": {
         "id": "Private trip bukan cuma soal mobil sendiri. Yang penting adalah alur komunikasi, itinerary, pickup, dan konfirmasi harga yang transparan.",
-        "us": "A private trip is not only about having your own car. Clear communication, itinerary, pickup, and transparent price confirmation matter more."
+        "us": "A private trip is not only about having your own car. Clear communication, itinerary, pickup, and transparent price confirmation matter more.",
+        "cn": "好的私人团应该有清楚行程、明确价格、当地团队和支付前的确认流程。"
       },
       "category": "tips",
       "destinationId": "indonesia",
@@ -6670,18 +6809,36 @@
       "updatedDate": "2026-06-10",
       "readingTime": {
         "id": "4 menit baca",
-        "us": "4 min read"
+        "us": "4 min read",
+        "cn": "4 分钟阅读"
       },
       "coverImage": "/images/gallery-indonesia-green.jpg",
       "coverAlt": {
         "id": "Pemandangan hijau perjalanan Indonesia",
-        "us": "Green Indonesia travel scenery"
+        "us": "Green Indonesia travel scenery",
+        "cn": "印尼私人旅行规划"
       },
       "tags": [
-        "Private Trip",
-        "Travel Tips",
-        "Indonesia",
-        "Booking"
+        {
+          "us": "Private Trip",
+          "id": "Private Trip",
+          "cn": "私人团"
+        },
+        {
+          "us": "Travel Tips",
+          "id": "Travel Tips",
+          "cn": "旅行贴士"
+        },
+        {
+          "us": "Indonesia",
+          "id": "Indonesia",
+          "cn": "印尼"
+        },
+        {
+          "us": "Booking",
+          "id": "Booking",
+          "cn": "预订"
+        }
       ],
       "relatedRouteIds": [
         "bromo-sunrise",
@@ -6691,42 +6848,50 @@
       "seo": {
         "title": {
           "id": "Cara Memilih Private Trip Indonesia | Tips Aman Booking",
-          "us": "How to Choose an Indonesia Private Trip | Safe Booking Tips"
+          "us": "How to Choose an Indonesia Private Trip | Safe Booking Tips",
+          "cn": "印尼私人团选择指南 | Tinggal Jalan"
         },
         "description": {
           "id": "Tips memilih private trip Indonesia: cek itinerary, pickup, harga, fasilitas, komunikasi WhatsApp, dan konfirmasi sebelum pembayaran.",
-          "us": "Tips for choosing an Indonesia private trip: check itinerary, pickup, price, inclusions, WhatsApp communication, and confirmation before payment."
+          "us": "Tips for choosing an Indonesia private trip: check itinerary, pickup, price, inclusions, WhatsApp communication, and confirmation before payment.",
+          "cn": "了解如何选择安全、价格清楚、沟通顺畅的印尼私人旅行。"
         }
       },
       "sections": [
         {
           "heading": {
             "id": "Cari itinerary yang spesifik",
-            "us": "Look for a specific itinerary"
+            "us": "Look for a specific itinerary",
+            "cn": "寻找具体的行程"
           },
           "body": {
             "id": "Itinerary yang baik menyebutkan alur stop, estimasi waktu, fasilitas, dan catatan penting. Hindari paket yang terlalu umum tanpa detail pickup dan durasi.",
-            "us": "A good itinerary explains the stop sequence, timing estimate, inclusions, and important notes. Avoid packages that are too generic without pickup and duration details."
+            "us": "A good itinerary explains the stop sequence, timing estimate, inclusions, and important notes. Avoid packages that are too generic without pickup and duration details.",
+            "cn": "行程应该说明出发时间、主要景点、包含项和不包含项。越清楚，到现场越容易安心。"
           }
         },
         {
           "heading": {
             "id": "Minta konfirmasi sebelum bayar",
-            "us": "Ask for confirmation before payment"
+            "us": "Ask for confirmation before payment",
+            "cn": "支付前先确认"
           },
           "body": {
             "id": "Tanggal, driver, kendaraan, jeep, dan tiket lokal sebaiknya dikonfirmasi dulu. Ini membuat pembayaran lebih aman dan mengurangi perubahan mendadak.",
-            "us": "Dates, driver, vehicle, jeep, and local tickets should be confirmed first. This makes payment safer and reduces last-minute changes."
+            "us": "Dates, driver, vehicle, jeep, and local tickets should be confirmed first. This makes payment safer and reduces last-minute changes.",
+            "cn": "在付款之前，先确认日期、人数、接送和车辆安排。这能避免价格或行程误解。"
           }
         },
         {
           "heading": {
             "id": "Pastikan kanal komunikasi jelas",
-            "us": "Make sure communication is clear"
+            "us": "Make sure communication is clear",
+            "cn": "确保沟通渠道清楚"
           },
           "body": {
             "id": "WhatsApp yang responsif sangat membantu, terutama untuk pickup dini hari, perubahan cuaca, atau kebutuhan khusus saat perjalanan.",
-            "us": "A responsive WhatsApp channel helps a lot, especially for early pickup, weather changes, or special needs during the trip."
+            "us": "A responsive WhatsApp channel helps a lot, especially for early pickup, weather changes, or special needs during the trip.",
+            "cn": "好的服务应该让你知道可以联系谁、如何修改行程，以及紧急情况如何处理。"
           }
         }
       ]
@@ -6735,11 +6900,13 @@
       "slug": "kabar-rute-baru-tinggal-jalan",
       "title": {
         "id": "Kabar Tinggal Jalan: Rute Pilihan Kini Lebih Mudah Dibandingkan",
-        "us": "Tinggal Jalan Update: Featured Routes Are Now Easier to Compare"
+        "us": "Tinggal Jalan Update: Featured Routes Are Now Easier to Compare",
+        "cn": "Tinggal Jalan 动态：精选路线现在更容易比较"
       },
       "excerpt": {
         "id": "Update pengalaman website Tinggal Jalan membantu traveler membandingkan rute Bromo, Jogja, Tumpak Sewu, dan Medan dengan lebih jelas.",
-        "us": "The updated Tinggal Jalan website experience helps travelers compare Bromo, Jogja, Tumpak Sewu, and Medan routes more clearly."
+        "us": "The updated Tinggal Jalan website experience helps travelers compare Bromo, Jogja, Tumpak Sewu, and Medan routes more clearly.",
+        "cn": "我们正在让旅客更容易比较路线、了解行程和通过 WhatsApp 咨询合适的私人团。"
       },
       "category": "kabar",
       "destinationId": "indonesia",
@@ -6747,18 +6914,36 @@
       "updatedDate": "2026-06-09",
       "readingTime": {
         "id": "3 menit baca",
-        "us": "3 min read"
+        "us": "3 min read",
+        "cn": "3 分钟阅读"
       },
       "coverImage": "/images/hero-bromo.jpg",
       "coverAlt": {
         "id": "Traveler melihat pemandangan Bromo",
-        "us": "Traveler looking at Bromo scenery"
+        "us": "Traveler looking at Bromo scenery",
+        "cn": "Tinggal Jalan 网站路线更新"
       },
       "tags": [
-        "News",
-        "Tinggal Jalan",
-        "Routes",
-        "Website Update"
+        {
+          "us": "News",
+          "id": "News",
+          "cn": "动态"
+        },
+        {
+          "us": "Tinggal Jalan",
+          "id": "Tinggal Jalan",
+          "cn": "Tinggal Jalan"
+        },
+        {
+          "us": "Routes",
+          "id": "Routes",
+          "cn": "路线"
+        },
+        {
+          "us": "Website Update",
+          "id": "Website Update",
+          "cn": "网站更新"
+        }
       ],
       "relatedRouteIds": [
         "bromo-tumpak",
@@ -6768,42 +6953,50 @@
       "seo": {
         "title": {
           "id": "Kabar Tinggal Jalan | Rute Wisata Lebih Mudah Dibandingkan",
-          "us": "Tinggal Jalan News | Easier Tour Route Comparison"
+          "us": "Tinggal Jalan News | Easier Tour Route Comparison",
+          "cn": "Tinggal Jalan 路线更新 | Tinggal Jalan"
         },
         "description": {
           "id": "Kabar terbaru Tinggal Jalan: pengalaman membandingkan rute wisata Indonesia kini dibuat lebih jelas untuk traveler.",
-          "us": "Latest Tinggal Jalan update: comparing Indonesia tour routes is now clearer for travelers."
+          "us": "Latest Tinggal Jalan update: comparing Indonesia tour routes is now clearer for travelers.",
+          "cn": "查看 Tinggal Jalan 如何让印尼私人旅行路线更容易比较和预订。"
         }
       },
       "sections": [
         {
           "heading": {
             "id": "Fokus pada rute yang mudah dipahami",
-            "us": "Focused on routes that are easy to understand"
+            "us": "Focused on routes that are easy to understand",
+            "cn": "聚焦于容易理解的路线"
           },
           "body": {
             "id": "Setiap rute dibuat dengan ringkasan, highlight, pickup, dan catatan penting agar traveler bisa membandingkan sebelum menghubungi tim.",
-            "us": "Each route includes a summary, highlights, pickup notes, and important details so travelers can compare before contacting the team."
+            "us": "Each route includes a summary, highlights, pickup notes, and important details so travelers can compare before contacting the team.",
+            "cn": "每条路线都会更明确地展示时长、价格、接送和适合的旅客类型，帮你更快做决定。"
           }
         },
         {
           "heading": {
             "id": "Booking tetap lewat WhatsApp",
-            "us": "Booking still happens through WhatsApp"
+            "us": "Booking still happens through WhatsApp",
+            "cn": "预订仍然通过 WhatsApp 确认"
           },
           "body": {
             "id": "Website membantu traveler memahami pilihan. Setelah itu, tim Tinggal Jalan tetap mengonfirmasi jadwal, kendaraan, dan kebutuhan khusus lewat WhatsApp.",
-            "us": "The website helps travelers understand their options. After that, the Tinggal Jalan team still confirms schedule, vehicle, and special needs through WhatsApp."
+            "us": "The website helps travelers understand their options. After that, the Tinggal Jalan team still confirms schedule, vehicle, and special needs through WhatsApp.",
+            "cn": "网站可以帮你初步选路线，但最终日期、车辆和细节会由团队再次确认。"
           }
         },
         {
           "heading": {
             "id": "Artikel akan terus ditambah",
-            "us": "More articles will be added over time"
+            "us": "More articles will be added over time",
+            "cn": "我们会持续增加文章"
           },
           "body": {
             "id": "Bagian Berita & Panduan disiapkan untuk tips perjalanan, update rute, dan panduan destinasi agar pengunjung bisa merencanakan trip dengan lebih percaya diri.",
-            "us": "The News & Guides section is prepared for travel tips, route updates, and destination guides so visitors can plan with more confidence."
+            "us": "The News & Guides section is prepared for travel tips, route updates, and destination guides so visitors can plan with more confidence.",
+            "cn": "新的目的地指南、行程建议和路线更新会逐步上线，让规划旅行更简单。"
           }
         }
       ]

@@ -38,6 +38,11 @@ class RouteFilterResource extends Resource
         return RouteFilterForm::configure($schema);
     }
 
+    public static function table(Table $table): Table
+    {
+        return RouteFiltersTable::configure($table);
+    }
+
     public static function getPages(): array
     {
         return [

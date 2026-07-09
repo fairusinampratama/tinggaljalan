@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PaymentSettings\Schemas;
 
 use App\Models\PaymentSetting;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -16,11 +17,10 @@ class PaymentSettingForm
     {
         return $schema
             ->components([
-                Section::make('Midtrans gateway')
-                    ->description('Midtrans is the only payment gateway for v1. Keys are stored encrypted and never exposed publicly.')
+                Section::make('Gateway configuration')
+                    ->description(fn (callable $get) => $get('gateway') === 'midtrans' ? 'Midtrans keys are stored encrypted and never exposed publicly.' : 'Enter your bank details to display to customers.')
                     ->schema([
                         TextInput::make('gateway')
-                            ->default(PaymentSetting::GATEWAY_MIDTRANS)
                             ->disabled()
                             ->dehydrated()
                             ->required(),
@@ -40,14 +40,34 @@ class PaymentSettingForm
                             ->revealable()
                             ->helperText('Leave blank on edit to keep the existing encrypted client key.')
                             ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->maxLength(2000),
+                            ->maxLength(2000)
+                            ->visible(fn (callable $get) => $get('gateway') === 'midtrans'),
                         TextInput::make('secret_key')
                             ->label('Midtrans server key')
                             ->password()
                             ->revealable()
                             ->helperText('Leave blank on edit to keep the existing encrypted server key.')
                             ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->maxLength(2000),
+                            ->maxLength(2000)
+                            ->visible(fn (callable $get) => $get('gateway') === 'midtrans'),
+                        Repeater::make('manual_bank_accounts')
+                            ->label('Bank Accounts')
+                            ->helperText('These accounts will be displayed to the customer when they checkout.')
+                            ->schema([
+                                TextInput::make('bank_name')
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('account_name')
+                                    ->required()
+                                    ->maxLength(255),
+                                TextInput::make('account_number')
+                                    ->required()
+                                    ->maxLength(255),
+                            ])
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['bank_name'] ?? null)
+                            ->visible(fn (callable $get) => $get('gateway') === 'manual')
+                            ->columnSpanFull(),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
@@ -63,12 +83,12 @@ class PaymentSettingForm
                             ->label('Booking confirmation note')
                             ->required()
                             ->rows(3)
-                            ->default('Payment is requested only after our team confirms availability.'),
+                            ->default('You won\'t be charged yet. We will send a secure payment link once your booking is confirmed.'),
                         Textarea::make('usd_note')
                             ->label('USD-IDR payment explanation')
                             ->required()
                             ->rows(3)
-                            ->default('USD quotes are converted to IDR when payment is requested. Midtrans processes payments in IDR.'),
+                            ->default('International cards accepted. Final billing is securely processed in IDR.'),
                     ])
                     ->columns(1)
                     ->columnSpanFull(),

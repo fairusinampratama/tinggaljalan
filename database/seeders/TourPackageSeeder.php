@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Destination;
 use App\Models\PackageAddOn;
+use App\Models\PackagePriceTier;
 use App\Models\TourPackage;
 use Database\Seeders\Concerns\LoadsPrototypeData;
 use Illuminate\Database\Seeder;
@@ -35,6 +36,7 @@ class TourPackageSeeder extends Seeder
                     'best_for' => $this->localized($route['bestFor'] ?? null),
                     'duration' => $route['duration'] ?? null,
                     'difficulty' => $this->localized($route['difficulty'] ?? null),
+                    'pricing_mode' => $route['pricingMode'] ?? 'flat',
                     'base_price_idr' => $route['basePriceIdr'] ?? $route['basePrice'] ?? null,
                     'base_price_usd' => $route['basePriceUsd'] ?? null,
                     'price_note' => $route['priceNote'] ?? null,
@@ -69,6 +71,28 @@ class TourPackageSeeder extends Seeder
                     'title' => $this->localized($item),
                     'sort_order' => $index + 1,
                 ]);
+            }
+
+            $tierKeys = [];
+            foreach (($route['priceTiers'] ?? []) as $index => $tierData) {
+                $tierKeys[] = $tierData['minPax'];
+                PackagePriceTier::updateOrCreate(
+                    [
+                        'tour_package_id' => $package->id,
+                        'min_pax' => $tierData['minPax'],
+                    ],
+                    [
+                        'max_pax' => $tierData['maxPax'],
+                        'price_idr' => $tierData['priceIdr'],
+                        'price_usd' => $tierData['priceUsd'],
+                        'sort_order' => $index,
+                    ]
+                );
+            }
+            if (!empty($tierKeys)) {
+                $package->priceTiers()->whereNotIn('min_pax', $tierKeys)->delete();
+            } else {
+                $package->priceTiers()->delete();
             }
 
             $addOnKeys = [];

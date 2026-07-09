@@ -22,5 +22,4 @@ return [
             ],
         ],
     ],
-    'currency_options' => ['IDR', 'USD'],
 ];

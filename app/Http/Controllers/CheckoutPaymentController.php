@@ -24,7 +24,7 @@ class CheckoutPaymentController extends Controller
             ->where('public_token', $payment)
             ->firstOrFail();
         $booking = $payment->booking;
-        $language = BookingLanguage::normalize($booking->communication_language);
+        $language = BookingLanguage::normalize($request->session()->get('language', $booking->communication_language));
         $paymentSettings = app(PaymentSettingsService::class);
         $presentation = $this->presentation($payment, $paymentSettings, $language);
 
@@ -45,13 +45,15 @@ class CheckoutPaymentController extends Controller
                 'chargeCurrency' => $payment->charge_currency,
                 'chargeAmount' => $payment->charge_amount,
                 'exchangeRate' => $payment->exchange_rate,
-                'providerLabel' => $paymentSettings->publicLabel(),
-                'bookingNote' => $paymentSettings->bookingNote(),
-                'usdNote' => $paymentSettings->usdNote(),
+                'provider' => $payment->provider,
+                'providerLabel' => $paymentSettings->publicLabel($payment->provider),
+                'bookingNote' => $paymentSettings->bookingNote($payment->provider),
+                'usdNote' => $paymentSettings->usdNote($payment->provider),
+                'manualBankAccounts' => $paymentSettings->manualBankAccounts($payment->provider),
                 'snapUrl' => $payment->snap_url,
                 'expiresAt' => $payment->expires_at ? BookingLanguage::date($payment->expires_at->timezone('Asia/Jakarta'), $language, true).' WIB' : null,
                 'paidAt' => $payment->paid_at ? BookingLanguage::date($payment->paid_at->timezone('Asia/Jakarta'), $language, true).' WIB' : null,
-                'copy' => $this->pageCopy($language, $paymentSettings),
+                'copy' => $this->pageCopy($language, $paymentSettings, $payment->provider),
                 'booking' => [
                     'code' => $booking->booking_code,
                     'name' => $booking->name,
@@ -67,7 +69,7 @@ class CheckoutPaymentController extends Controller
             'whatsappUrl' => PublicSite::whatsappUrl([
                 BookingLanguage::translate('booking.support_question', [], $language),
                 BookingLanguage::translate('booking.booking_code', [], $language).": {$booking->booking_code}",
-                BookingLanguage::translate('booking.charge_label', ['provider' => $paymentSettings->publicLabel()], $language).': '.PublicSite::formatMoney($payment->charge_amount, 'IDR'),
+                BookingLanguage::translate('booking.charge_label', ['provider' => $paymentSettings->publicLabel($payment->provider)], $language).': '.PublicSite::formatMoney($payment->charge_amount, 'IDR'),
             ]),
             'seo' => Seo::noindex([
                 'title' => "Payment {$booking->booking_code} | Tinggal Jalan",
@@ -119,14 +121,14 @@ class CheckoutPaymentController extends Controller
         ];
     }
 
-    private function pageCopy(string $language, PaymentSettingsService $settings): array
+    private function pageCopy(string $language, PaymentSettingsService $settings, string $provider): array
     {
-        $keys = ['eyebrow', 'charge', 'original_quote', 'expires', 'paid_at', 'exchange_rate', 'missing_link', 'ask_whatsapp', 'back_home', 'booking_summary', 'package', 'travel_date', 'customer', 'guests', 'checking', 'checked', 'refresh_failed', 'last_checked', 'usd_note'];
+        $keys = ['eyebrow', 'charge', 'original_quote', 'expires', 'paid_at', 'exchange_rate', 'missing_link', 'ask_whatsapp', 'back_home', 'booking_summary', 'package', 'travel_date', 'customer', 'guests', 'checking', 'checked', 'refresh_failed', 'last_checked', 'usd_note', 'bank_accounts', 'account_name', 'account_number'];
 
         return collect($keys)->mapWithKeys(fn (string $key): array => [
-            $key => BookingLanguage::translate('booking.payment_page.'.$key, ['provider' => $settings->publicLabel()], $language),
+            $key => BookingLanguage::translate('booking.payment_page.'.$key, ['provider' => $settings->publicLabel($provider)], $language),
         ])->all() + [
-            'pay_securely' => BookingLanguage::translate('booking.pay_securely', ['provider' => $settings->publicLabel()], $language),
+            'pay_securely' => BookingLanguage::translate('booking.pay_securely', ['provider' => $settings->publicLabel($provider)], $language),
         ];
     }
     private function isTerminal(string $status): bool
@@ -140,7 +142,8 @@ class CheckoutPaymentController extends Controller
     {
         $status = $payment->status;
         $hasSnapUrl = filled($payment->snap_url);
-        $canPay = in_array($status, ['pending', 'invoice_sent'], true) && $hasSnapUrl;
+        $isManual = $payment->provider === 'manual';
+        $canPay = in_array($status, ['pending', 'invoice_sent'], true) && ($hasSnapUrl || $isManual);
 
         $t = fn (string $key, array $replace = []): string => BookingLanguage::translate('booking.payment_page.'.$key, $replace, $language);
 
@@ -160,10 +163,10 @@ class CheckoutPaymentController extends Controller
                 $t('failed_body'),
                 'danger',
             ],
-            default => $hasSnapUrl
+            default => ($hasSnapUrl || $isManual)
                 ? [
                     $t('pending_headline'),
-                    $t('pending_body', ['provider' => $settings->publicLabel()]),
+                    $isManual ? $t('manual_pending_body') : $t('pending_body', ['provider' => $settings->publicLabel($payment->provider)]),
                     'info',
                 ]
                 : [

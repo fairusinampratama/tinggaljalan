@@ -29,11 +29,11 @@ export function Footer({ t, whatsappUrl }) {
   ];
 
   return (
-    <footer id="contact" className="bg-brandDark px-4 py-10 text-white sm:px-8 lg:px-10">
+    <footer id="contact" className="bg-ink px-4 py-10 text-white sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[1.25fr_0.9fr_1fr] lg:items-start">
           <div>
-            <img src={logoUrl} alt="Tinggal Jalan" className="h-11 w-auto rounded bg-white px-3 py-2" />
+            <img src={logoUrl} alt="Tinggal Jalan" className="h-11 w-auto rounded bg-surface px-3 py-2" />
             <p className="mt-4 max-w-lg text-sm font-semibold leading-6 text-white/65">{t.footerText}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               {trustBadges.map((item) => (
@@ -55,7 +55,7 @@ export function Footer({ t, whatsappUrl }) {
                         href={link.href}
                         target={link.external ? '_blank' : undefined}
                         rel={link.external ? 'noreferrer' : undefined}
-                        className="inline-flex items-center gap-1 transition hover:-translate-y-0.5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue"
+                        className="inline-flex items-center gap-1 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                       >
                         {link.label}
                       </a>
@@ -66,7 +66,7 @@ export function Footer({ t, whatsappUrl }) {
             ))}
           </nav>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="rounded-xl border border-white/10 bg-surface/5 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.04em] text-white/58">{t.contactEyebrow}</p>
             <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
@@ -74,7 +74,7 @@ export function Footer({ t, whatsappUrl }) {
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
                 <MessageCircle className={iconSize} /> {t.sendToWhatsapp ?? 'WhatsApp'}
               </a>
-              <a href={contactDetails.emailHref ?? `mailto:${contactDetails.email ?? ''}`} className={`${secondaryButtonClass} border-white/15 bg-white/10 text-white hover:bg-white hover:text-brandDark`}>
+              <a href={contactDetails.emailHref ?? `mailto:${contactDetails.email ?? ''}`} className={`${secondaryButtonClass} border-white/15 bg-surface/10 text-white hover:bg-surface hover:text-ink`}>
                 <Mail className={iconSize} /> {contactDetails.email}
               </a>
             </div>
@@ -85,7 +85,7 @@ export function Footer({ t, whatsappUrl }) {
           <p>© 2026 Tinggal Jalan. All rights reserved.</p>
           <a
             href="#home"
-            className="inline-flex items-center gap-1 transition hover:-translate-y-0.5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue"
+            className="inline-flex items-center gap-1 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
           >
             {t.backToTop} <ArrowUp className="h-4 w-4" />
           </a>

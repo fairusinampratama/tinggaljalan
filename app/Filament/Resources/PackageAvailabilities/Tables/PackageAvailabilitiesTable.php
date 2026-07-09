@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -23,26 +24,33 @@ class PackageAvailabilitiesTable
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['tourPackage.destination', 'destination']))
             ->columns([
-                TextColumn::make('scope')
-                    ->label('Scope')
-                    ->badge()
-                    ->state(fn (PackageAvailability $record): string => $record->tour_package_id ? 'Specific package' : 'Destination-wide')
-                    ->color(fn (PackageAvailability $record): string => $record->tour_package_id ? 'info' : 'gray'),
-                TextColumn::make('subject')
-                    ->label('Applies to')
-                    ->state(fn (PackageAvailability $record): string => $record->tourPackage
-                        ? PublicSite::localized($record->tourPackage->title, 'us', $record->tourPackage->slug)
-                        : ($record->destination?->name ?? 'Missing scope'))
-                    ->description(fn (PackageAvailability $record): ?string => $record->tourPackage?->destination?->name)
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(function (Builder $query) use ($search): void {
-                        $query
-                            ->whereHas('destination', fn (Builder $query): Builder => $query->where('name', 'like', "%{$search}%"))
-                            ->orWhereHas('tourPackage', fn (Builder $query): Builder => $query
-                                ->where('slug', 'like', "%{$search}%")
-                                ->orWhere('title->us', 'like', "%{$search}%"));
-                    }))
-                    ->wrap(),
-                TextColumn::make('date')->date()->sortable(),
+                TextColumn::make('destination.name')
+                    ->label('Destination')
+                    ->placeholder('-')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('tourPackage.title')
+                    ->label('Tour Package')
+                    ->formatStateUsing(fn ($record) => $record->tourPackage ? PublicSite::localized($record->tourPackage->title, 'us', $record->tourPackage->slug) : '-')
+                    ->placeholder('-')
+                    ->sortable()
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas('tourPackage', fn (Builder $query): Builder => $query->where('title->us', 'like', "%{$search}%")->orWhere('slug', 'like', "%{$search}%")))
+                    ->toggleable(),
+                TextColumn::make('date')
+                    ->label('Start Date')
+                    ->date('d M Y')
+                    ->sortable(),
+                TextColumn::make('end_date')
+                    ->label('End Date')
+                    ->placeholder('-')
+                    ->date('d M Y')
+                    ->sortable()
+                    ->toggleable(),
+                IconColumn::make('is_open_ended')
+                    ->label('Open Ended')
+                    ->boolean()
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -64,7 +72,11 @@ class PackageAvailabilitiesTable
                 TextColumn::make('reason')
                     ->placeholder('-')
                     ->limit(50)
-                    ->wrap(),
+                    ->toggleable(),
+                TextColumn::make('notes')
+                    ->placeholder('-')
+                    ->limit(50)
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('scope')

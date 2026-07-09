@@ -17,7 +17,7 @@ export function DestinationSection({ items }) {
   }
 
   return (
-    <section id="destination" className="relative overflow-hidden px-4 pb-14 pt-24 sm:px-8 lg:px-10">
+    <section id="destination" className="public-section relative overflow-hidden bg-white">
       <div className="mx-auto max-w-7xl">
         <SectionHeader eyebrow={t.destinationEyebrow} title={t.destinationTitle}>
           {t.destinationText}
@@ -28,7 +28,7 @@ export function DestinationSection({ items }) {
               key={item.name}
               role="link"
               tabIndex={0}
-              className="group cursor-pointer overflow-hidden rounded-2xl border border-brandLine bg-white shadow-soft transition duration-300 hover:-translate-y-1 hover:border-brandBlue/40 hover:shadow-xl hover:shadow-brandBlue/10 focus-visible:-translate-y-1 focus-visible:border-brandBlue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brandBlue"
+              className="group cursor-pointer overflow-hidden rounded-xl border border-line bg-surface shadow-soft transition duration-300 hover:border-secondary/40 hover:shadow-xl hover:shadow-secondary/10 focus-visible:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
               onClick={() => openDestinationRoutes(item.name)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
@@ -45,9 +45,9 @@ export function DestinationSection({ items }) {
                 />
               </div>
               <div className="p-5">
-                <p className="text-xs font-bold uppercase tracking-[0.04em] text-brandBlue">{item.region}</p>
-                <h3 className="mt-2 text-2xl font-bold transition duration-300 group-hover:text-brandBlue">{item.name}</h3>
-                <p className="mt-3 min-h-20 text-sm font-semibold leading-6 text-brandMuted">{getLocalized(item.copy, language)}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{item.region}</p>
+                <h3 className="public-heading-card mt-2 transition duration-300 group-hover:text-secondary">{item.name}</h3>
+                <p className="public-copy mt-3">{getLocalized(item.copy, language)}</p>
               </div>
             </article>
           ))}

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'name', 'region', 'province', 'short_description', 'description', 'cover_image', 'gallery', 'source_refs', 'sort_order', 'is_featured', 'is_active', 'seo'])]
+#[Fillable(['slug', 'name', 'region', 'province', 'short_description', 'cover_image', 'sort_order', 'is_featured', 'is_active'])]
 class Destination extends Model
 {
     use HasTravelScopes;
@@ -17,13 +17,9 @@ class Destination extends Model
     {
         return [
             'short_description' => 'array',
-            'description' => 'array',
-            'gallery' => 'array',
-            'source_refs' => 'array',
             'sort_order' => 'integer',
             'is_featured' => 'boolean',
             'is_active' => 'boolean',
-            'seo' => 'array',
         ];
     }
 

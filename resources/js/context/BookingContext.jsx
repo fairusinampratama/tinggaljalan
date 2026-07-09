@@ -5,7 +5,13 @@ import { getRegionConfig, normalizeRegion } from '../utils/localization';
 
 const BookingContext = createContext(null);
 
+function currencyForTravelerType(travelerType) {
+  return travelerType === 'local' ? 'IDR' : 'USD';
+}
+
 function normalizeDraft(draft = {}, defaults = {}) {
+  const travelerType = draft.travelerType ?? draft.traveler_type ?? defaults.travelerType ?? defaults.traveler_type ?? 'international';
+
   return {
     name: '',
     email: '',
@@ -19,10 +25,11 @@ function normalizeDraft(draft = {}, defaults = {}) {
     currency: 'USD',
     addOns: [],
     notes: '',
-    voucher: 'BROMO10',
+    voucher: '',
     ...defaults,
     ...draft,
-    travelerType: draft.travelerType ?? draft.traveler_type ?? defaults.travelerType ?? defaults.traveler_type ?? 'international',
+    travelerType,
+    currency: currencyForTravelerType(travelerType),
     addOns: draft.addOns ?? draft.add_ons ?? defaults.addOns ?? defaults.add_ons ?? [],
     whatsappCountry: draft.whatsappCountry ?? draft.whatsapp_country ?? defaults.whatsappCountry ?? defaults.whatsapp_country ?? 'ID',
   };
@@ -60,14 +67,14 @@ export function BookingProvider({ children }) {
   const publicData = props.publicData ?? {};
   const pageBooking = props.booking?.draft ?? {};
   const bookingDefaults = publicData.bookingOptions?.initialBooking ?? {};
-  const availableRoutes = props.routes ?? publicData.routes ?? [];
+  const availableRoutes = props.routes?.data ?? (Array.isArray(props.routes) ? props.routes : null) ?? publicData.routes ?? [];
   const fallbackRoute = availableRoutes[0] ?? null;
   const initialRouteId = pageBooking.route ?? props.route?.id ?? fallbackRoute?.id;
   const initialBookingState = normalizeDraft(pageBooking, bookingDefaults);
   const [languageState, setLanguageState] = useState(props.language ?? publicData.language ?? 'us');
   const [selectedRouteId, setSelectedRouteId] = useState(initialRouteId);
-  const [voucherCode, setVoucherCode] = useState(pageBooking.voucher ?? 'BROMO10');
-  const [appliedVoucher, setAppliedVoucher] = useState(pageBooking.voucher ?? 'BROMO10');
+  const [voucherCode, setVoucherCode] = useState(pageBooking.voucher ?? '');
+  const [appliedVoucher, setAppliedVoucher] = useState(pageBooking.voucher ?? '');
   const [bookingCode] = useState(props.savedBooking?.code ?? '');
   const [booking, setBooking] = useState(initialBookingState);
   const language = normalizeRegion(languageState);
@@ -107,7 +114,7 @@ export function BookingProvider({ children }) {
 
   function updateSelectedRouteId(routeId) {
     const nextRoute = availableRoutes.find((route) => route.id === routeId || route.slug === routeId) ?? fallbackRoute;
-    const availableAddOns = new Set((nextRoute.addOns ?? []).map((addOn) => addOn.id));
+    const availableAddOns = new Set((nextRoute?.addOns ?? []).map((addOn) => addOn.id));
 
     setSelectedRouteId(routeId);
     const nextBooking = {
@@ -126,7 +133,6 @@ export function BookingProvider({ children }) {
       pax: nextBooking.pax,
       pickup: nextBooking.pickup,
       traveler_type: nextBooking.travelerType,
-      currency: nextBooking.currency,
       add_ons: nextBooking.addOns,
       voucher: nextBooking.voucher ?? appliedVoucher,
     }, {

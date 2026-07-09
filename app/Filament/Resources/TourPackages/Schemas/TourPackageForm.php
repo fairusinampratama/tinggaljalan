@@ -4,13 +4,14 @@ namespace App\Filament\Resources\TourPackages\Schemas;
 
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\TourPackageTranslationHelper;
+use App\Models\PackagePriceTier;
 use App\Models\TourPackage;
 use App\Support\RouteFilterOptions;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Fieldset;
@@ -98,25 +99,61 @@ class TourPackageForm
     private static function homepageListingSchema(): array
     {
         return [
-            Fieldset::make('Starting prices')
+            Fieldset::make('Per-person pricing')
                 ->schema([
-                    TextInput::make('base_price_idr')
-                        ->label('Base price IDR')
-                        ->helperText('Starting price shown to Indonesian visitors. Use numbers only.')
-                        ->numeric()
-                        ->minValue(0)
-                        ->prefix('IDR'),
-                    TextInput::make('base_price_usd')
-                        ->label('Base price USD')
-                        ->helperText('Starting price shown to international visitors. Use numbers only.')
-                        ->numeric()
-                        ->minValue(0)
-                        ->prefix('USD'),
+                    Select::make('pricing_mode')
+                        ->label('Pricing method')
+                        ->options([
+                            'flat' => 'One price per person',
+                            'tiered' => 'Tiered by number of travelers',
+                        ])
+                        ->default('flat')
+                        ->required()
+                        ->live()
+                        ->helperText('Tiered pricing lowers the per-person rate for configured group-size ranges.'),
+                    Grid::make(2)
+                        ->schema([
+                            TextInput::make('base_price_idr')
+                                ->label('Local price per person')
+                                ->numeric()
+                                ->minValue(0)
+                                ->prefix('IDR')
+                                ->required(fn (Get $get): bool => ($get('pricing_mode') ?? 'flat') === 'flat'),
+                            TextInput::make('base_price_usd')
+                                ->label('International price per person')
+                                ->numeric()
+                                ->minValue(0)
+                                ->prefix('USD')
+                                ->required(fn (Get $get): bool => ($get('pricing_mode') ?? 'flat') === 'flat'),
+                        ])
+                        ->visible(fn (Get $get): bool => ($get('pricing_mode') ?? 'flat') === 'flat'),
+                    Repeater::make('priceTiers')
+                        ->relationship()
+                        ->label('Traveler price tiers')
+                        ->schema([
+                            TextInput::make('min_pax')->label('From travelers')->numeric()->minValue(1)->required(),
+                            TextInput::make('max_pax')->label('To travelers')->numeric()->minValue(1)->placeholder('∞'),
+                            TextInput::make('price_idr')->label('IDR / person')->numeric()->minValue(1)->prefix('IDR')->required(),
+                            TextInput::make('price_usd')->label('USD / person')->numeric()->minValue(1)->prefix('USD')->required(),
+                            TextInput::make('sort_order')->hidden()->default(0),
+                        ])
+                        ->columns(4)
+                        ->defaultItems(1)
+                        ->reorderable()
+                        ->orderColumn('sort_order')
+                        ->rules([
+                            fn () => function (string $attribute, mixed $value, \Closure $fail): void {
+                                if ($message = PackagePriceTier::validateRanges((array) $value)) {
+                                    $fail($message);
+                                }
+                            },
+                        ])
+                        ->helperText('Start at 1 and keep every range contiguous. Leave the "To travelers" field empty on your final tier to create an open-ended limit (e.g., 5+ travelers). If you set a final limit, larger groups will be asked to request a custom quote.')
+                        ->visible(fn (Get $get): bool => $get('pricing_mode') === 'tiered')
+                        ->required(fn (Get $get): bool => $get('pricing_mode') === 'tiered')
+                        ->columnSpanFull(),
                 ])
-                ->columns([
-                    'default' => 1,
-                    'md' => 2,
-                ])
+                ->columns(1)
                 ->columnSpanFull(),
             Fieldset::make('Review display')
                 ->schema([
@@ -323,7 +360,9 @@ class TourPackageForm
     {
         return [
             AdminForm::galleryUpload('gallery', 'Gallery images', 'admin/packages/gallery')
-                ->helperText('Add 2-4 route-specific images. Drag to reorder; the first image appears largest after the cover image.')
+                ->minFiles(2)
+                ->maxFiles(10)
+                ->helperText('Optional. Upload 2-10 route-specific images. Drag to reorder; the first image appears largest.')
                 ->columnSpanFull(),
             AdminForm::primaryLocalizedField('cover_alt', 'Cover alt text')
                 ->helperText('Short image description for accessibility and SEO.'),
@@ -449,5 +488,4 @@ class TourPackageForm
                     ->send();
             });
     }
-
 }

@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, MessageCircle } from 'lucide-react';
+import { CheckCircle, MessageCircle, Info } from 'lucide-react';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { PageShell } from '../components/ui/PageShell';
@@ -26,29 +26,28 @@ export function CheckoutConfirmationPage() {
       <PageShell eyebrow="Booking" title={t.requestSentTitle}>
       <CheckoutSteps current={2} />
       <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-        <section className={`rounded-2xl border border-brandLine bg-white p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
-          <div className="grid h-11 w-11 place-items-center rounded-full bg-brandBlue text-brandDark">
-            <CheckCircle className="h-5 w-5" />
-          </div>
-          <h2 className="mt-5 text-2xl font-bold">{t.waitingConfirmation}</h2>
-          <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
+        <section>
+          <h2 className="text-3xl font-bold text-ink">{t.waitingConfirmation}</h2>
+          <p className="mt-3 text-sm leading-relaxed text-muted">
             {t.requestSentText}
           </p>
-          <div className={`mt-5 rounded-2xl border border-transparent bg-brandLight p-4 ${cardHoverClass}`}>
-            <p className="text-sm font-bold text-brandDark">{t.bookingCode}</p>
-            <p className="mt-1 text-2xl font-extrabold text-brandBlue">{savedBookingCode}</p>
-            <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">
-              {t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}. {bookingSummary.paymentNote || t.paymentDeferredNote}
-            </p>
-            {bookingSummary.currency === 'USD' && bookingSummary.usdPaymentNote ? (
-              <p className="mt-2 text-sm font-semibold leading-6 text-brandMuted">{bookingSummary.usdPaymentNote}</p>
-            ) : null}
+          <div className="mt-6 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+            <p className="text-sm font-bold text-ink">{t.bookingCode}</p>
+            <p className="mt-1 text-2xl font-bold text-secondary sm:text-3xl">{savedBookingCode}</p>
+            <div className="mt-6 text-sm leading-relaxed text-muted">
+              <p>
+                {t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}. {bookingSummary.paymentNote || t.paymentDeferredNote}
+              </p>
+              {bookingSummary.currency === 'USD' && bookingSummary.usdPaymentNote ? (
+                <p className="mt-4">{bookingSummary.usdPaymentNote}</p>
+              ) : null}
+            </div>
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a href={handoffUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <a href={handoffUrl} target="_blank" rel="noreferrer" className={`${whatsappButtonClass} w-full justify-center sm:w-auto`}>
               <MessageCircle className={iconSize} /> {t.sendToWhatsapp}
             </a>
-            <Link to="/" className={secondaryButtonClass}>
+            <Link to="/" className={`${secondaryButtonClass} w-full justify-center sm:w-auto`}>
               {t.done}
             </Link>
           </div>

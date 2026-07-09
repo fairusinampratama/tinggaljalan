@@ -1,0 +1,48 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+@import '@fontsource/manrope/latin-400.css';
+@import '@fontsource/manrope/latin-500.css';
+@import '@fontsource/manrope/latin-600.css';
+@import '@fontsource/manrope/latin-700.css';
+@import '@fontsource/manrope/latin-800.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+:root {
+    --font-family: Manrope, Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
+}
+
+:root:not(.dark) .fi-body {
+    background: #f7f4ed;
+    color: #202522;
+}
+
+:root:not(.dark) .fi-body .fi-topbar > nav,
+:root:not(.dark) .fi-body .fi-sidebar,
+:root:not(.dark) .fi-body .fi-section,
+:root:not(.dark) .fi-body .fi-ta-ctn,
+:root:not(.dark) .fi-body .fi-modal-window {
+    border-color: #ded7c8;
+    background-color: rgb(255 253 248 / 0.96);
+}
+
+:root:not(.dark) .fi-body .fi-sidebar,
+:root:not(.dark) .fi-body .fi-topbar > nav {
+    backdrop-filter: blur(16px);
+}
+
+:root:not(.dark) .fi-body .fi-section,
+:root:not(.dark) .fi-body .fi-ta-ctn,
+:root:not(.dark) .fi-body .fi-modal-window {
+    box-shadow: 0 16px 40px rgb(16 42 54 / 0.07);
+}
+
+:root:not(.dark) .fi-body .fi-sidebar-item.fi-active > a,
+:root:not(.dark) .fi-body .fi-sidebar-item > a:hover {
+    background-color: #eee9df;
+}
+
+:root:not(.dark) .fi-body .fi-sidebar-item.fi-active svg,
+:root:not(.dark) .fi-body .fi-sidebar-item.fi-active span {
+    color: #2f6f6d;
+}

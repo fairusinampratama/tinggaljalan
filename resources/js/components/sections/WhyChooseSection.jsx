@@ -19,7 +19,7 @@ export function WhyChooseSection({ items }) {
   }
 
   return (
-    <section className="bg-white px-4 py-16 sm:px-8 lg:px-10">
+    <section className="public-section bg-white">
       <div className="mx-auto max-w-7xl">
         <SectionHeader eyebrow={t.whyEyebrow} title={t.whyTitle}>
           {t.whyText}
@@ -29,11 +29,11 @@ export function WhyChooseSection({ items }) {
             const Icon = iconMap[icon] ?? Compass;
 
             return (
-              <article key={getLocalized(title, language)} className={`rounded-2xl border border-brandLine bg-white p-6 ${cardHoverClass}`}>
-                <h3 className="flex items-center gap-2 text-xl font-bold text-brandDark">
-                  <Icon className="h-4 w-4 text-brandBlue" /> {getLocalized(title, language)}
+              <article key={getLocalized(title, language)} className={`rounded-xl border border-line bg-surface p-6 ${cardHoverClass}`}>
+                <h3 className="flex items-center gap-2 text-xl font-bold text-ink">
+                  <Icon className="h-4 w-4 text-secondary" /> {getLocalized(title, language)}
                 </h3>
-                <p className="mt-3 text-sm font-semibold leading-6 text-brandMuted">{getLocalized(text, language)}</p>
+                <p className="mt-3 text-sm font-semibold leading-6 text-muted">{getLocalized(text, language)}</p>
               </article>
             );
           })}

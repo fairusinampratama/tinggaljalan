@@ -21,8 +21,8 @@ Tinggal Jalan
 {{ __('booking.exchange_rate') }}: USD 1 = {{ PublicSite::formatMoney($payment->exchange_rate, 'IDR') }}
 @endif
 {{ __('booking.paid_on') }}: {{ BookingLanguage::date($payment->paid_at?->timezone('Asia/Jakarta'), $language, true) }} WIB
-{{ __('booking.payment_method') }}: {{ $payment->midtrans_payment_type ?: '-' }}
-{{ __('booking.transaction_reference') }}: {{ $payment->midtrans_transaction_id ?: '-' }}
+{{ __('booking.payment_method') }}: {{ $payment->provider === 'manual' ? 'Manual Bank Transfer' : ($payment->midtrans_payment_type ?: '-') }}
+{{ __('booking.transaction_reference') }}: {{ $payment->provider === 'manual' ? '-' : ($payment->midtrans_transaction_id ?: '-') }}
 {{ __('booking.order_reference') }}: {{ $payment->order_id }}
 
 {{ strtoupper(__('booking.booking_summary')) }}

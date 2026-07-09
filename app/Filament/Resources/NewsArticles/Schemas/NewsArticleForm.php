@@ -7,7 +7,6 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
@@ -31,7 +30,7 @@ class NewsArticleForm
                         ->schema(self::articleContentSchema())
                         ->columns(1),
                     Step::make('Optional translations')
-                        ->description('Leave empty to use English automatically.')
+                        ->description('Leave empty to use English automatically. Adapt translations for each reader instead of copying literal machine-style text.')
                         ->schema(self::translationSchema())
                         ->columns(2),
                     Step::make('Publishing & Meta')
@@ -90,6 +89,7 @@ class NewsArticleForm
                     AdminForm::primaryLocalizedField('body', 'Body', required: true, textarea: true)
                         ->helperText('Main content for this section. Add one main topic per section.'),
                     Section::make('Translations')
+                        ->description('Optional Indonesian and Chinese adaptations. Keep the meaning, but write naturally for each reader.')
                         ->schema([
                             ...AdminForm::translationFields('heading', 'Heading'),
                             ...AdminForm::translationFields('body', 'Body', textarea: true),
@@ -155,9 +155,12 @@ class NewsArticleForm
                         ->columnSpanFull(),
                 ])
                 ->columnSpanFull(),
-            TagsInput::make('tags')
-                ->placeholder('Add tag')
-                ->helperText('Keywords to help readers find related articles. Press enter after each tag.')
+            Section::make('Reader-facing tags')
+                ->description('Tags are visible on article cards. English is edited first; Indonesian and Chinese can be adapted inside each tag and fall back to English when empty.')
+                ->schema([
+                    AdminForm::primaryLocalizedRepeater('tags', 'Tags')
+                        ->helperText('Add short topics such as Bromo, Family Trip, or Booking Tips. Use translations that feel natural to readers, not literal machine copies.'),
+                ])
                 ->columnSpanFull(),
         ];
     }

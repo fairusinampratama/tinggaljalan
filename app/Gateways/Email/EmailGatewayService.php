@@ -34,7 +34,7 @@ class EmailGatewayService
             throw new InvalidArgumentException('Booking email is required before sending invoice email.');
         }
 
-        if (! filled($payment->snap_url)) {
+        if ($payment->provider === 'midtrans' && ! filled($payment->snap_url)) {
             throw new InvalidArgumentException('A Midtrans Snap URL is required before sending invoice email.');
         }
 
