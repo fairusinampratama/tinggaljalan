@@ -24,7 +24,7 @@ test -f "$LIVE_PATH/.env" || { echo "The live .env file is missing." >&2; exit 1
 test -d "$LIVE_PATH/storage" || { echo "The live storage directory is missing." >&2; exit 1; }
 test ! -e "$CURRENT" || { echo "$CURRENT already exists but is not a valid initialized symlink." >&2; exit 1; }
 
-mkdir -p "$RELEASES" "$SHARED/backups/database" "$(diname "$LEGACY")"
+mkdir -p "$RELEASES" "$SHARED/backups/database" "$(dirname "$LEGACY")"
 test "$(df -Pk "$DOMAIN_ROOT" | awk 'NR==2 {print $4}')" -gt 524288 || {
     echo "At least 512 MB of free disk space is required for bootstrap." >&2
     exit 1
