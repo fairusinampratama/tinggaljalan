@@ -20,10 +20,11 @@ request_200 "$BASE_URL/robots.txt"
 request_200 "$BASE_URL/admin/login"
 
 SITEMAP="$(mktemp)"
-trap 'rm -f "$SITEMAP"' EXIT
+SAMPLE_URL_FILE="$(mktemp)"
+trap 'rm -f "$SITEMAP" "$SAMPLE_URL_FILE"' EXIT
 curl --fail --silent --show-error --max-time 30 "$BASE_URL/sitemap.xml" > "$SITEMAP"
 
-mapfile -t SAMPLE_URLS < <("$PHP_BIN" -r '
+"$PHP_BIN" -r '
     libxml_use_internal_errors(true);
     $xml = simplexml_load_file($argv[1]);
     if ($xml === false) { fwrite(STDERR, "Invalid sitemap XML.\n"); exit(1); }
@@ -44,11 +45,11 @@ mapfile -t SAMPLE_URLS < <("$PHP_BIN" -r '
     }
     if ($route === null || $news === null) { fwrite(STDERR, "Sitemap needs a route and news detail URL.\n"); exit(1); }
     echo $route."\n".$news."\n";
-' "$SITEMAP")
+' "$SITEMAP" > "$SAMPLE_URL_FILE"
 
-for url in "${SAMPLE_URLS[@]}"; do
+while IFS= read -r url; do
     request_200 "$url"
-done
+done < "$SAMPLE_URL_FILE"
 
 ACTIVE_RELEASE="$(readlink -f "$CURRENT_LINK")"
 test -f "$ACTIVE_RELEASE/REVISION" || { echo "Active release has no REVISION file." >&2; exit 1; }
