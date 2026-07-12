@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { getLocalized } from '../../utils/localization';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
 import { SectionHeader } from '../ui/SectionHeader';
 
 export function DestinationSection({ items }) {
@@ -38,10 +39,13 @@ export function DestinationSection({ items }) {
               }}
             >
               <div className="overflow-hidden">
-                <img
+                <ResponsiveImage
                   src={item.image}
                   alt={item.name}
                   className="h-52 w-full object-cover transition duration-500 group-hover:scale-105"
+                  sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  width={1200}
+                  height={780}
                 />
               </div>
               <div className="p-5">

@@ -69,7 +69,13 @@ After verification, set `PRODUCTION_DEPLOY_ENABLED=true`. The next successful `m
 
 ## Deployment behavior
 
-The workflow uses PHP 8.4 and Node 22, runs Pint, the complete Laravel test suite, and Vite. It installs production Composer dependencies and packages built assets with a `REVISION` file.
+The workflow uses PHP 8.4 and Node 22, runs Pint, the complete Laravel test suite, generates static responsive image variants, and builds Vite assets. It installs production Composer dependencies and packages built assets with a `REVISION` file.
+
+### Responsive image generation
+
+Production PHP must have GD with WebP support enabled. Admin uploads generate responsive WebP variants immediately in shared public storage, so uploading hero, destination, route, news, or gallery images does not require running npm. Each deployment also runs `php artisan images:generate-responsive --missing` after shared storage is linked to backfill older uploads or repair missing variants.
+
+Static repository images are still generated during CI with `npm run build:performance` and packaged into the immutable release under `public/images/generated`.
 
 The remote deployment then:
 

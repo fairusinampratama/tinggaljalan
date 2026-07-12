@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('site_settings', function (Blueprint $table) {
-            $table->boolean('hero_autoplay_enabled')->default(false);
+            $table->boolean('hero_autoplay_enabled')->default(true);
             $table->unsignedInteger('hero_autoplay_interval')->default(8000);
         });
     }

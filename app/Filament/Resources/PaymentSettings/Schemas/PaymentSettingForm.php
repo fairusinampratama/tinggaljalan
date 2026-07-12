@@ -18,7 +18,7 @@ class PaymentSettingForm
         return $schema
             ->components([
                 Section::make('Gateway configuration')
-                    ->description(fn (callable $get) => $get('gateway') === 'midtrans' ? 'Midtrans keys are stored encrypted and never exposed publicly.' : 'Enter your bank details to display to customers.')
+                    ->description(fn (callable $get) => in_array($get('gateway'), ['midtrans', 'doku'], true) ? 'Gateway keys are stored encrypted and never exposed publicly.' : 'Enter your bank details to display to customers.')
                     ->schema([
                         TextInput::make('gateway')
                             ->disabled()
@@ -41,15 +41,16 @@ class PaymentSettingForm
                             ->helperText('Leave blank on edit to keep the existing encrypted client key.')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->maxLength(2000)
-                            ->visible(fn (callable $get) => $get('gateway') === 'midtrans'),
+                            ->visible(fn (callable $get) => in_array($get('gateway'), ['midtrans', 'doku'], true))
+                            ->label(fn (callable $get): string => $get('gateway') === 'doku' ? 'DOKU Client ID' : 'Midtrans client key'),
                         TextInput::make('secret_key')
-                            ->label('Midtrans server key')
+                            ->label(fn (callable $get): string => $get('gateway') === 'doku' ? 'DOKU Secret Key' : 'Midtrans server key')
                             ->password()
                             ->revealable()
-                            ->helperText('Leave blank on edit to keep the existing encrypted server key.')
+                            ->helperText('Leave blank on edit to keep the existing encrypted secret key.')
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->maxLength(2000)
-                            ->visible(fn (callable $get) => $get('gateway') === 'midtrans'),
+                            ->visible(fn (callable $get) => in_array($get('gateway'), ['midtrans', 'doku'], true)),
                         Repeater::make('manual_bank_accounts')
                             ->label('Bank Accounts')
                             ->helperText('These accounts will be displayed to the customer when they checkout.')
@@ -93,7 +94,7 @@ class PaymentSettingForm
                     ->columns(1)
                     ->columnSpanFull(),
                 Section::make('Exchange rate')
-                    ->description('Used when a USD quote is converted to the IDR amount charged by Midtrans.')
+                    ->description('Used when a USD quote is converted to the IDR amount charged by the active gateway.')
                     ->schema([
                         Select::make('exchange_rate_provider')
                             ->label('Provider')

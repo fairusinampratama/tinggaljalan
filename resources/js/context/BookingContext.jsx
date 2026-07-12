@@ -1,7 +1,11 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+﻿import { createContext, useContext, useEffect, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { copy } from '../data/translations';
+import { loadCopy } from '../data/translations';
 import { getRegionConfig, normalizeRegion } from '../utils/localization';
+
+const fallbackCopy = {
+  nav: ['Home', 'Destination', 'Routes', 'News & Guides', 'Booking', 'Contact'],
+};
 
 const BookingContext = createContext(null);
 
@@ -67,7 +71,7 @@ export function BookingProvider({ children }) {
   const publicData = props.publicData ?? {};
   const pageBooking = props.booking?.draft ?? {};
   const bookingDefaults = publicData.bookingOptions?.initialBooking ?? {};
-  const availableRoutes = props.routes?.data ?? (Array.isArray(props.routes) ? props.routes : null) ?? publicData.routes ?? [];
+  const availableRoutes = props.routes?.data ?? (Array.isArray(props.routes) ? props.routes : null) ?? [];
   const fallbackRoute = availableRoutes[0] ?? null;
   const initialRouteId = pageBooking.route ?? props.route?.id ?? fallbackRoute?.id;
   const initialBookingState = normalizeDraft(pageBooking, bookingDefaults);
@@ -77,6 +81,7 @@ export function BookingProvider({ children }) {
   const [appliedVoucher, setAppliedVoucher] = useState(pageBooking.voucher ?? '');
   const [bookingCode] = useState(props.savedBooking?.code ?? '');
   const [booking, setBooking] = useState(initialBookingState);
+  const [currentCopy, setCurrentCopy] = useState(fallbackCopy);
   const language = normalizeRegion(languageState);
   const regionConfig = getRegionConfig(language);
 
@@ -84,10 +89,29 @@ export function BookingProvider({ children }) {
     setBooking(normalizeDraft(pageBooking, bookingDefaults));
     setVoucherCode(pageBooking.voucher ?? bookingDefaults.voucher ?? '');
     setAppliedVoucher(pageBooking.voucher ?? bookingDefaults.voucher ?? '');
-  }, [JSON.stringify(pageBooking), JSON.stringify(bookingDefaults)]);
+
+    const nextRouteId = pageBooking.route ?? props.route?.id ?? fallbackRoute?.id;
+    if (nextRouteId) {
+      setSelectedRouteId(nextRouteId);
+    }
+  }, [JSON.stringify(pageBooking), JSON.stringify(bookingDefaults), props.route?.id, fallbackRoute?.id]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadCopy(language).then((nextCopy) => {
+      if (isMounted) {
+        setCurrentCopy(nextCopy ?? fallbackCopy);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [language]);
 
   const selectedRoute = availableRoutes.find((route) => route.id === selectedRouteId || route.slug === selectedRouteId) ?? fallbackRoute;
-  const t = { ...(copy[language] ?? copy.us ?? copy.id), regionId: language };
+  const t = { ...currentCopy, regionId: language };
   const bookingSummary = props.booking?.summary ?? emptySummary(booking.currency);
   const dateAvailability = normalizeAvailability(props.booking?.availability);
   const bookingBlock = {

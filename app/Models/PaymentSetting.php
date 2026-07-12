@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class PaymentSetting extends Model
 {
     public const GATEWAY_MIDTRANS = 'midtrans';
+    public const GATEWAY_DOKU = 'doku';
     public const GATEWAY_MANUAL = 'manual';
 
     protected function casts(): array
@@ -43,6 +44,21 @@ class PaymentSetting extends Model
         return self::query()->firstOrCreate(
             ['gateway' => self::GATEWAY_MIDTRANS],
             self::defaults(),
+        );
+    }
+
+    public static function doku(): self
+    {
+        return self::query()->firstOrCreate(
+            ['gateway' => self::GATEWAY_DOKU],
+            [
+                ...self::defaults(),
+                'gateway' => self::GATEWAY_DOKU,
+                'is_enabled' => false,
+                'public_label' => 'Secure DOKU payment link',
+                'booking_note' => 'You won\'t be charged yet. We will send a secure DOKU payment link once your booking is confirmed.',
+                'usd_note' => 'DOKU charges securely in IDR after USD quotes are converted.',
+            ],
         );
     }
 

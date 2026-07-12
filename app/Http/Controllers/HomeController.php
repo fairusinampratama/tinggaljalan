@@ -24,8 +24,8 @@ class HomeController extends Controller
         return Inertia::render('HomePage', [
             'language' => $language,
             'destinations' => Destination::query()->active()->featured()->ordered()->get()->map(fn (Destination $destination) => InertiaPublicData::destination($destination))->values(),
-            'featuredRoutes' => InertiaPublicData::routes(TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->featured()->ordered()->limit(6)->get()),
-            'latestArticles' => InertiaPublicData::articles(NewsArticle::query()->with(['destination', 'articleCategory', 'tourPackages'])->published()->latest('published_at')->limit(3)->get()),
+            'featuredRoutes' => InertiaPublicData::routeCards(TourPackage::query()->with(['destination', 'newsArticles'])->active()->featured()->ordered()->limit(6)->get()),
+            'latestArticles' => InertiaPublicData::articleCards(NewsArticle::query()->with(['destination', 'articleCategory', 'tourPackages'])->published()->latest('published_at')->limit(3)->get()),
             'faqs' => Faq::query()->active()->ordered()->limit(8)->get()->map(fn (Faq $faq) => [
                 'question' => $faq->question,
                 'answer' => $faq->answer,

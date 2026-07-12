@@ -56,7 +56,8 @@ class PackageAvailabilityForm
                             ->searchable()
                             ->preload()
                             ->required(fn (Get $get): bool => $get('scope_type') === 'destination')
-                            ->visible(fn (Get $get): bool => $get('scope_type') === 'destination'),
+                            ->visible(fn (Get $get): bool => $get('scope_type') === 'destination')
+                            ->helperText('Choose the destination to apply this rule to all of its packages.'),
                         Select::make('tour_package_id')
                             ->label('Tour package')
                             ->options(fn (): array => TourPackage::query()
@@ -69,19 +70,22 @@ class PackageAvailabilityForm
                             ->searchable()
                             ->preload()
                             ->required(fn (Get $get): bool => $get('scope_type') === 'package')
-                            ->visible(fn (Get $get): bool => $get('scope_type') === 'package'),
+                            ->visible(fn (Get $get): bool => $get('scope_type') === 'package')
+                            ->helperText('Select the specific tour package to override the destination-wide rule.'),
                         \Filament\Schemas\Components\Grid::make(3)
                             ->schema([
                                 DatePicker::make('date')
                                     ->label('Start date')
                                     ->required()
-                                    ->native(false),
+                                    ->native(false)
+                                    ->helperText('Select the date when this availability rule begins.'),
                                 DatePicker::make('end_date')
                                     ->label('End date')
                                     ->required(fn (Get $get): bool => ! $get('is_open_ended'))
                                     ->visible(fn (Get $get): bool => ! $get('is_open_ended'))
                                     ->afterOrEqual('date')
-                                    ->native(false),
+                                    ->native(false)
+                                    ->helperText('The rule remains active until this end date (inclusive).'),
                                 \Filament\Forms\Components\Toggle::make('is_open_ended')
                                     ->label('Open-ended')
                                     ->default(false)
@@ -90,7 +94,8 @@ class PackageAvailabilityForm
                                         if ($state) {
                                             $set('end_date', null);
                                         }
-                                    }),
+                                    })
+                                    ->helperText('If enabled, this rule applies indefinitely from the start date (hides end date).'),
                             ])
                             ->columnSpanFull(),
                         Select::make('status')

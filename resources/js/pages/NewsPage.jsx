@@ -94,7 +94,7 @@ export function NewsPage() {
               </p>
               <div className="mt-4 grid grid-cols-3 gap-3 text-center">
                 {[
-                  { value: (publicData.articles ?? []).length, label: t.newsArticlesCount },
+                  { value: totalArticles, label: t.newsArticlesCount },
                   { value: (publicData.destinations ?? []).length, label: t.newsDestinationsCount },
                   { value: 3, label: t.newsQuickPaths },
                 ].map((item) => (
@@ -117,7 +117,7 @@ export function NewsPage() {
               destinationFilter={destinationFilter}
               hasActiveFilters={hasActiveFilters}
               resultCount={totalArticles}
-              totalCount={(publicData.articles ?? []).length}
+              totalCount={totalArticles}
               onUpdate={updateQuery}
               onReset={clearFilters}
             />

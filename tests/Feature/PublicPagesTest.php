@@ -105,7 +105,7 @@ class PublicPagesTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('publicData.home.heroSlides', 0)
-                ->where('publicData.home.heroSettings.autoplayEnabled', false)
+                ->where('publicData.home.heroSettings.autoplayEnabled', true)
                 ->where('publicData.home.heroSettings.autoplayInterval', 8000));
     }
 
@@ -170,8 +170,7 @@ class PublicPagesTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('faqs', $assertGlobalFaqs)
-                ->where('publicData.faqs', $assertGlobalFaqs));
+                ->where('faqs', $assertGlobalFaqs));
 
         $this->get('/routes/'.$package->slug)
             ->assertOk()

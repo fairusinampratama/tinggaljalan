@@ -3,6 +3,7 @@
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPaymentWhatsappController;
 use App\Http\Controllers\CheckoutPaymentController;
+use App\Http\Controllers\DokuWebhookController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LanguageController;
@@ -37,6 +38,7 @@ Route::get('/checkout/payment/{payment}/status', [CheckoutPaymentController::cla
     ->middleware('throttle:20,1')
     ->name('checkout.payment.status');
 Route::post('/midtrans/webhook', MidtransWebhookController::class)->name('midtrans.webhook');
+Route::post('/doku/webhook', DokuWebhookController::class)->name('doku.webhook');
 Route::get('/admin/payment-handoffs/{payment}/whatsapp', BookingPaymentWhatsappController::class)
     ->middleware('auth')
     ->name('admin.booking-payments.whatsapp');

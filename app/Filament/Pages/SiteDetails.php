@@ -85,7 +85,7 @@ class SiteDetails extends Page implements HasForms
                     ->schema([
                         Toggle::make('hero_autoplay_enabled')
                             ->label('Enable hero autoplay')
-                            ->default(false)
+                            ->default(true)
                             ->helperText('When enabled, visitors can still pause the carousel. Reduced-motion preferences always disable autoplay.'),
                         TextInput::make('hero_autoplay_interval')
                             ->label('Autoplay interval (milliseconds)')

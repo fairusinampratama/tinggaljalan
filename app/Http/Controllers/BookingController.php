@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendNewBookingAdminNotification;
 use App\Models\Booking;
 use App\Models\TourPackage;
 use App\Support\BookingLanguage;
@@ -169,6 +170,14 @@ class BookingController extends Controller
 
         $request->session()->put('booking_id', $booking->id);
         $request->session()->put('booking_draft', $draft);
+
+        app()->terminating(function () use ($booking): void {
+            app(SendNewBookingAdminNotification::class, ['bookingId' => $booking->id])->handle(
+                app(\App\Gateways\Email\EmailGatewayService::class),
+                app(\App\Gateways\WhatsApp\WhatsAppGatewayService::class),
+                app(\App\Gateways\WhatsApp\NewBookingAdminWhatsAppMessage::class),
+            );
+        });
 
         return redirect()->route('checkout.confirmation');
     }

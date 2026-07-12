@@ -21,12 +21,17 @@ class FaqForm
                             ->numeric()
                             ->default(0)
                             ->helperText('Lower numbers appear first.'),
-                        Toggle::make('is_active')->required()->default(true),
+                        Toggle::make('is_active')
+                            ->required()
+                            ->default(true)
+                            ->helperText('Toggle to display or hide this FAQ on public pages.'),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-                AdminForm::localized('question', 'Question', required: true),
-                AdminForm::localized('answer', 'Answer', required: true, textarea: true),
+                AdminForm::localized('question', 'Question', required: true)
+                    ->description('The question text. Translate to ID, US, and CN.'),
+                AdminForm::localized('answer', 'Answer', required: true, textarea: true)
+                    ->description('The answer text. Supports multi-line explanations. Translate to ID, US, and CN.'),
             ]);
     }
 }

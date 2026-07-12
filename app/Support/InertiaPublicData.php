@@ -24,16 +24,6 @@ class InertiaPublicData
     public static function shared(Request $request): array
     {
         $language = PublicSite::language($request);
-        $packages = TourPackage::query()
-            ->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])
-            ->active()
-            ->ordered()
-            ->get();
-        $articles = NewsArticle::query()
-            ->with(['destination', 'articleCategory', 'tourPackages'])
-            ->published()
-            ->latest('published_at')
-            ->get();
 
         return [
             'language' => $language,
@@ -41,18 +31,12 @@ class InertiaPublicData
             'home' => self::home(),
             'bookingOptions' => self::bookingOptions($request),
             'paymentSettings' => app(PaymentSettingsService::class)->publicPayload(),
-            'routes' => self::routes($packages),
             'destinations' => Destination::query()->active()->ordered()->get()->map(fn (Destination $destination) => self::destination($destination))->values(),
-            'articles' => self::articles($articles),
             'categories' => ArticleCategory::query()->active()->ordered()->get()->map(fn (ArticleCategory $category) => [
                 'value' => $category->slug,
                 'label' => self::localizedArray($category->label),
             ])->values(),
             'routeStyles' => RouteFilterOptions::publicOptions(),
-            'faqs' => Faq::query()->active()->ordered()->get()->map(fn (Faq $faq) => [
-                'question' => self::localizedArray($faq->question),
-                'answer' => self::localizedArray($faq->answer),
-            ])->values(),
             'reviews' => Review::query()->active()->featured()->ordered()->limit(Review::MAX_ACTIVE_FEATURED)->get()->map(fn (Review $review) => [
                 'name' => $review->name,
                 'origin' => self::localizedArray($review->origin),
@@ -111,7 +95,7 @@ class InertiaPublicData
 
         return [
             'heroSettings' => [
-                'autoplayEnabled' => (bool) ($site?->hero_autoplay_enabled ?? false),
+                'autoplayEnabled' => (bool) ($site?->hero_autoplay_enabled ?? true),
                 'autoplayInterval' => min(15000, max(5000, (int) ($site?->hero_autoplay_interval ?? 8000))),
             ],
             'heroSlides' => HeroSlide::query()->activeScheduled()->ordered()->limit(5)->get()->map(fn ($slide) => [
@@ -268,6 +252,16 @@ class InertiaPublicData
         return $packages->map(fn (TourPackage $package) => self::route($package))->values()->all();
     }
 
+    public static function routeCard(TourPackage $package): array
+    {
+        return array_intersect_key(self::route($package), array_flip(['id', 'slug', 'destinationId', 'destinationName', 'title', 'category', 'tag', 'badge', 'excerpt', 'intro', 'why', 'bestFor', 'duration', 'difficulty', 'basePrice', 'basePriceIdr', 'basePriceUsd', 'image', 'imageAlt', 'pickupLabel', 'groupType', 'rating', 'reviewCount', 'reviewSource', 'styles', 'featured', 'relatedArticleSlugs']));
+    }
+
+    public static function routeCards(Collection $packages): array
+    {
+        return $packages->map(fn (TourPackage $package) => self::routeCard($package))->values()->all();
+    }
+
     public static function article(NewsArticle $article): array
     {
         return [
@@ -296,6 +290,16 @@ class InertiaPublicData
     public static function articles(Collection $articles): array
     {
         return $articles->map(fn (NewsArticle $article) => self::article($article))->values()->all();
+    }
+
+    public static function articleCard(NewsArticle $article): array
+    {
+        return array_intersect_key(self::article($article), array_flip(['id', 'slug', 'title', 'excerpt', 'category', 'destinationId', 'destinationName', 'publishedDate', 'updatedDate', 'readingTime', 'coverImage', 'coverAlt', 'tags', 'relatedRouteIds', 'isFeatured', 'publishedTime', 'modifiedTime']));
+    }
+
+    public static function articleCards(Collection $articles): array
+    {
+        return $articles->map(fn (NewsArticle $article) => self::articleCard($article))->values()->all();
     }
 
     public static function packageAddOn(PackageAddOn $packageAddOn): array

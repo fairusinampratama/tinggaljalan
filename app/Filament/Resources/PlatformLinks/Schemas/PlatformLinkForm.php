@@ -17,8 +17,15 @@ class PlatformLinkForm
             ->components([
                 Section::make('Platform link')
                     ->schema([
-                        TextInput::make('name')->required()->maxLength(255),
-                        TextInput::make('url')->url()->required()->maxLength(255),
+                        TextInput::make('name')
+                            ->required()
+                            ->maxLength(255)
+                            ->helperText('Platform name (e.g., \'Google Maps\' or \'Traveloka\').'),
+                        TextInput::make('url')
+                            ->url()
+                            ->required()
+                            ->maxLength(255)
+                            ->helperText('The full external link URL to your brand profile.'),
                         AdminForm::imageUpload('logo', 'Logo', 'admin/platform-links/logos')
                             ->required()
                             ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'])
@@ -30,7 +37,11 @@ class PlatformLinkForm
                             ->required()
                             ->maxLength(255)
                             ->helperText('Describe the logo, for example: Traveloka logo.'),
-                        TextInput::make('sort_order')->required()->numeric()->default(0),
+                        TextInput::make('sort_order')
+                            ->required()
+                            ->numeric()
+                            ->default(0)
+                            ->helperText('Display order. Lower numbers appear first.'),
                         Toggle::make('is_active')->required()
                             ->default(fn (): bool => PlatformLink::query()->active()->count() < PlatformLink::MAX_ACTIVE)
                             ->helperText('Only four platform links can be active at once.'),

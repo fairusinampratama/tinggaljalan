@@ -36,6 +36,10 @@ rm -rf \
 cp -a "$ROOT/vendor" "$STAGE/vendor"
 mkdir -p "$STAGE/public"
 cp -a "$ROOT/public/build" "$STAGE/public/build"
+if test -d "$ROOT/public/images/generated"; then
+    mkdir -p "$STAGE/public/images"
+    cp -a "$ROOT/public/images/generated" "$STAGE/public/images/generated"
+fi
 mkdir -p "$STAGE/bootstrap/cache"
 printf '%s\n' "$SHA" > "$STAGE/REVISION"
 

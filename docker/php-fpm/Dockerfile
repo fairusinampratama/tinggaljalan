@@ -6,9 +6,13 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         libicu-dev \
+        libjpeg62-turbo-dev \
+        libpng-dev \
+        libwebp-dev \
         libzip-dev \
         unzip \
-    && docker-php-ext-install intl opcache pdo_mysql zip \
+    && docker-php-ext-configure gd --with-jpeg --with-webp \
+    && docker-php-ext-install gd intl opcache pdo_mysql zip \
     && rm -rf /var/lib/apt/lists/*
 
 ARG WWWUSER=1000

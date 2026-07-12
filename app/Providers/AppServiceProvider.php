@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Gateways\WhatsApp\HttpWhatspieClient;
 use App\Gateways\WhatsApp\WhatspieClient;
+use App\Payments\Doku\DokuClient;
+use App\Payments\Doku\HttpDokuClient;
 use App\Payments\ExchangeRates\ExchangeRateClient;
 use App\Payments\ExchangeRates\FrankfurterExchangeRateClient;
 use App\Payments\Midtrans\HttpMidtransClient;
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(MidtransClient::class, HttpMidtransClient::class);
+        $this->app->bind(DokuClient::class, HttpDokuClient::class);
         $this->app->bind(ExchangeRateClient::class, FrankfurterExchangeRateClient::class);
         $this->app->bind(WhatspieClient::class, HttpWhatspieClient::class);
     }

@@ -59,6 +59,35 @@ class WhatsAppGatewayService
         return WhatsAppSendResult::sent($messageId ?: null, $response);
     }
 
+    public function sendMessageTo(string $phone, string $message): WhatsAppSendResult
+    {
+        $setting = $this->settings->current();
+
+        if (! $setting || ! $setting->is_enabled || $setting->provider === WhatsappGatewaySetting::PROVIDER_MANUAL) {
+            return WhatsAppSendResult::failed('Automatic WhatsApp gateway is not enabled.');
+        }
+
+        if ($setting->provider !== WhatsappGatewaySetting::PROVIDER_WHATSPIE) {
+            return WhatsAppSendResult::failed('Unsupported WhatsApp gateway provider.');
+        }
+
+        try {
+            $response = $this->whatspie->sendMessage(
+                $this->normalizePhone($phone, $setting->default_country_code ?: '62'),
+                $message,
+            );
+        } catch (\Throwable $exception) {
+            return WhatsAppSendResult::failed($exception->getMessage(), ['local_error' => $exception->getMessage()]);
+        }
+
+        $messageId = data_get($response, 'id')
+            ?? data_get($response, 'message_id')
+            ?? data_get($response, 'data.id')
+            ?? data_get($response, 'data.message_id');
+
+        return WhatsAppSendResult::sent(filled($messageId) ? (string) $messageId : null, $response);
+    }
+
     public function sendTest(string $phone, string $message = 'This is a Tinggal Jalan WhatsApp gateway test.'): WhatsAppSendResult
     {
         $setting = $this->settings->current();

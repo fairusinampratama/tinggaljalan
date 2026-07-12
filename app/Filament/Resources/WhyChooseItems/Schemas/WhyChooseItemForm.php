@@ -26,14 +26,17 @@ class WhyChooseItemForm
                             ->schema([
                                 TextInput::make('title.us')
                                     ->label('Title (English)')
-                                    ->required(),
+                                    ->required()
+                                    ->helperText('English headline (e.g., \'Malang Based Local Team\').'),
                                 Textarea::make('text.us')
                                     ->label('Description (English)')
                                     ->required()
-                                    ->rows(3),
+                                    ->rows(3)
+                                    ->helperText('English description of why customers should choose Tinggal Jalan.'),
                             ]),
 
                         Section::make('Translations')
+                            ->description('Provide localized headlines and descriptions in Indonesian and Chinese.')
                             ->schema([
                                 TextInput::make('title.id')->label('Title (Indonesian)'),
                                 TextInput::make('title.cn')->label('Title (Chinese)'),
@@ -65,15 +68,19 @@ class WhyChooseItemForm
                                         'coffee' => 'Coffee',
                                     ])
                                     ->searchable()
-                                    ->required(),
-                                TextInput::make('sort_order')->required()
+                                    ->required()
+                                    ->helperText('Select the visual icon that represents this selling point.'),
+                                TextInput::make('sort_order')
                                     ->label('Sort Order')
                                     ->numeric()
                                     ->default(0)
-                                    ->required(),
-                                Toggle::make('is_active')->required()
+                                    ->required()
+                                    ->helperText('Lower values order this item earlier on the homepage.'),
+                                Toggle::make('is_active')
                                     ->label('Is Active')
+                                    ->required()
                                     ->default(true)
+                                    ->helperText('Toggle to publish this item. Max 3 active items are permitted.')
                                     ->rules([
                                         function (?WhyChooseItem $record) {
                                             return function (string $attribute, $value, Closure $fail) use ($record) {

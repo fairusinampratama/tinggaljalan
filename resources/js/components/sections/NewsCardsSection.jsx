@@ -4,6 +4,7 @@ import { useBooking } from '../../context/BookingContext';
 import { getLocalized } from '../../utils/localization';
 import { iconSize, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 import { SectionHeader } from '../ui/SectionHeader';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
 
 const allValue = 'all';
 
@@ -59,9 +60,9 @@ function MetaRow({ article, language }) {
 }
 
 function RelatedRouteChip({ article, language, compact = false }) {
-  const { publicData, t } = useBooking();
+  const { t } = useBooking();
   const routeId = article.relatedRouteIds?.[0];
-  const route = routeId ? publicData.routes?.find((item) => item.id === routeId || item.slug === routeId) : null;
+  const route = null;
 
   if (!route) {
     return null;
@@ -90,7 +91,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
   const imageClass = isFeatured
     ? 'aspect-[16/10] h-full min-h-72'
     : isHorizontal || isCompact
-      ? 'aspect-[4/3] h-full min-h-40'
+      ? 'aspect-[16/10] h-48 sm:aspect-[4/3] sm:h-full sm:min-h-40'
       : 'aspect-[16/10] h-52';
   const titleClass = isFeatured ? 'text-3xl sm:text-4xl' : isCompact ? 'text-lg' : 'text-xl';
 
@@ -102,7 +103,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
     <article
       role="link"
       tabIndex={0}
-      className={`group h-full cursor-pointer overflow-hidden rounded-xl border border-line bg-surface shadow-soft transition duration-300 hover:border-secondary/40 hover:shadow-xl hover:shadow-secondary/10 focus-within:-translate-y-1 focus-within:border-secondary/40 focus-within:shadow-xl focus-within:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${isHorizontal || isCompact ? 'grid grid-cols-[40%_1fr]' : isFeatured ? 'flex flex-col lg:grid lg:grid-cols-[1.08fr_0.92fr]' : 'flex flex-col'
+      className={`group h-full cursor-pointer overflow-hidden rounded-xl border border-line bg-surface shadow-soft transition duration-300 hover:border-secondary/40 hover:shadow-xl hover:shadow-secondary/10 focus-within:-translate-y-1 focus-within:border-secondary/40 focus-within:shadow-xl focus-within:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${isHorizontal || isCompact ? 'flex flex-col sm:grid sm:grid-cols-[40%_1fr]' : isFeatured ? 'flex flex-col lg:grid lg:grid-cols-[1.08fr_0.92fr]' : 'flex flex-col'
         }`}
       onClick={openArticle}
       onKeyDown={(event) => {
@@ -113,10 +114,15 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
       }}
     >
       <div className="overflow-hidden bg-subtle">
-        <img
+        <ResponsiveImage
           src={article.coverImage}
           alt={getLocalized(article.coverAlt, language)}
           className={`${imageClass} w-full object-cover transition duration-500 group-hover:scale-105 group-focus-visible:scale-105`}
+          sizes={isFeatured ? '(min-width: 1024px) 55vw, 100vw' : '(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw'}
+          loading={isFeatured ? 'eager' : 'lazy'}
+          fetchPriority={isFeatured ? 'high' : 'auto'}
+          width={1200}
+          height={750}
         />
       </div>
       <div className={`flex min-w-0 flex-1 flex-col ${isFeatured ? 'p-6 sm:p-7' : isCompact ? 'p-4' : 'p-5'}`}>

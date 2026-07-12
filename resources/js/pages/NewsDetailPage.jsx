@@ -4,6 +4,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { NewsCardsSection } from '../components/sections/NewsCardsSection';
 import { Seo } from '../components/seo/Seo';
 import { useBooking } from '../context/BookingContext';
+import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { getLocalized } from '../utils/localization';
 import { buildNewsArticleJsonLd, getNewsSeo } from '../utils/seo';
 
@@ -19,7 +20,7 @@ export function NewsDetailPage() {
   const { props } = usePage();
   const { articleSlug } = useParams();
   const { language, whatsappUrl, publicData, t, regionConfig } = useBooking();
-  const article = props.article ?? publicData.articles?.find((item) => item.slug === articleSlug);
+  const article = props.article;
 
   if (!article) {
     return <Navigate to="/news" replace />;
@@ -27,7 +28,7 @@ export function NewsDetailPage() {
 
   const seo = props.seo ?? getNewsSeo(article, language);
   const category = publicData.categories?.find((item) => item.value === article.category);
-  const relatedRoutes = props.relatedRoutes ?? article.relatedRouteIds.map((routeId) => publicData.routes?.find((route) => route.id === routeId || route.slug === routeId)).filter(Boolean).slice(0, 3);
+  const relatedRoutes = props.relatedRoutes ?? [];
   const relatedArticles = props.relatedArticles ?? [];
 
   return (
@@ -62,10 +63,15 @@ export function NewsDetailPage() {
               </header>
 
               <div className="mb-10 overflow-hidden rounded-2xl">
-                <img
+                <ResponsiveImage
                   src={article.coverImage}
                   alt={getLocalized(article.coverAlt, language)}
                   className="aspect-[16/9] w-full object-cover"
+                  sizes="(min-width: 1024px) 65vw, 100vw"
+                  loading="eager"
+                  fetchPriority="high"
+                  width={1600}
+                  height={900}
                 />
               </div>
 

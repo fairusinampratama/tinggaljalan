@@ -7,6 +7,10 @@
         <link rel="icon" type="image/png" href="/images/logo-tj.png">
 
 
+        @if (request()->routeIs('home'))
+            @include('partials.hero-preloads')
+        @endif
+
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.jsx'])
         @inertiaHead

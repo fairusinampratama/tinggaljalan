@@ -41,7 +41,7 @@ class RouteController extends Controller
 
         $seo = Seo::routesIndex($packages->getCollection(), $search !== '');
 
-        $packages->getCollection()->transform(fn ($package) => InertiaPublicData::route($package));
+        $packages->getCollection()->transform(fn ($package) => InertiaPublicData::routeCard($package));
 
         return Inertia::render('RoutesPage', [
             'language' => $language,

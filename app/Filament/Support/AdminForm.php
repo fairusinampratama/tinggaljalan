@@ -3,6 +3,7 @@
 namespace App\Filament\Support;
 
 use App\Support\PublicSite;
+use App\Support\ResponsiveImageGenerator;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
@@ -212,7 +213,13 @@ class AdminForm
             ->saveUploadedFileUsing(static function (TemporaryUploadedFile $file) use ($directory): ?string {
                 $extension = $file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg';
 
-                return $file->storeAs($directory, Str::ulid().'.'.$extension, 'public') ?: null;
+                $path = $file->storeAs($directory, Str::ulid().'.'.$extension, 'public') ?: null;
+
+                if ($path) {
+                    app(ResponsiveImageGenerator::class)->generateForPublicDiskPath($path);
+                }
+
+                return $path;
             })
             ->getUploadedFileUsing(static function (string $file): ?array {
                 if (blank($file)) {

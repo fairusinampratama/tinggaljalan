@@ -6,7 +6,6 @@ export function useSlider({
   total,
   autoplay = false,
   autoplayInterval = 6000,
-  preloadSources = [],
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [userPaused, setUserPaused] = useState(false);
@@ -87,18 +86,8 @@ export function useSlider({
     setActiveIndex((current) => Math.min(current, Math.max(total - 1, 0)));
   }, [total]);
 
-  useEffect(() => {
-    if (!hasMultiple || typeof Image === 'undefined') return;
-
-    const indexes = [(activeIndex - 1 + total) % total, (activeIndex + 1) % total];
-    indexes.forEach((index) => {
-      const source = preloadSources[index];
-      [source?.desktop, source?.mobile].filter(Boolean).forEach((url) => {
-        const image = new Image();
-        image.src = url;
-      });
-    });
-  }, [activeIndex, hasMultiple, preloadSources, total]);
+  // Avoid speculative neighbor image preloads on the public hero. Lighthouse showed
+  // the next slide's original upload competing with the active LCP image on mobile.
 
   return {
     activeIndex,

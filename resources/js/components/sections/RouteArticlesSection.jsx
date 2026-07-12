@@ -5,6 +5,7 @@ import { getLocalized, getRegionConfig, localizeDuration } from '../../utils/loc
 import { iconSize, primaryButtonClass, secondaryButtonClass } from '../ui/styles';
 import { SectionHeader } from '../ui/SectionHeader';
 import { RatingDisplay } from '../ui/RatingDisplay';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
 
 export function RouteArticlesSection({
   t,
@@ -43,7 +44,7 @@ export function RouteArticlesSection({
                 role="link"
                 tabIndex={0}
                 className={`group cursor-pointer overflow-hidden rounded-xl border border-line bg-surface shadow-soft transition duration-300 hover:border-secondary/40 hover:shadow-xl hover:shadow-secondary/10 focus-within:-translate-y-1 focus-within:border-secondary/40 focus-within:shadow-xl focus-within:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
-                  isCatalog ? 'grid grid-cols-[42%_1fr]' : ''
+                  isCatalog ? 'flex flex-col sm:grid sm:grid-cols-[42%_1fr]' : ''
                 }`}
                 onClick={() => openRouteArticle(item.id)}
                 onKeyDown={(event) => {
@@ -54,10 +55,13 @@ export function RouteArticlesSection({
                 }}
               >
                 <div className="overflow-hidden">
-                  <img
+                  <ResponsiveImage
                     src={item.image}
                     alt={getLocalized(item.imageAlt, language) || getLocalized(item.title, language)}
-                    className={`${isCatalog ? 'h-full min-h-52 w-full' : 'h-52 w-full'} object-cover transition duration-500 group-hover:scale-105 group-focus-within:scale-105`}
+                    className={`${isCatalog ? 'aspect-[16/10] h-48 w-full sm:h-full sm:min-h-52' : 'h-52 w-full'} object-cover transition duration-500 group-hover:scale-105 group-focus-within:scale-105`}
+                    sizes={isCatalog ? '(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw' : '(min-width: 1024px) 33vw, 100vw'}
+                    width={1200}
+                    height={750}
                   />
                 </div>
                 <div className={`${isCatalog ? 'flex min-w-0 flex-col p-4' : 'p-5'}`}>

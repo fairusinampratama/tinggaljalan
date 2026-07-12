@@ -24,6 +24,8 @@ class SiteSettingSeeder extends Seeder
                 'business_address' => $brand['contactDetails']['address'] ?? null,
                 'google_maps_url' => $brand['contactDetails']['map_url'] ?? null,
                 'service_hours' => $brand['contactDetails']['hours'] ?? [],
+                'hero_autoplay_enabled' => true,
+                'hero_autoplay_interval' => 8000,
             ],
         );
     }

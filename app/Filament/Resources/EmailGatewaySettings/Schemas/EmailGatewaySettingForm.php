@@ -17,18 +17,36 @@ class EmailGatewaySettingForm
             Section::make('Email gateway')
                 ->description('Local can use log. Production can use Brevo SMTP or another SMTP provider.')
                 ->schema([
-                    Toggle::make('is_enabled')->label('Enabled')->default(true),
+                    Toggle::make('is_enabled')
+                        ->label('Enabled')
+                        ->default(true)
+                        ->helperText('Enable or disable all outgoing email notifications.'),
                     Select::make('provider')
                         ->options([
                             EmailGatewaySetting::PROVIDER_LOG => 'Log / Laravel fallback',
                             EmailGatewaySetting::PROVIDER_SMTP => 'SMTP',
                         ])
                         ->required()
-                        ->default(EmailGatewaySetting::PROVIDER_LOG),
-                    TextInput::make('host')->default('smtp-relay.brevo.com')->maxLength(255),
-                    TextInput::make('port')->numeric()->minValue(1)->maxValue(65535)->default(587),
-                    Select::make('scheme')->options(['smtp' => 'smtp', 'smtps' => 'smtps'])->default('smtp'),
-                    TextInput::make('username')->label('SMTP Username')->maxLength(255),
+                        ->default(EmailGatewaySetting::PROVIDER_LOG)
+                        ->helperText('Choose \'Log\' for local development or \'SMTP\' to send actual emails.'),
+                    TextInput::make('host')
+                        ->default('smtp-relay.brevo.com')
+                        ->maxLength(255)
+                        ->helperText('The outgoing SMTP server hostname (e.g., \'smtp-relay.brevo.com\').'),
+                    TextInput::make('port')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(65535)
+                        ->default(587)
+                        ->helperText('The port used by the SMTP host (usually 587 for TLS, or 465 for SSL).'),
+                    Select::make('scheme')
+                        ->options(['smtp' => 'smtp', 'smtps' => 'smtps'])
+                        ->default('smtp')
+                        ->helperText('Security protocol. Use \'smtp\' for TLS/starttls or \'smtps\' for SSL.'),
+                    TextInput::make('username')
+                        ->label('SMTP Username')
+                        ->maxLength(255)
+                        ->helperText('The username/email credential for the SMTP service.'),
                     TextInput::make('password')
                         ->label('SMTP Password')
                         ->password()
@@ -36,8 +54,15 @@ class EmailGatewaySettingForm
                         ->helperText('Leave blank on edit to keep the existing encrypted password.')
                         ->dehydrated(fn (?string $state): bool => filled($state))
                         ->maxLength(2000),
-                    TextInput::make('from_address')->email()->default('booking@tinggaljalan.com')->maxLength(255),
-                    TextInput::make('from_name')->default('Tinggal Jalan')->maxLength(255),
+                    TextInput::make('from_address')
+                        ->email()
+                        ->default('booking@tinggaljalan.com')
+                        ->maxLength(255)
+                        ->helperText('The sender email address appearing on sent emails.'),
+                    TextInput::make('from_name')
+                        ->default('Tinggal Jalan')
+                        ->maxLength(255)
+                        ->helperText('The sender display name appearing on sent emails.'),
                 ])
                 ->columns(2)
                 ->columnSpanFull(),

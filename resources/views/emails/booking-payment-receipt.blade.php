@@ -30,8 +30,7 @@
 <tr><td style="padding:5px 0;color:#667277;">{{ __('booking.exchange_rate') }}</td><td align="right" style="padding:5px 0;">USD 1 = {{ PublicSite::formatMoney($payment->exchange_rate, 'IDR') }}</td></tr>
 @endif
 <tr><td style="padding:5px 0;color:#667277;">{{ __('booking.paid_on') }}</td><td align="right" style="padding:5px 0;">{{ $paidAt ?: '-' }}</td></tr>
-<tr><td style="padding:5px 0;color:#667277;">{{ __('booking.payment_method') }}</td><td align="right" style="padding:5px 0;">{{ $payment->provider === 'manual' ? 'Manual Bank Transfer' : ($payment->midtrans_payment_type ?: '-') }}</td></tr>
-<tr><td style="padding:5px 0;color:#667277;">{{ __('booking.transaction_reference') }}</td><td align="right" style="padding:5px 0;word-break:break-all;">{{ $payment->provider === 'manual' ? '-' : ($payment->midtrans_transaction_id ?: '-') }}</td></tr>
+<tr><td style="padding:5px 0;color:#667277;">{{ __('booking.payment_method') }}</td><td align="right" style="padding:5px 0;">{{ $payment->paymentMethodLabel() }}</td></tr>
 <tr><td style="padding:5px 0;color:#667277;">{{ __('booking.order_reference') }}</td><td align="right" style="padding:5px 0;word-break:break-all;">{{ $payment->order_id }}</td></tr>
 </table></td></tr></table>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:18px;border:1px solid #e3e8e6;border-radius:8px;"><tr><td style="padding:18px;">

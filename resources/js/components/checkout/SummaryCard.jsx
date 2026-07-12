@@ -11,7 +11,7 @@ export function SummaryCard({ t, booking, selectedRoute, summary, bookingBlock, 
     <aside className={`h-fit rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
       <h2 className="text-2xl font-bold">{t.summary}</h2>
       <div className="mt-5 grid gap-3 text-sm font-semibold text-muted">
-        <div className="flex justify-between gap-4"><span>{t.route}</span><span className="text-right text-ink">{getLocalized(selectedRoute.title, language)}</span></div>
+        <div className="flex justify-between gap-4"><span>{t.route}</span><span className="text-right text-ink">{selectedRoute ? getLocalized(selectedRoute.title, language) : '-'}</span></div>
         <div className="flex justify-between gap-4"><span>{t.date}</span><span className="text-right text-ink">{formatTravelDate(booking.date, language)}</span></div>
         {availabilityLabel ? <div className="flex justify-between gap-4"><span>{t.availability}</span><span className="text-right text-ink">{availabilityLabel}</span></div> : null}
         {booking.pickup ? <div className="flex justify-between gap-4"><span>{t.pickup}</span><span className="text-right text-ink">{booking.pickup}</span></div> : null}

@@ -49,12 +49,12 @@ class NewsController extends Controller
         $articles = $query->paginate(12)->withQueryString();
         $seo = Seo::newsIndex($articles->getCollection(), $search !== '', $language);
         
-        $articles->getCollection()->transform(fn ($article) => InertiaPublicData::article($article));
+        $articles->getCollection()->transform(fn ($article) => InertiaPublicData::articleCard($article));
 
         return Inertia::render('NewsPage', [
             'language' => $language,
             'articles' => $articles,
-            'featured' => $featuredModel ? InertiaPublicData::article($featuredModel) : null,
+            'featured' => $featuredModel ? InertiaPublicData::articleCard($featuredModel) : null,
             'categories' => ArticleCategory::query()->active()->ordered()->get(),
             'destinations' => Destination::query()->active()->ordered()->get()->map(fn (Destination $destination) => InertiaPublicData::destination($destination))->values(),
             'search' => $search,
@@ -92,8 +92,8 @@ class NewsController extends Controller
         return Inertia::render('NewsDetailPage', [
             'language' => $language,
             'article' => InertiaPublicData::article($article),
-            'relatedArticles' => InertiaPublicData::articles($related),
-            'relatedRoutes' => InertiaPublicData::routes($article->tourPackages->isNotEmpty()
+            'relatedArticles' => InertiaPublicData::articleCards($related),
+            'relatedRoutes' => InertiaPublicData::routeCards($article->tourPackages->isNotEmpty()
                 ? $article->tourPackages
                 : TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->where('destination_id', $article->destination_id)->limit(3)->get()),
             'seo' => Seo::articleDetail($article, $language),

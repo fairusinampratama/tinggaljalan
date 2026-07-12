@@ -10,11 +10,21 @@ class PaymentSettingsService
     private array $settingsCache = [];
     public function midtrans(): ?PaymentSetting
     {
+        return $this->gateway(PaymentSetting::GATEWAY_MIDTRANS);
+    }
+
+    public function doku(): ?PaymentSetting
+    {
+        return $this->gateway(PaymentSetting::GATEWAY_DOKU);
+    }
+
+    public function gateway(string $gateway): ?PaymentSetting
+    {
         if (! Schema::hasTable('payment_settings')) {
             return null;
         }
 
-        return PaymentSetting::query()->where('gateway', PaymentSetting::GATEWAY_MIDTRANS)->first();
+        return PaymentSetting::query()->where('gateway', $gateway)->first();
     }
 
     public function active(): ?PaymentSetting
@@ -34,6 +44,11 @@ class PaymentSettingsService
     public function midtransEnabled(): bool
     {
         return $this->active()?->gateway === PaymentSetting::GATEWAY_MIDTRANS;
+    }
+
+    public function dokuEnabled(): bool
+    {
+        return $this->active()?->gateway === PaymentSetting::GATEWAY_DOKU;
     }
 
     private function getSetting(?string $provider = null): ?PaymentSetting
@@ -102,6 +117,27 @@ class PaymentSettingsService
         }
 
         return (bool) config('services.midtrans.is_production');
+    }
+
+    public function dokuClientId(): string
+    {
+        return (string) ($this->doku()?->public_key ?: config('services.doku.client_id'));
+    }
+
+    public function dokuSecretKey(): string
+    {
+        return (string) ($this->doku()?->secret_key ?: config('services.doku.secret_key'));
+    }
+
+    public function dokuIsProduction(): bool
+    {
+        $setting = $this->doku();
+
+        if ($setting) {
+            return $setting->mode === 'production';
+        }
+
+        return (bool) config('services.doku.is_production');
     }
 
     public function exchangeRateProvider(): string

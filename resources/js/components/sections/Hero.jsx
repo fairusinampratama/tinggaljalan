@@ -1,10 +1,11 @@
-import { ChevronLeft, ChevronRight, Compass, MessageCircle, Pause, Play } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Compass, MessageCircle } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { useSlider } from '../../hooks/useSlider';
 import { getLocalized } from '../../utils/localization';
 import { Dropdown } from '../ui/Dropdown';
+import { ResponsiveImage } from '../ui/ResponsiveImage';
 import { darkButtonClass, glassButtonClass, iconSize, primaryButtonClass } from '../ui/styles';
 
 function formatCarouselLabel(template, current, total) {
@@ -60,24 +61,24 @@ function HeroSlideContent({ slide, language }) {
   if (slide.textAlignment === 'right') alignmentClass = 'ml-auto items-end text-right';
 
   return (
-    <div className={`relative flex h-full max-w-[600px] flex-col justify-center px-6 sm:px-12 ${alignmentClass}`}>
+    <div className={`relative flex h-full max-w-[min(34rem,calc(100%-2rem))] flex-col justify-end px-5 pb-28 pt-24 sm:max-w-[600px] sm:justify-center sm:px-12 sm:pb-0 sm:pt-0 ${alignmentClass}`}>
       {eyebrowText ? (
-        <p className="mb-4 inline-flex border-l-2 border-accent px-4 text-[11px] font-semibold uppercase leading-5 tracking-[0.18em] text-accent sm:text-xs">
+        <p className="mb-3 inline-flex border-l-2 border-accent px-3 text-[11px] font-semibold uppercase leading-5 tracking-[0.14em] text-accent sm:mb-4 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
           {eyebrowText}
         </p>
       ) : null}
       {headingText ? (
-        <h2 className="text-balance font-display text-4xl font-normal leading-[1.08] tracking-[-0.015em] text-white sm:text-[54px]">
+        <h2 className="text-balance font-display text-[2.35rem] font-normal leading-[1.04] tracking-normal text-white sm:text-[54px] sm:leading-[1.08]">
           {headingText}
         </h2>
       ) : null}
       {descriptionText ? (
-        <p className="mt-4 line-clamp-3 text-pretty text-sm font-semibold leading-relaxed text-white/90 sm:text-[17px]">
+        <p className="mt-3 line-clamp-2 text-pretty text-sm font-semibold leading-relaxed text-white/90 sm:mt-4 sm:line-clamp-3 sm:text-[17px]">
           {descriptionText}
         </p>
       ) : null}
       {(primaryCtaLabel && slide.primaryCtaUrl) || (secondaryCtaLabel && slide.secondaryCtaUrl) ? (
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
           <HeroCta label={primaryCtaLabel} url={slide.primaryCtaUrl} className={primaryButtonClass} />
           <HeroCta label={secondaryCtaLabel} url={slide.secondaryCtaUrl} className={glassButtonClass} />
         </div>
@@ -122,15 +123,10 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
   const heroSettings = publicData.home?.heroSettings ?? {};
   const autoplayEnabled = Boolean(heroSettings.autoplayEnabled);
   const autoplayInterval = Math.min(15000, Math.max(5000, Number(heroSettings.autoplayInterval) || 8000));
-  const preloadSources = useMemo(
-    () => slides.map((slide) => ({ desktop: slide.desktopImage, mobile: slide.mobileImage || slide.desktopImage })),
-    [slides],
-  );
   const slider = useSlider({
     total: slides.length,
     autoplay: autoplayEnabled,
     autoplayInterval,
-    preloadSources,
   });
   const hasMultiple = slides.length > 1;
   const activeSlideLabel = formatCarouselLabel(t.heroSlideStatus, slider.activeIndex + 1, slides.length);
@@ -157,7 +153,7 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
     <section id="home" className="relative bg-canvas pt-0">
       <h1 className="sr-only">{t.heroTitle}</h1>
       <div
-        className="group relative h-[500px] w-full overflow-hidden bg-primary sm:h-[580px]"
+        className="group relative h-[520px] w-full overflow-hidden bg-primary sm:h-[580px]"
         tabIndex={hasMultiple ? 0 : undefined}
         role="region"
         aria-roledescription="carousel"
@@ -182,19 +178,22 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
                 aria-roledescription="slide"
                 aria-label={slideLabel}
                 aria-hidden={inactive}
+
                 inert={inactive ? true : undefined}
               >
-                <picture>
-                  <source media="(min-width: 640px)" srcSet={slide.desktopImage} />
-                  <img
-                    src={slide.mobileImage || slide.desktopImage}
-                    alt={getLocalized(slide.imageAlt, language) || ''}
-                    className="absolute inset-0 h-full w-full object-cover"
-                    style={{ objectPosition: slide.focalPosition || 'center' }}
-                    loading={index === 0 ? 'eager' : 'lazy'}
-                    fetchPriority={index === 0 ? 'high' : 'auto'}
-                  />
-                </picture>
+                <ResponsiveImage
+                  src={slide.mobileImage || slide.desktopImage}
+                  desktopSrc={slide.desktopImage}
+                  alt={getLocalized(slide.imageAlt, language) || ''}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  style={{ objectPosition: slide.focalPosition || 'center' }}
+                  sizes="100vw"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  fetchPriority={index === 0 ? 'high' : 'auto'}
+                  decoding={index === 0 ? 'sync' : 'async'}
+                  width={1600}
+                  height={900}
+                />
 
                 <div className={overlayClass(slide.textAlignment)} style={{ opacity: overlayOpacity }} />
 
@@ -206,58 +205,9 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
           })}
         </div>
 
-        {hasMultiple ? (
-          <>
-            <button
-              type="button"
-              onClick={slider.showPrevious}
-              className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white opacity-100 transition hover:bg-black/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:left-8 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-              aria-label={t.heroPreviousSlide}
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button
-              type="button"
-              onClick={slider.showNext}
-              className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white opacity-100 transition hover:bg-black/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-8 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-              aria-label={t.heroNextSlide}
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-
-            <div className="absolute bottom-5 left-0 right-0 z-10 flex items-center justify-center gap-2">
-              <span className="mr-1 text-xs font-semibold tracking-wider text-white drop-shadow-md" aria-hidden="true">
-                {String(slider.activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}
-              </span>
-              {slides.map((slide, index) => (
-                <button
-                  key={`dot-${slide.id}`}
-                  type="button"
-                  onClick={() => slider.selectIndex(index)}
-                  className="group/dot inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                  aria-label={`${t.heroGoToSlide} ${index + 1}`}
-                  aria-current={index === slider.activeIndex ? 'true' : undefined}
-                >
-                  <span className={`h-1.5 rounded-full transition-all duration-300 ${index === slider.activeIndex ? 'w-6 bg-accent' : 'w-2 bg-white/60 group-hover/dot:bg-white'}`} />
-                </button>
-              ))}
-              {autoplayEnabled ? (
-                <button
-                  type="button"
-                  onClick={slider.toggleUserPaused}
-                  className="ml-1 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white transition hover:bg-black/55 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                  aria-label={slider.userPaused ? t.heroPlaySlides : t.heroPauseSlides}
-                  aria-pressed={slider.userPaused}
-                >
-                  {slider.userPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                </button>
-              ) : null}
-            </div>
-          </>
-        ) : null}
       </div>
 
-      <div className="relative z-30 mx-auto -mt-8 max-w-6xl px-4 pb-12 sm:-mt-12 sm:px-8 sm:pb-16 lg:px-10">
+      <div className="relative z-30 mx-auto -mt-7 max-w-6xl px-4 pb-12 sm:-mt-12 sm:px-8 sm:pb-16 lg:px-10">
         <div className="rounded-xl border border-line/80 bg-surface/95 p-5 shadow-xl shadow-black/5 backdrop-blur sm:p-6">
           <p className="font-display text-xl font-normal text-primary sm:text-2xl">{t.searchTitle}</p>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">{t.findTripText}</p>

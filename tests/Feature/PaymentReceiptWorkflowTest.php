@@ -165,7 +165,8 @@ class PaymentReceiptWorkflowTest extends TestCase
         $mail->assertHasSubject('Payment received: '.$payment->booking->booking_code);
         $mail->assertSeeInHtml('Payment received');
         $mail->assertSeeInHtml('Rp700.000');
-        $mail->assertSeeInHtml('midtrans-reference');
+        $mail->assertSeeInHtml('Midtrans');
+        $mail->assertDontSeeInHtml('midtrans-reference');
         $mail->assertSeeInHtml($payment->order_id);
         $mail->assertSeeInHtml(route('checkout.payment.show', $payment->public_token));
         $mail->assertSeeInText('not an Indonesian tax invoice');
@@ -190,6 +191,27 @@ class PaymentReceiptWorkflowTest extends TestCase
         $this->assertStringContainsString('WIB', $whatsapp);
     }
 
+    public function test_doku_receipt_renders_provider_brand_without_transaction_reference(): void
+    {
+        $payment = $this->payment([
+            'provider' => 'doku',
+            'status' => 'paid',
+            'paid_at' => now(),
+            'doku_payment_token' => 'doku-token-reference',
+            'doku_raw_notification' => [
+                'transaction' => ['status' => 'SUCCESS', 'id' => 'doku-transaction-reference'],
+                'payment' => ['channel' => ['id' => 'VIRTUAL_ACCOUNT_BCA']],
+            ],
+        ])->load('booking.tourPackage');
+
+        $mail = new BookingPaymentReceiptMail($payment);
+
+        $mail->assertSeeInHtml('DOKU');
+        $mail->assertSeeInText('Payment method: DOKU');
+        $mail->assertDontSeeInHtml('Transaction reference');
+        $mail->assertDontSeeInHtml('doku-transaction-reference');
+        $mail->assertSeeInHtml($payment->order_id);
+    }
     private function enableWhatspie(): FakeWhatspieClient
     {
         $fake = new FakeWhatspieClient();

@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\PaymentSetting;
+use App\Payments\Doku\HttpDokuClient;
 use App\Payments\Midtrans\HttpMidtransClient;
 use App\Payments\PaymentSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,6 +65,48 @@ class PaymentSettingsServiceTest extends TestCase
             'usdNote' => 'Configured USD note.',
             'manualBankAccounts' => [],
         ], $settings->publicPayload());
+    }
+
+
+    public function test_doku_settings_use_encrypted_database_values(): void
+    {
+        $setting = PaymentSetting::doku();
+        $setting->update([
+            'mode' => 'sandbox',
+            'public_key' => 'doku-client-id',
+            'secret_key' => 'doku-secret-key',
+        ]);
+        $raw = $setting->refresh()->getRawOriginal();
+        $settings = app(PaymentSettingsService::class);
+
+        $this->assertNotSame('doku-client-id', $raw['public_key']);
+        $this->assertNotSame('doku-secret-key', $raw['secret_key']);
+        $this->assertSame('doku-client-id', $settings->dokuClientId());
+        $this->assertSame('doku-secret-key', $settings->dokuSecretKey());
+        $this->assertFalse($settings->dokuIsProduction());
+    }
+
+    public function test_doku_client_sends_signed_checkout_request(): void
+    {
+        PaymentSetting::doku()->update([
+            'public_key' => 'doku-client-id',
+            'secret_key' => 'doku-secret-key',
+        ]);
+        Http::fake([
+            'api-sandbox.doku.com/*' => Http::response([
+                'response' => [
+                    'payment' => ['token_id' => 'token', 'url' => 'https://sandbox.doku.com/checkout/link/token'],
+                ],
+            ]),
+        ]);
+
+        app(HttpDokuClient::class)->createCheckoutPayment([
+            'order' => ['invoice_number' => 'TJ1PABCDEFGH', 'amount' => 1000],
+        ], 'TJ1PABCDEFGH');
+
+        Http::assertSent(fn ($request): bool => $request->hasHeader('Client-Id', 'doku-client-id')
+            && $request->hasHeader('Request-Id', 'TJ1PABCDEFGH')
+            && str_starts_with($request->header('Signature')[0] ?? '', 'HMACSHA256='));
     }
 
     public function test_midtrans_client_uses_database_server_key_when_configured(): void

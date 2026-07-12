@@ -7,6 +7,8 @@ use App\Models\BookingPayment;
 use App\Models\Destination;
 use App\Models\TourPackage;
 use App\Payments\BookingPaymentService;
+use App\Models\PaymentSetting;
+use App\Payments\Doku\DokuClient;
 use App\Payments\ExchangeRates\ExchangeRateClient;
 use App\Payments\ExchangeRates\ExchangeRateService;
 use App\Payments\ExchangeRates\FrankfurterExchangeRateClient;
@@ -16,6 +18,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use Tests\Support\FakeExchangeRateClient;
+use Tests\Support\FakeDokuClient;
 use Tests\Support\FakeMidtransClient;
 use Tests\TestCase;
 
@@ -24,6 +27,8 @@ class BookingPaymentServiceTest extends TestCase
     use RefreshDatabase;
 
     private FakeMidtransClient $midtrans;
+
+    private FakeDokuClient $doku;
 
     private FakeExchangeRateClient $exchangeRates;
 
@@ -39,8 +44,10 @@ class BookingPaymentServiceTest extends TestCase
             'services.exchange_rates.cache_ttl_hours' => 12,
         ]);
         $this->midtrans = new FakeMidtransClient();
+        $this->doku = new FakeDokuClient();
         $this->exchangeRates = new FakeExchangeRateClient();
         $this->app->instance(MidtransClient::class, $this->midtrans);
+        $this->app->instance(DokuClient::class, $this->doku);
         $this->app->instance(ExchangeRateClient::class, $this->exchangeRates);
     }
 
@@ -58,6 +65,52 @@ class BookingPaymentServiceTest extends TestCase
         $this->assertSame(0, $this->exchangeRates->calls);
         $this->assertSame('fake-snap-token', $payment->snap_token);
         $this->assertSame(750000, $this->midtrans->createdPayloads[0]['transaction_details']['gross_amount']);
+    }
+
+
+    public function test_doku_payment_request_uses_checkout_payment_url(): void
+    {
+        PaymentSetting::midtrans()->update(['is_enabled' => false]);
+        PaymentSetting::doku()->update([
+            'is_enabled' => true,
+            'public_key' => 'doku-client-id',
+            'secret_key' => 'doku-secret-key',
+        ]);
+        $booking = $this->booking(['currency' => 'IDR', 'total' => 880000]);
+
+        $payment = app(BookingPaymentService::class)->createPaymentRequest($booking);
+
+        $this->assertSame('doku', $payment->provider);
+        $this->assertSame('fake-doku-token', $payment->snap_token);
+        $this->assertSame('https://sandbox.doku.com/checkout/link/fake-doku-token', $payment->snap_url);
+        $this->assertSame('fake-doku-token', $payment->doku_payment_token);
+        $this->assertSame(880000, $this->doku->createdPayloads[0]['order']['amount']);
+        $this->assertSame($payment->order_id, $this->doku->createdPayloads[0]['order']['invoice_number']);
+        $this->assertSame($payment->order_id, $this->doku->requestIds[0]);
+    }
+
+    public function test_doku_statuses_map_to_local_payment_states(): void
+    {
+        $payment = BookingPayment::create([
+            'booking_id' => $this->booking()->id,
+            'provider' => 'doku',
+            'order_id' => 'TJ1PABCDEFGH',
+            'public_token' => 'doku-public-token',
+            'quote_currency' => 'IDR',
+            'quote_amount' => 500000,
+            'charge_currency' => 'IDR',
+            'charge_amount' => 500000,
+            'status' => 'pending',
+        ]);
+        $service = app(BookingPaymentService::class);
+
+        $paid = $service->applyDokuStatus($payment, ['transaction' => ['status' => 'SUCCESS']]);
+        $this->assertSame('paid', $paid->status);
+        $this->assertNotNull($paid->paid_at);
+
+        $expired = $service->applyDokuStatus($paid, ['transaction' => ['status' => 'EXPIRED']]);
+        $this->assertSame('expired', $expired->status);
+        $this->assertNotNull($expired->expired_at);
     }
 
     public function test_frankfurter_client_parses_usd_to_idr_rate(): void

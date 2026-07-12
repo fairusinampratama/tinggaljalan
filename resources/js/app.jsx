@@ -4,16 +4,18 @@ import { createRoot } from 'react-dom/client';
 import { AppLayout } from './components/layout/AppLayout';
 import { BookingProvider } from './context/BookingContext';
 
-const pages = import.meta.glob('./pages/**/*.jsx', { eager: true });
+const pages = import.meta.glob('./pages/**/*.jsx');
 
 createInertiaApp({
   title: (title) => (title ? `${title} | Tinggal Jalan` : 'Tinggal Jalan'),
-  resolve: (name) => {
-    const page = pages[`./pages/${name}.jsx`];
+  resolve: async (name) => {
+    const loadPage = pages[`./pages/${name}.jsx`];
 
-    if (!page) {
+    if (!loadPage) {
       throw new Error(`Inertia page not found: ${name}`);
     }
+
+    const page = await loadPage();
 
     const componentName = name.split('/').pop();
     const component = page.default ?? page[componentName];

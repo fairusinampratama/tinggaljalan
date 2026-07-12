@@ -37,6 +37,7 @@ class TrustStatForm
                             ->default('star')
                             ->required()
                             ->inline()
+                            ->helperText('Choose the icon that corresponds to the stat type.')
                             ->columnSpanFull(),
                         TextInput::make('sort_order')->required()
                             ->numeric()
@@ -48,8 +49,10 @@ class TrustStatForm
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
-                AdminForm::localized('title', 'Title', required: true),
-                AdminForm::localized('value', 'Value', required: true),
+                AdminForm::localized('title', 'Title', required: true)
+                    ->description('The stat title or label (e.g., \'Google Reviews\' or \'Certified Planner\'). Translate to ID, US, and CN.'),
+                AdminForm::localized('value', 'Value', required: true)
+                    ->description('The numeric or text value of the stat (e.g., \'5.0\' or \'Official Standard\'). Translate to ID, US, and CN.'),
             ]);
     }
 }

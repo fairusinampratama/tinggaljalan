@@ -11,8 +11,8 @@ export function RouteDetailPage() {
   const { props } = usePage();
   const { routeId } = useParams();
   const navigate = useNavigate();
-  const { language, t, whatsappUrl, publicData } = useBooking();
-  const route = props.route ?? publicData.routes?.find((item) => item.id === routeId || item.slug === routeId);
+  const { language, t, whatsappUrl } = useBooking();
+  const route = props.route;
 
   if (!route) {
     return <Navigate to="/routes" replace />;
@@ -23,7 +23,7 @@ export function RouteDetailPage() {
   };
   const seo = props.seo ?? getRouteSeo(route, language);
   const relatedArticles = props.relatedArticles ?? [];
-  const faqItems = props.faqs ?? publicData.faqs ?? [];
+  const faqItems = props.faqs ?? [];
 
   return (
     <>

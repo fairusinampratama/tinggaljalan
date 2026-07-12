@@ -57,6 +57,8 @@ trap rollback_on_error ERR
 "$PHP_BIN" "$RELEASE/artisan" deploy:backup-database --retain=10 --path="$SHARED/backups/database"
 "$PHP_BIN" "$RELEASE/artisan" migrate --force
 "$PHP_BIN" "$RELEASE/artisan" optimize:clear
+"$PHP_BIN" -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
+"$PHP_BIN" "$RELEASE/artisan" images:generate-responsive --missing
 "$PHP_BIN" "$RELEASE/artisan" config:cache
 "$PHP_BIN" "$RELEASE/artisan" event:cache
 "$PHP_BIN" "$RELEASE/artisan" route:cache
