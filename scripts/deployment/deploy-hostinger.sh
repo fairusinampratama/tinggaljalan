@@ -10,6 +10,7 @@ RELEASES="$DEPLOY_ROOT/releases"
 SHARED="$DEPLOY_ROOT/shared"
 CURRENT="$DEPLOY_ROOT/current"
 LIVE_PATH="$DOMAIN_ROOT/tinggaljalan-app"
+PUBLIC_HTML="$DOMAIN_ROOT/public_html"
 RELEASE="$RELEASES/$SHA"
 PHP_BIN="/opt/alt/php84/usr/bin/php"
 
@@ -17,6 +18,7 @@ PHP_BIN="/opt/alt/php84/usr/bin/php"
 test -x "$PHP_BIN" || { echo "PHP 8.4 is unavailable." >&2; exit 1; }
 for command in composer mysqldump gzip tar curl; do command -v "$command" >/dev/null || { echo "$command is unavailable." >&2; exit 1; }; done
 test -L "$LIVE_PATH" && test -L "$CURRENT" || { echo "Run bootstrap-hostinger.sh first." >&2; exit 1; }
+test -d "$PUBLIC_HTML" || { echo "public_html is missing." >&2; exit 1; }
 test -f "$SHARED/.env" && test -d "$SHARED/storage" || { echo "Shared environment or storage is missing." >&2; exit 1; }
 test -r "$ARCHIVE" || { echo "Release archive is unreadable." >&2; exit 1; }
 test ! -e "$RELEASE" || { echo "Release $SHA already exists." >&2; exit 1; }
@@ -68,6 +70,23 @@ rm -f "$CURRENT.next"
 ln -s "$RELEASE" "$CURRENT.next"
 mv -Tf "$CURRENT.next" "$CURRENT"
 SWITCHED=1
+
+link_public_asset() {
+    local name="$1"
+    local link="$PUBLIC_HTML/$name"
+    local target="../tinggaljalan-app/public/$name"
+
+    if [[ -e "$link" && ! -L "$link" ]]; then
+        mv "$link" "$PUBLIC_HTML/$name.legacy-$SHA"
+    fi
+
+    rm -f "$link"
+    ln -s "$target" "$link"
+}
+
+link_public_asset build
+link_public_asset images
+
 "$PHP_BIN" "$RELEASE/artisan" up
 "$RELEASE/scripts/deployment/health-check.sh" "$BASE_URL" "$SHA" "$CURRENT" "$PHP_BIN"
 trap - ERR
