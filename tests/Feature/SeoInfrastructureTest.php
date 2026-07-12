@@ -160,6 +160,30 @@ class SeoInfrastructureTest extends TestCase
             ->assertDontSee('/news/'.$draft->slug, false);
     }
 
+    public function test_sitemap_and_route_detail_canonicalize_dirty_route_slugs(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('is_active', true)->firstOrFail();
+        $package->update(['slug' => 'dirty-route ']);
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee('<loc>http://localhost:8000/routes/dirty-route</loc>', false)
+            ->assertDontSee('<loc>http://localhost:8000/routes/dirty-route </loc>', false)
+            ->assertDontSee('/routes/dirty-route%20', false);
+
+        $this->get('/routes/dirty-route')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('RouteDetailPage')
+                ->where('route.slug', 'dirty-route')
+                ->where('seo.canonical', 'http://localhost:8000/routes/dirty-route'));
+
+        $this->get('/routes/dirty-route%20')
+            ->assertRedirect('/routes/dirty-route');
+    }
+
     public function test_robots_txt_declares_private_paths_and_sitemap(): void
     {
         $this->get('/robots.txt')

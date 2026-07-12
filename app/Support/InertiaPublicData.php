@@ -185,8 +185,8 @@ class InertiaPublicData
         ]);
 
         return [
-            'id' => $package->slug,
-            'slug' => $package->slug,
+            'id' => trim((string) $package->slug),
+            'slug' => trim((string) $package->slug),
             'destinationId' => $destination?->slug,
             'destinationName' => [
                 'id' => $destination?->name,
@@ -244,7 +244,7 @@ class InertiaPublicData
                 ->values()
                 ->all(),
             'packageOptions' => [[
-                'id' => $package->slug,
+                'id' => trim((string) $package->slug),
                 'title' => self::localizedArray($package->title),
                 'description' => self::localizedArray($package->intro ?? $package->excerpt),
                 'basePriceIdr' => $pricingResolver->startingPrice($package, 'IDR'),

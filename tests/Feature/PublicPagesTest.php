@@ -7,11 +7,13 @@ use App\Models\Destination;
 use App\Models\Faq;
 use App\Models\HeroSlide;
 use App\Models\NewsArticle;
-use App\Models\PackageAvailability;
 use App\Models\PackageAddOn;
+use App\Models\PackageAvailability;
 use App\Models\RouteFilter;
 use App\Models\SiteSetting;
 use App\Models\TourPackage;
+use App\Support\TierPricingResolver;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -139,6 +141,7 @@ class PublicPagesTest extends TestCase
                 ->where('publicData.destinations', fn ($destinations): bool => collect($destinations)
                     ->contains('slug', $destination->slug)));
     }
+
     public function test_homepage_and_route_pages_use_the_same_global_active_faqs(): void
     {
         $this->seed();
@@ -212,7 +215,7 @@ class PublicPagesTest extends TestCase
                 ->where('styleFilter', 'honeymoon')
                 ->where('publicData.routeStyles.7.value', 'honeymoon')
                 ->where('publicData.routeStyles.7.label.us', 'Honeymoon')
-                ->where('routes.0.slug', $package->slug));
+                ->where('routes.data.0.slug', $package->slug));
     }
 
     public function test_inactive_route_filters_are_hidden_publicly_and_do_not_break_legacy_package_styles(): void
@@ -234,7 +237,7 @@ class PublicPagesTest extends TestCase
                 ->component('RoutesPage')
                 ->where('styleFilter', 'recommended')
                 ->where('publicData.routeStyles', fn ($styles) => collect($styles)->pluck('value')->doesntContain('secret'))
-                ->where('routes.0.slug', $package->slug));
+                ->where('routes.data.0.slug', $package->slug));
 
         $this->get("/routes/{$package->slug}")
             ->assertOk()
@@ -454,7 +457,7 @@ class PublicPagesTest extends TestCase
     public function test_booking_draft_persists_and_submission_creates_booking(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->with('packageAddOns')->firstOrFail();
         $packageAddOn = $package->packageAddOns->firstOrFail();
@@ -504,7 +507,7 @@ class PublicPagesTest extends TestCase
     public function test_limited_capacity_warns_but_allows_booking_request(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         PackageAvailability::create([
@@ -546,10 +549,11 @@ class PublicPagesTest extends TestCase
             'status' => 'new',
         ]);
     }
+
     public function test_booking_accepts_large_group_guest_count_within_configured_limit(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $package->update(['pricing_mode' => 'flat']);
         $package->priceTiers()->delete();
@@ -570,10 +574,11 @@ class PublicPagesTest extends TestCase
         $this->post('/booking', [...$payload, 'pax' => 1000])
             ->assertSessionHasErrors('pax');
     }
+
     public function test_public_booking_stops_when_group_exceeds_final_price_tier(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $package->update(['pricing_mode' => 'tiered']);
@@ -606,7 +611,7 @@ class PublicPagesTest extends TestCase
 
     public function test_booking_submission_requires_valid_email_and_whatsapp(): void
     {
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $this->post('/checkout/review', [
             'name' => 'Invalid Contact',
@@ -615,10 +620,11 @@ class PublicPagesTest extends TestCase
             'email' => '',
         ])->assertSessionHasErrors(['whatsapp', 'email']);
     }
+
     public function test_booking_recalculation_uses_database_vouchers_prices_add_ons_and_availability(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->with(['packageAddOns', 'destination'])->firstOrFail();
         $packageAddOn = $package->packageAddOns->firstOrFail();
@@ -663,7 +669,7 @@ class PublicPagesTest extends TestCase
     public function test_traveler_type_selects_price_list_and_ignores_submitted_currency(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $basePayload = [
@@ -674,6 +680,8 @@ class PublicPagesTest extends TestCase
             'add_ons' => [],
             'voucher' => '',
         ];
+        $localPricing = app(TierPricingResolver::class)->resolve($package, 2, 'IDR');
+        $internationalPricing = app(TierPricingResolver::class)->resolve($package, 2, 'USD');
 
         $this->post('/booking/recalculate', $basePayload + [
             'traveler_type' => 'local',
@@ -687,8 +695,8 @@ class PublicPagesTest extends TestCase
                 ->where('booking.draft.travelerType', 'local')
                 ->where('booking.draft.currency', 'IDR')
                 ->where('booking.summary.currency', 'IDR')
-                ->where('booking.summary.base', $package->base_price_idr)
-                ->where('booking.summary.total', $package->base_price_idr * 2));
+                ->where('booking.summary.base', $localPricing['unit_price'])
+                ->where('booking.summary.total', $localPricing['package_subtotal']));
 
         $this->post('/booking/recalculate', $basePayload + [
             'traveler_type' => 'international',
@@ -701,14 +709,14 @@ class PublicPagesTest extends TestCase
                 ->where('booking.draft.travelerType', 'international')
                 ->where('booking.draft.currency', 'USD')
                 ->where('booking.summary.currency', 'USD')
-                ->where('booking.summary.base', $package->base_price_usd)
-                ->where('booking.summary.total', $package->base_price_usd * 2));
+                ->where('booking.summary.base', $internationalPricing['unit_price'])
+                ->where('booking.summary.total', $internationalPricing['package_subtotal']));
     }
 
     public function test_booking_uses_route_specific_add_on_prices_for_the_same_add_on(): void
     {
         $this->seed();
-        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+        $this->withoutMiddleware(PreventRequestForgery::class);
 
         $firstPackage = TourPackage::where('slug', 'bromo-sunrise')->with('packageAddOns')->firstOrFail();
         $secondPackage = TourPackage::where('slug', 'bromo-madakaripura')->firstOrFail();

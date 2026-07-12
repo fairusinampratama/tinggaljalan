@@ -21,12 +21,14 @@ class PackageAvailabilityTest extends TestCase
         PackageAvailability::create([
             'destination_id' => $destination->id,
             'date' => '2026-08-10',
+            'end_date' => '2026-08-10',
             'status' => 'limited',
             'seats_left' => 4,
         ]);
         $packageRule = PackageAvailability::create([
             'tour_package_id' => $package->id,
             'date' => '2026-08-10',
+            'end_date' => '2026-08-10',
             'status' => 'blocked',
             'reason' => 'Package override',
         ]);

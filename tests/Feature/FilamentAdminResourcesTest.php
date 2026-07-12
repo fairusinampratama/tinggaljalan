@@ -32,6 +32,7 @@ use Filament\Forms\Components\FileUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -81,8 +82,11 @@ class FilamentAdminResourcesTest extends TestCase
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $slide = HeroSlide::query()->firstOrFail();
-        $this->assertSame(['us' => null, 'id' => null, 'cn' => null], $slide->heading);
+        $slide = HeroSlide::query()->where('admin_label', 'Image-only promotion')->firstOrFail();
+        $this->assertCount(3, $slide->heading);
+        $this->assertNull($slide->heading['us']);
+        $this->assertNull($slide->heading['id']);
+        $this->assertNull($slide->heading['cn']);
         $this->assertSame(0, $slide->overlay_strength);
         $this->assertSame('Promotional Bromo landscape', $slide->image_alt['us']);
     }
@@ -196,7 +200,7 @@ class FilamentAdminResourcesTest extends TestCase
             ->callTableAction('replicate', $slide)
             ->assertHasNoTableActionErrors();
 
-        $copy = HeroSlide::query()->whereKeyNot($slide->getKey())->firstOrFail();
+        $copy = HeroSlide::query()->where('admin_label', 'Summer promotion - Copy')->firstOrFail();
         $this->assertSame('Summer promotion - Copy', $copy->admin_label);
         $this->assertFalse($copy->is_active);
         $this->assertNull($copy->start_date);
@@ -221,7 +225,7 @@ class FilamentAdminResourcesTest extends TestCase
             ]);
         }
 
-        $legacy = HeroSlide::query()->orderBy('id')->firstOrFail();
+        $legacy = HeroSlide::query()->whereNull('admin_label')->firstOrFail();
         $this->assertSame('Legacy heading 1', $legacy->displayLabel());
         $this->assertSame('Active', $legacy->publicationStatus());
 
@@ -271,6 +275,7 @@ class FilamentAdminResourcesTest extends TestCase
 
         $this->assertModelMissing($record);
     }
+
     public function test_user_resource_creates_admin_accounts(): void
     {
         $this->seed();
@@ -305,6 +310,7 @@ class FilamentAdminResourcesTest extends TestCase
         $this->assertModelMissing($other);
         $this->assertModelExists($admin);
     }
+
     public function test_platform_logo_upload_is_stored_and_exposed_publicly(): void
     {
         Storage::fake('public');
@@ -329,13 +335,14 @@ class FilamentAdminResourcesTest extends TestCase
 
         $this->get('/')
             ->assertOk()
-            ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->assertInertia(fn (AssertableInertia $page) => $page
                 ->has('publicData.platformLinks', PlatformLink::MAX_ACTIVE)
                 ->where('publicData.platformLinks', fn ($links): bool => collect($links)->contains(
                     fn (array $link): bool => $link['logo'] === '/storage/'.$platform->logo
                         && $link['alt'] === 'Uploaded Platform logo',
                 )));
     }
+
     public function test_guest_is_redirected_from_admin_resources(): void
     {
         $this->get('/admin/destinations')

@@ -3,8 +3,6 @@
 namespace App\Filament\Resources\NewsArticles\Schemas;
 
 use App\Filament\Support\AdminForm;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -61,6 +59,7 @@ class NewsArticleForm
             TextInput::make('slug')
                 ->helperText('URL text for this article, for example mount-bromo-guide. Keep it lowercase with hyphens.')
                 ->required()
+                ->dehydrateStateUsing(fn ($state): string => trim((string) $state))
                 ->maxLength(255)
                 ->columnSpanFull(),
             AdminForm::imageUpload('cover_image', 'Cover image', 'admin/news/covers')

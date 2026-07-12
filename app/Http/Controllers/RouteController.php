@@ -58,14 +58,16 @@ class RouteController extends Controller
     public function show(Request $request, string $slug)
     {
         $language = PublicSite::language($request);
+        $requestedSlug = trim($slug);
         $package = TourPackage::query()
             ->with(['destination', 'itineraryItems', 'packageAddOns', 'newsArticles', 'bookings'])
             ->active()
-            ->where(function ($query) use ($slug) {
-                $query->where('slug', $slug);
+            ->where(function ($query) use ($requestedSlug) {
+                $query->where('slug', $requestedSlug)
+                    ->orWhereRaw('TRIM(slug) = ?', [$requestedSlug]);
 
-                if (ctype_digit($slug)) {
-                    $query->orWhere('id', (int) $slug);
+                if (ctype_digit($requestedSlug)) {
+                    $query->orWhere('id', (int) $requestedSlug);
                 }
             })
             ->first();
@@ -74,8 +76,10 @@ class RouteController extends Controller
             return redirect()->route('routes.index');
         }
 
-        if ($package->slug !== $slug) {
-            return redirect()->route('routes.show', ['slug' => $package->slug]);
+        $canonicalSlug = trim((string) $package->slug);
+
+        if ($canonicalSlug !== $slug) {
+            return redirect()->route('routes.show', ['slug' => $canonicalSlug], 301);
         }
 
         return Inertia::render('RouteDetailPage', [

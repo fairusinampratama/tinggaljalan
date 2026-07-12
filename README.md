@@ -166,7 +166,7 @@ Never commit real API keys or SMTP passwords. Credentials stored through the adm
 ## Documentation
 
 - [Local setup](docs/setup.md)
-- [Shared hosting deployment](docs/shared-hosting.md)
+- [Automated Hostinger deployment](docs/atomic-deployment.md)
 - [Frontend structure](docs/frontend-structure.md)
 - [Theme tokens](docs/theme-tokens.md)
 - [Admin user guide](PANDUAN_PENGGUNA.md)

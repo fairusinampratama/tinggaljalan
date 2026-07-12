@@ -10,7 +10,9 @@ use Illuminate\Support\Str;
 class Seo
 {
     public const SITE_NAME = 'Tinggal Jalan';
+
     public const DEFAULT_DESCRIPTION = 'Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan routes with clear itineraries, flexible pickup, and WhatsApp support.';
+
     public const DEFAULT_IMAGE = 'images/hero-bromo.jpg';
 
     public static function baseUrl(): string
@@ -81,7 +83,7 @@ class Seo
                 self::collectionJsonLd('Indonesia Tour Packages', '/routes', $packages->map(fn (TourPackage $package) => [
                     '@type' => 'ListItem',
                     'position' => $packages->search($package) + 1,
-                    'url' => self::canonical('/routes/'.$package->slug),
+                    'url' => self::canonical('/routes/'.trim((string) $package->slug)),
                     'name' => PublicSite::localized($package->title, 'us'),
                 ])->values()->all()),
             ],
@@ -97,7 +99,7 @@ class Seo
         return self::page([
             'title' => "{$title} | Tinggal Jalan",
             'description' => $description,
-            'canonical' => self::canonical('/routes/'.$package->slug),
+            'canonical' => self::canonical('/routes/'.trim((string) $package->slug)),
             'og_type' => 'product',
             'image' => self::assetUrl($package->cover_image),
             'json_ld' => [
@@ -129,7 +131,7 @@ class Seo
                 self::collectionJsonLd($title, '/news', $articles->map(fn (NewsArticle $article) => [
                     '@type' => 'ListItem',
                     'position' => $articles->search($article) + 1,
-                    'url' => self::canonical('/news/'.$article->slug),
+                    'url' => self::canonical('/news/'.trim((string) $article->slug)),
                     'name' => PublicSite::localized($article->title, $language),
                 ])->values()->all(), 'Blog'),
             ],
@@ -145,7 +147,7 @@ class Seo
         return self::page([
             'title' => "{$title} | Tinggal Jalan",
             'description' => $description,
-            'canonical' => self::canonical('/news/'.$article->slug),
+            'canonical' => self::canonical('/news/'.trim((string) $article->slug)),
             'og_type' => 'article',
             'image' => self::assetUrl($article->cover_image),
             'published_time' => optional($article->published_at)->toIso8601String(),
@@ -222,7 +224,7 @@ class Seo
                 'priceCurrency' => $currency,
                 'price' => $price,
                 'availability' => 'https://schema.org/InStock',
-                'url' => self::canonical('/routes/'.$package->slug),
+                'url' => self::canonical('/routes/'.trim((string) $package->slug)),
             ],
             'aggregateRating' => [
                 '@type' => 'AggregateRating',
@@ -242,7 +244,7 @@ class Seo
             'name' => PublicSite::localized($package->title, $language),
             'description' => PublicSite::localized($package->intro ?? $package->excerpt, $language),
             'image' => self::assetUrl($package->cover_image),
-            'url' => self::canonical('/routes/'.$package->slug),
+            'url' => self::canonical('/routes/'.trim((string) $package->slug)),
             'touristType' => PublicSite::localized($package->best_for, $language),
             'itinerary' => $package->itineraryItems->map(fn ($item) => [
                 '@type' => 'ItemList',
@@ -281,7 +283,7 @@ class Seo
             ],
             'mainEntityOfPage' => [
                 '@type' => 'WebPage',
-                '@id' => self::canonical('/news/'.$article->slug),
+                '@id' => self::canonical('/news/'.trim((string) $article->slug)),
             ],
         ];
     }

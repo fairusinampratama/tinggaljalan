@@ -1,0 +1,162 @@
+name: CI and production deployment
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate application
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php84-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Check changed PHP formatting
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: bash scripts/ci/pint-changed.sh
+
+      - name: Run Laravel tests
+        run: composer test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install production PHP dependencies
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+
+      - name: Check production platform requirements
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        run: composer check-platform-reqs --no-dev
+
+      - name: Build immutable release
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        run: bash scripts/deployment/build-release.sh "$GITHUB_SHA" "$RUNNER_TEMP/release-$GITHUB_SHA.tar.gz"
+
+      - name: Upload immutable release
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-${{ github.sha }}
+          path: ${{ runner.temp }}/release-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  deploy:
+    name: Deploy production
+    needs: validate
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      PRODUCTION_URL: https://tinggaljalan.com
+      SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+      SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+      SSH_USER: ${{ secrets.PROD_SSH_USER }}
+      DOMAIN_ROOT: ${{ secrets.PROD_DOMAIN_ROOT }}
+
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Download immutable release
+        uses: actions/download-artifact@v4
+        with:
+          name: production-${{ github.sha }}
+          path: ${{ runner.temp }}/release
+
+      - name: Validate deployment secrets
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_HOST"
+          test -n "$SSH_PORT"
+          test -n "$SSH_USER"
+          test -n "$DOMAIN_ROOT"
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+
+      - name: Configure pinned SSH access
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/production"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/production" "$HOME/.ssh/known_hosts"
+
+      - name: Upload release
+        env:
+          ARCHIVE: ${{ runner.temp }}/release/release-${{ github.sha }}.tar.gz
+        run: |
+          REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
+          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$DOMAIN_ROOT/deployments/incoming'"
+          scp -i "$HOME/.ssh/production" -P "$SSH_PORT" "$ARCHIVE" "$SSH_USER@$SSH_HOST:$REMOTE_ARCHIVE"
+
+      - name: Deploy atomic release
+        run: |
+          REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
+          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "bash -s -- '$DOMAIN_ROOT' '$GITHUB_SHA' '$REMOTE_ARCHIVE' '$PRODUCTION_URL'" \
+            < scripts/deployment/deploy-hostinger.sh
+
+      - name: Record deployment summary
+        run: |
+          {
+            echo '## Production deployment'
+            echo
+            echo "- Revision: \`$GITHUB_SHA\`"
+            echo "- URL: $PRODUCTION_URL"
+            echo '- Strategy: atomic symlink release'
+          } >> "$GITHUB_STEP_SUMMARY"

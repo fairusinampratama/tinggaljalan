@@ -39,19 +39,35 @@ class SitemapController extends Controller
             ],
         ]);
 
-        $routes->each(fn (TourPackage $package) => $urls->push([
-            'loc' => Seo::canonical('/routes/'.$package->slug),
-            'lastmod' => optional($package->updated_at)->toAtomString(),
-            'changefreq' => 'monthly',
-            'priority' => '0.8',
-        ]));
+        $routes->each(function (TourPackage $package) use ($urls): void {
+            $slug = trim((string) $package->slug);
 
-        $articles->each(fn (NewsArticle $article) => $urls->push([
-            'loc' => Seo::canonical('/news/'.$article->slug),
-            'lastmod' => optional($article->content_updated_at ?? $article->updated_at)->toAtomString(),
-            'changefreq' => 'monthly',
-            'priority' => $article->is_featured ? '0.75' : '0.7',
-        ]));
+            if ($slug === '') {
+                return;
+            }
+
+            $urls->push([
+                'loc' => Seo::canonical('/routes/'.$slug),
+                'lastmod' => optional($package->updated_at)->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.8',
+            ]);
+        });
+
+        $articles->each(function (NewsArticle $article) use ($urls): void {
+            $slug = trim((string) $article->slug);
+
+            if ($slug === '') {
+                return;
+            }
+
+            $urls->push([
+                'loc' => Seo::canonical('/news/'.$slug),
+                'lastmod' => optional($article->content_updated_at ?? $article->updated_at)->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => $article->is_featured ? '0.75' : '0.7',
+            ]);
+        });
 
         return response()
             ->view('public.sitemap', ['urls' => $urls])

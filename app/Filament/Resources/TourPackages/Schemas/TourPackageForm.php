@@ -81,6 +81,7 @@ class TourPackageForm
             TextInput::make('slug')
                 ->helperText('URL text for this route, for example bromo-sunrise. Keep it lowercase with hyphens.')
                 ->required()
+                ->dehydrateStateUsing(fn ($state): string => trim((string) $state))
                 ->maxLength(255),
             TextInput::make('duration')
                 ->helperText('Short trip length shown to customers, for example 1 day or 2D1N.')
