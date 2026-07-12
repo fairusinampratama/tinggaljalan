@@ -51,15 +51,22 @@ class ResponsiveImageGeneratorTest extends TestCase
         }
 
         $source = $this->testDirectory.'/sample.png';
-        file_put_contents($source, base64_decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAFElEQVR4nGP8z4AATAxEcDgBTykAObACpInwnaEAAAAASUVORK5CYII='
-        ));
+        $this->writeSamplePng($source);
 
         $generated = $images->generateForPublicDiskPath('testing-responsive-images/sample.png');
 
         $this->assertSame(5, $generated);
         $this->assertFileExists(storage_path('app/public/generated/storage/testing-responsive-images/sample-480.webp'));
         $this->assertFileExists(storage_path('app/public/generated/storage/testing-responsive-images/sample-1600.webp'));
+    }
+
+    private function writeSamplePng(string $path): void
+    {
+        $image = imagecreatetruecolor(16, 12);
+        $color = imagecolorallocate($image, 24, 96, 132);
+        imagefilledrectangle($image, 0, 0, 15, 11, $color);
+        imagepng($image, $path);
+        imagedestroy($image);
     }
 
     public function test_backfill_command_generates_missing_variants_and_skips_generated_folder(): void
@@ -70,9 +77,7 @@ class ResponsiveImageGeneratorTest extends TestCase
             $this->markTestSkipped('GD WebP support is unavailable in this PHP runtime.');
         }
 
-        file_put_contents($this->testDirectory.'/sample.png', base64_decode(
-            'iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAFElEQVR4nGP8z4AATAxEcDgBTykAObACpInwnaEAAAAASUVORK5CYII='
-        ));
+        $this->writeSamplePng($this->testDirectory.'/sample.png');
 
         $this->artisan('images:generate-responsive', ['--missing' => true])
             ->assertSuccessful();
