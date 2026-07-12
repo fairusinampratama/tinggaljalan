@@ -53,7 +53,8 @@ jobs:
           php artisan key:generate
 
       - name: Verify image runtime
-        run: php -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
+        run: |
+          php -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
 
       - name: Install frontend dependencies
         run: npm ci
