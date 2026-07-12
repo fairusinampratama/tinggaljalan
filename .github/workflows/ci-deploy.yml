@@ -60,11 +60,11 @@ jobs:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
         run: bash scripts/ci/pint-changed.sh
 
-      - name: Run Laravel tests
-        run: composer test
-
       - name: Build frontend
         run: npm run build
+
+      - name: Run Laravel tests
+        run: composer test
 
       - name: Install production PHP dependencies
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
