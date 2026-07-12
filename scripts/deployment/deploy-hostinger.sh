@@ -70,12 +70,16 @@ SWITCHED=1
 "$RELEASE/scripts/deployment/health-check.sh" "$BASE_URL" "$SHA" "$CURRENT" "$PHP_BIN"
 trap - ERR
 
-mapfile -t ALL_RELEASES < <(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)
-if (( ${#ALL_RELEASES[@]} > 5 )); then
-    for old_release in "${ALL_RELEASES[@]:5}"; do
+RELEASE_LIST="$(mktemp)"
+find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2- > "$RELEASE_LIST"
+release_number=0
+while IFS= read -r old_release; do
+    release_number=$((release_number + 1))
+    if (( release_number > 5 )); then
         [[ "$(readlink -f "$CURRENT")" == "$(readlink -f "$old_release")" ]] || rm -rf -- "$old_release"
-    done
-fi
+    fi
+done < "$RELEASE_LIST"
+rm -f "$RELEASE_LIST"
 
 rm -f "$ARCHIVE"
 echo "Deployment completed for $SHA."
