@@ -13,8 +13,10 @@ export function DestinationSection({ items }) {
     return null;
   }
 
-  function openDestinationRoutes(destinationName) {
-    navigate(`/routes?destination=${encodeURIComponent(destinationName)}`);
+  function openDestinationRoutes(destination) {
+    const destinationFilter = destination.slug ?? destination.id ?? destination.name;
+
+    navigate(`/routes?destination=${encodeURIComponent(destinationFilter)}`);
   }
 
   return (
@@ -30,11 +32,11 @@ export function DestinationSection({ items }) {
               role="link"
               tabIndex={0}
               className="group cursor-pointer overflow-hidden rounded-xl border border-line bg-surface shadow-soft transition duration-300 hover:border-secondary/40 hover:shadow-xl hover:shadow-secondary/10 focus-visible:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-              onClick={() => openDestinationRoutes(item.name)}
+              onClick={() => openDestinationRoutes(item)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  openDestinationRoutes(item.name);
+                  openDestinationRoutes(item);
                 }
               }}
             >
