@@ -137,7 +137,7 @@ class BookingPaymentService
         $payment->update([
             'snap_token' => $paymentResponse['token_id'] ?? null,
             'snap_url' => $paymentResponse['url'] ?? null,
-            'doku_request_id' => $response['response']['headers']['requestId'] ?? $payment->order_id,
+            'doku_request_id' => $response['response']['headers']['request_id'] ?? $payment->order_id,
             'doku_payment_token' => $paymentResponse['token_id'] ?? null,
             'doku_raw_response' => $response,
         ]);

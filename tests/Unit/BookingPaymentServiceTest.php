@@ -84,6 +84,7 @@ class BookingPaymentServiceTest extends TestCase
         $this->assertSame('fake-doku-token', $payment->snap_token);
         $this->assertSame('https://sandbox.doku.com/checkout/link/fake-doku-token', $payment->snap_url);
         $this->assertSame('fake-doku-token', $payment->doku_payment_token);
+        $this->assertSame('fake-request-id', $payment->doku_request_id);
         $this->assertSame(880000, $this->doku->createdPayloads[0]['order']['amount']);
         $this->assertFalse($this->doku->createdPayloads[0]['order']['auto_redirect']);
         $this->assertFalse($this->doku->createdPayloads[0]['order']['disable_retry_payment']);

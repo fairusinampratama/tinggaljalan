@@ -19,7 +19,7 @@ class FakeDokuClient implements DokuClient
                 'url' => 'https://sandbox.doku.com/checkout/link/fake-doku-token',
             ],
             'headers' => [
-                'requestId' => 'fake-request-id',
+                'request_id' => 'fake-request-id',
             ],
         ],
     ];
