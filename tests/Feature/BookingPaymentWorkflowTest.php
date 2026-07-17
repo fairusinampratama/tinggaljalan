@@ -4,20 +4,25 @@ namespace Tests\Feature;
 
 use App\Filament\Support\BookingPaymentHandoff;
 use App\Mail\BookingPaymentInvoiceMail;
+use App\Mail\BookingPaymentReceiptMail;
 use App\Models\Booking;
 use App\Models\BookingPayment;
 use App\Models\Destination;
+use App\Models\PaymentSetting;
 use App\Models\TourPackage;
 use App\Models\User;
 use App\Payments\BookingPaymentService;
+use App\Payments\Doku\DokuClient;
 use App\Payments\ExchangeRates\ExchangeRateClient;
 use App\Payments\Midtrans\MidtransClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Testing\AssertableInertia as Assert;
 use InvalidArgumentException;
 use RuntimeException;
+use Tests\Support\FakeDokuClient;
 use Tests\Support\FakeExchangeRateClient;
 use Tests\Support\FakeMidtransClient;
 use Tests\TestCase;
@@ -36,9 +41,9 @@ class BookingPaymentWorkflowTest extends TestCase
             'services.midtrans.server_key' => 'server-key',
             'services.exchange_rates.usd_idr_buffer_percent' => 2,
         ]);
-        $this->midtrans = new FakeMidtransClient();
+        $this->midtrans = new FakeMidtransClient;
         $this->app->instance(MidtransClient::class, $this->midtrans);
-        $this->app->instance(ExchangeRateClient::class, new FakeExchangeRateClient());
+        $this->app->instance(ExchangeRateClient::class, new FakeExchangeRateClient);
     }
 
     public function test_invoice_email_can_be_sent_and_records_sent_timestamp(): void
@@ -105,6 +110,26 @@ class BookingPaymentWorkflowTest extends TestCase
                 ->where('payment.chargeAmount', $payment->charge_amount));
 
         $this->get('/checkout/payment/not-real-token')->assertNotFound();
+    }
+
+    public function test_public_doku_payment_page_exposes_its_gateway_environment(): void
+    {
+        PaymentSetting::midtrans()->update(['is_enabled' => false]);
+        PaymentSetting::doku()->update([
+            'is_enabled' => true,
+            'mode' => 'sandbox',
+            'public_key' => 'doku-client-id',
+            'secret_key' => 'doku-secret-key',
+        ]);
+        $this->app->instance(DokuClient::class, new FakeDokuClient);
+        $payment = app(BookingPaymentService::class)->createPaymentRequest($this->booking());
+
+        $this->get("/checkout/payment/{$payment->public_token}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('CheckoutPaymentStatusPage')
+                ->where('payment.provider', 'doku')
+                ->where('payment.environment', 'sandbox'));
     }
 
     public function test_public_payment_page_presents_customer_states_clearly(): void
@@ -308,7 +333,6 @@ class BookingPaymentWorkflowTest extends TestCase
         $mailable->assertDontSeeInText('Exchange rate');
     }
 
-
     public function test_public_status_check_reconciles_pending_payment_with_midtrans(): void
     {
         $payment = $this->paymentForStatus('pending');
@@ -402,6 +426,7 @@ class BookingPaymentWorkflowTest extends TestCase
         $this->assertSame('invoice_sent', $payment->refresh()->status);
         $this->assertNotNull($payment->sent_at);
     }
+
     public function test_midtrans_webhook_settlement_marks_payment_paid_without_completing_booking(): void
     {
         $booking = $this->booking();
@@ -494,8 +519,8 @@ class BookingPaymentWorkflowTest extends TestCase
 
     public function test_manual_payment_request_can_be_created_without_midtrans_api(): void
     {
-        \App\Models\PaymentSetting::midtrans()->update(['is_enabled' => false]);
-        \App\Models\PaymentSetting::where('gateway', 'manual')->update([
+        PaymentSetting::midtrans()->update(['is_enabled' => false]);
+        PaymentSetting::where('gateway', 'manual')->update([
             'is_enabled' => true,
         ]);
 
@@ -517,13 +542,13 @@ class BookingPaymentWorkflowTest extends TestCase
 
         $this->assertSame('paid', $paid->status);
         $this->assertNotNull($paid->paid_at);
-        Mail::assertSent(\App\Mail\BookingPaymentReceiptMail::class);
+        Mail::assertSent(BookingPaymentReceiptMail::class);
     }
 
     public function test_manual_payment_renders_bank_details_on_public_page(): void
     {
-        \App\Models\PaymentSetting::midtrans()->update(['is_enabled' => false]);
-        \App\Models\PaymentSetting::where('gateway', 'manual')->update([
+        PaymentSetting::midtrans()->update(['is_enabled' => false]);
+        PaymentSetting::where('gateway', 'manual')->update([
             'is_enabled' => true,
             'manual_bank_accounts' => [
                 [
@@ -542,14 +567,14 @@ class BookingPaymentWorkflowTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('CheckoutPaymentStatusPage')
                 ->where('payment.provider', 'manual')
-                ->where('payment.manualBankAccounts', fn (\Illuminate\Support\Collection $accounts) => 
-                    $accounts->count() === 1 &&
+                ->where('payment.manualBankAccounts', fn (Collection $accounts) => $accounts->count() === 1 &&
                     $accounts->first()['bank_name'] === 'Test Bank' &&
                     $accounts->first()['account_name'] === 'Test Name' &&
                     $accounts->first()['account_number'] === '123'
                 )
                 ->etc());
     }
+
     private function booking(array $overrides = []): Booking
     {
         $destination = Destination::firstOrCreate([

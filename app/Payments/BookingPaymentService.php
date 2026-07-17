@@ -108,6 +108,7 @@ class BookingPaymentService
         $payment = BookingPayment::create([
             'booking_id' => $booking->id,
             'provider' => 'doku',
+            'gateway_environment' => $this->settings->dokuIsProduction() ? 'production' : 'sandbox',
             'order_id' => $this->dokuOrderId($booking),
             'public_token' => Str::random(40),
             'quote_currency' => $booking->currency ?: 'IDR',
@@ -535,7 +536,8 @@ class BookingPaymentService
                 'currency' => 'IDR',
                 'callback_url' => $paymentUrl,
                 'callback_url_result' => $paymentUrl,
-                'auto_redirect' => true,
+                'auto_redirect' => false,
+                'disable_retry_payment' => false,
                 'language' => $language === 'id' ? 'ID' : 'EN',
                 'line_items' => [[
                     'id' => $booking->booking_code,

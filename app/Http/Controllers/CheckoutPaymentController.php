@@ -46,6 +46,7 @@ class CheckoutPaymentController extends Controller
                 'chargeAmount' => $payment->charge_amount,
                 'exchangeRate' => $payment->exchange_rate,
                 'provider' => $payment->provider,
+                'environment' => $payment->gateway_environment,
                 'providerLabel' => $paymentSettings->publicLabel($payment->provider),
                 'bookingNote' => $paymentSettings->bookingNote($payment->provider),
                 'usdNote' => $paymentSettings->usdNote($payment->provider),
