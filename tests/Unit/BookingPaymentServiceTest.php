@@ -104,6 +104,11 @@ class BookingPaymentServiceTest extends TestCase
         ]);
         $service = app(BookingPaymentService::class);
 
+        $retryableFailure = $service->applyDokuStatus($payment, ['transaction' => ['status' => 'FAILED']]);
+        $this->assertSame('pending', $retryableFailure->status);
+        $this->assertSame('FAILED', $retryableFailure->doku_transaction_status);
+        $this->assertNull($retryableFailure->failed_at);
+
         $paid = $service->applyDokuStatus($payment, ['transaction' => ['status' => 'SUCCESS']]);
         $this->assertSame('paid', $paid->status);
         $this->assertNotNull($paid->paid_at);
