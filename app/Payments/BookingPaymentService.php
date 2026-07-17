@@ -331,8 +331,7 @@ class BookingPaymentService
             'Request-Target:'.$request->getPathInfo(),
             'Digest:'.base64_encode(hash('sha256', $request->getContent(), true)),
         ];
-        $expected = 'HMACSHA256='.base64_encode(hash_hmac('sha256', implode("
-", $components), $this->settings->dokuSecretKey(), true));
+        $expected = 'HMACSHA256='.base64_encode(hash_hmac('sha256', implode("\n", $components), $this->settings->dokuSecretKey(), true));
 
         return hash_equals($expected, $signature);
     }
@@ -371,7 +370,11 @@ class BookingPaymentService
     {
         $wasPaid = $payment->status === 'paid';
         $transactionStatus = strtoupper((string) data_get($payload, 'transaction.status', data_get($payload, 'status', '')));
-        $status = $this->localDokuStatus($transactionStatus);
+        // DOKU Checkout emits FAILED for an individual payment-method attempt
+        // while the hosted checkout remains available for another attempt.
+        $status = $transactionStatus === 'FAILED'
+            ? $payment->status
+            : $this->localDokuStatus($transactionStatus);
 
         if ($status === 'pending' && $payment->status === 'invoice_sent') {
             $status = 'invoice_sent';
@@ -456,8 +459,7 @@ class BookingPaymentService
         return match ($transactionStatus) {
             'SUCCESS' => 'paid',
             'EXPIRED' => 'expired',
-            'FAILED' => 'failed',
-            'PENDING', 'TIMEOUT', 'REDIRECT' => 'pending',
+            'FAILED', 'PENDING', 'TIMEOUT', 'REDIRECT' => 'pending',
             default => 'pending',
         };
     }

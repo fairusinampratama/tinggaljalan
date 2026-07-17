@@ -123,7 +123,7 @@ class CheckoutPaymentController extends Controller
 
     private function pageCopy(string $language, PaymentSettingsService $settings, string $provider): array
     {
-        $keys = ['eyebrow', 'charge', 'original_quote', 'expires', 'paid_at', 'exchange_rate', 'missing_link', 'ask_whatsapp', 'back_home', 'booking_summary', 'package', 'travel_date', 'customer', 'guests', 'checking', 'checked', 'refresh_failed', 'last_checked', 'usd_note', 'bank_accounts', 'account_name', 'account_number'];
+        $keys = ['eyebrow', 'charge', 'original_quote', 'expires', 'paid_at', 'exchange_rate', 'missing_link', 'ask_whatsapp', 'back_home', 'booking_summary', 'package', 'travel_date', 'customer', 'guests', 'checking', 'checked', 'refresh_failed', 'last_checked', 'bank_accounts', 'account_name', 'account_number'];
 
         return collect($keys)->mapWithKeys(fn (string $key): array => [
             $key => BookingLanguage::translate('booking.payment_page.'.$key, ['provider' => $settings->publicLabel($provider)], $language),
@@ -131,10 +131,12 @@ class CheckoutPaymentController extends Controller
             'pay_securely' => BookingLanguage::translate('booking.pay_securely', ['provider' => $settings->publicLabel($provider)], $language),
         ];
     }
+
     private function isTerminal(string $status): bool
     {
         return in_array($status, ['paid', 'expired', 'failed', 'cancelled'], true);
     }
+
     /**
      * @return array<string, mixed>
      */

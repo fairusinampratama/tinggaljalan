@@ -5,9 +5,9 @@ namespace Tests\Unit;
 use App\Models\Booking;
 use App\Models\BookingPayment;
 use App\Models\Destination;
+use App\Models\PaymentSetting;
 use App\Models\TourPackage;
 use App\Payments\BookingPaymentService;
-use App\Models\PaymentSetting;
 use App\Payments\Doku\DokuClient;
 use App\Payments\ExchangeRates\ExchangeRateClient;
 use App\Payments\ExchangeRates\ExchangeRateService;
@@ -17,8 +17,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
-use Tests\Support\FakeExchangeRateClient;
 use Tests\Support\FakeDokuClient;
+use Tests\Support\FakeExchangeRateClient;
 use Tests\Support\FakeMidtransClient;
 use Tests\TestCase;
 
@@ -43,9 +43,9 @@ class BookingPaymentServiceTest extends TestCase
             'services.exchange_rates.usd_idr_buffer_percent' => 2,
             'services.exchange_rates.cache_ttl_hours' => 12,
         ]);
-        $this->midtrans = new FakeMidtransClient();
-        $this->doku = new FakeDokuClient();
-        $this->exchangeRates = new FakeExchangeRateClient();
+        $this->midtrans = new FakeMidtransClient;
+        $this->doku = new FakeDokuClient;
+        $this->exchangeRates = new FakeExchangeRateClient;
         $this->app->instance(MidtransClient::class, $this->midtrans);
         $this->app->instance(DokuClient::class, $this->doku);
         $this->app->instance(ExchangeRateClient::class, $this->exchangeRates);
@@ -66,7 +66,6 @@ class BookingPaymentServiceTest extends TestCase
         $this->assertSame('fake-snap-token', $payment->snap_token);
         $this->assertSame(750000, $this->midtrans->createdPayloads[0]['transaction_details']['gross_amount']);
     }
-
 
     public function test_doku_payment_request_uses_checkout_payment_url(): void
     {
@@ -104,6 +103,11 @@ class BookingPaymentServiceTest extends TestCase
         ]);
         $service = app(BookingPaymentService::class);
 
+        $retryableFailure = $service->applyDokuStatus($payment, ['transaction' => ['status' => 'FAILED']]);
+        $this->assertSame('pending', $retryableFailure->status);
+        $this->assertSame('FAILED', $retryableFailure->doku_transaction_status);
+        $this->assertNull($retryableFailure->failed_at);
+
         $paid = $service->applyDokuStatus($payment, ['transaction' => ['status' => 'SUCCESS']]);
         $this->assertSame('paid', $paid->status);
         $this->assertNotNull($paid->paid_at);
@@ -124,7 +128,7 @@ class BookingPaymentServiceTest extends TestCase
             ]),
         ]);
 
-        $rate = (new FrankfurterExchangeRateClient())->usdToIdr();
+        $rate = (new FrankfurterExchangeRateClient)->usdToIdr();
 
         $this->assertSame('frankfurter', $rate['source']);
         $this->assertSame(16500.25, $rate['raw_rate']);
