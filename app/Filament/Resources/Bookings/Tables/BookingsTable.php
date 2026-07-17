@@ -396,9 +396,12 @@ class BookingsTable
                             return $result->redirectUrl ? redirect()->away($result->redirectUrl) : null;
                         }),
                     Action::make('sync_payment_status')
-                        ->label('Sync Midtrans status')
+                        ->label(fn (Booking $record): string => match ($record->activePayment?->provider) {
+                            'doku' => 'Sync DOKU status',
+                            default => 'Sync Midtrans status',
+                        })
                         ->icon('heroicon-o-arrow-path')
-                        ->visible(fn (Booking $record): bool => (bool) $record->activePayment)
+                        ->visible(fn (Booking $record): bool => in_array($record->activePayment?->provider, ['midtrans', 'doku'], true))
                         ->action(function (Booking $record): void {
                             app(BookingPaymentService::class)->sync($record->activePayment);
 
