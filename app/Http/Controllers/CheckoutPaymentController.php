@@ -131,10 +131,12 @@ class CheckoutPaymentController extends Controller
             'pay_securely' => BookingLanguage::translate('booking.pay_securely', ['provider' => $settings->publicLabel($provider)], $language),
         ];
     }
+
     private function isTerminal(string $status): bool
     {
         return in_array($status, ['paid', 'expired', 'failed', 'cancelled'], true);
     }
+
     /**
      * @return array<string, mixed>
      */

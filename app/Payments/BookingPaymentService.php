@@ -331,8 +331,7 @@ class BookingPaymentService
             'Request-Target:'.$request->getPathInfo(),
             'Digest:'.base64_encode(hash('sha256', $request->getContent(), true)),
         ];
-        $expected = 'HMACSHA256='.base64_encode(hash_hmac('sha256', implode("
-", $components), $this->settings->dokuSecretKey(), true));
+        $expected = 'HMACSHA256='.base64_encode(hash_hmac('sha256', implode("\n", $components), $this->settings->dokuSecretKey(), true));
 
         return hash_equals($expected, $signature);
     }
