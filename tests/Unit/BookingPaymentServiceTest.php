@@ -80,10 +80,13 @@ class BookingPaymentServiceTest extends TestCase
         $payment = app(BookingPaymentService::class)->createPaymentRequest($booking);
 
         $this->assertSame('doku', $payment->provider);
+        $this->assertSame('sandbox', $payment->gateway_environment);
         $this->assertSame('fake-doku-token', $payment->snap_token);
         $this->assertSame('https://sandbox.doku.com/checkout/link/fake-doku-token', $payment->snap_url);
         $this->assertSame('fake-doku-token', $payment->doku_payment_token);
         $this->assertSame(880000, $this->doku->createdPayloads[0]['order']['amount']);
+        $this->assertFalse($this->doku->createdPayloads[0]['order']['auto_redirect']);
+        $this->assertFalse($this->doku->createdPayloads[0]['order']['disable_retry_payment']);
         $this->assertSame($payment->order_id, $this->doku->createdPayloads[0]['order']['invoice_number']);
         $this->assertSame($payment->order_id, $this->doku->requestIds[0]);
     }

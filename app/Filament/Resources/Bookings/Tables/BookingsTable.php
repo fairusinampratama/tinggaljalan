@@ -11,6 +11,7 @@ use App\Models\BookingPayment;
 use App\Payments\BookingPaymentService;
 use App\Payments\ExchangeRates\ExchangeRateService;
 use App\Payments\PaymentReceiptService;
+use App\Payments\PaymentSettingsService;
 use App\Support\BookingLanguage;
 use App\Support\BookingQuoteService;
 use App\Support\PhoneNumber;
@@ -89,6 +90,14 @@ class BookingsTable
                     ->state(fn (Booking $record): string => PublicSite::formatMoney((int) $record->total, $record->currency ?: 'IDR'))
                     ->description(fn (Booking $record): string => self::paymentSummary($record))
                     ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('total', $direction)),
+                TextColumn::make('payment_environment')
+                    ->label('Gateway')
+                    ->badge()
+                    ->state(fn (Booking $record): ?string => $record->latestPayment?->provider === 'doku' && $record->latestPayment?->gateway_environment
+                        ? 'DOKU '.strtoupper($record->latestPayment->gateway_environment)
+                        : null)
+                    ->color(fn (Booking $record): string => $record->latestPayment?->gateway_environment === 'production' ? 'success' : 'warning')
+                    ->placeholder('-'),
                 TextColumn::make('status')
                     ->label('Booking status')
                     ->badge()
@@ -181,7 +190,7 @@ class BookingsTable
                         ->label('Create payment request')
                         ->icon('heroicon-o-credit-card')
                         ->color('success')
-                        ->visible(fn (Booking $record): bool => !app(\App\Payments\PaymentSettingsService::class)->isManualActive() && $record->status === 'confirmed' && in_array($record->pricing_status, ['priced', 'quoted'], true) && $record->total > 0 && ! $record->activePayment)
+                        ->visible(fn (Booking $record): bool => ! app(PaymentSettingsService::class)->isManualActive() && $record->status === 'confirmed' && in_array($record->pricing_status, ['priced', 'quoted'], true) && $record->total > 0 && ! $record->activePayment)
                         ->schema([
                             TextInput::make('exchange_rate')
                                 ->label('USD to IDR exchange rate')
@@ -214,7 +223,7 @@ class BookingsTable
                         ->label('Create manual payment request')
                         ->icon('heroicon-o-banknotes')
                         ->color('success')
-                        ->visible(fn (Booking $record): bool => app(\App\Payments\PaymentSettingsService::class)->isManualActive() && $record->status === 'confirmed' && in_array($record->pricing_status, ['priced', 'quoted'], true) && $record->total > 0 && ! $record->activePayment)
+                        ->visible(fn (Booking $record): bool => app(PaymentSettingsService::class)->isManualActive() && $record->status === 'confirmed' && in_array($record->pricing_status, ['priced', 'quoted'], true) && $record->total > 0 && ! $record->activePayment)
                         ->schema([
                             TextInput::make('exchange_rate')
                                 ->label('USD to IDR exchange rate')

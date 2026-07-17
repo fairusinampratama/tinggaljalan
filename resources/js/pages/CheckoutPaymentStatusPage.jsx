@@ -44,6 +44,12 @@ export function CheckoutPaymentStatusPage() {
         noindex
       />
       <PageShell eyebrow={copy.eyebrow ?? 'Payment'} title={copy.pay_securely ?? `Pay securely with ${payment.providerLabel ?? 'Midtrans'}`}>
+        {payment.provider === 'doku' && payment.environment ? (
+          <div className={`mb-5 rounded-xl border px-4 py-3 text-sm font-bold ${payment.environment === 'production' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-300 bg-amber-50 text-amber-950'}`}>
+            DOKU {payment.environment.toUpperCase()}
+            {payment.environment === 'sandbox' ? ' - test payment only; no real charge will be captured.' : ''}
+          </div>
+        ) : null}
         <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
           <section className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
             <div className={`rounded-xl border p-4 ${toneStyles[payment.tone] ?? toneStyles.info}`}>
