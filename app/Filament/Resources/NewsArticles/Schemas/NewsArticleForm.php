@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\NewsArticles\Schemas;
 
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\NewsArticleReadiness;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Components\Wizard\Step;
 use Filament\Schemas\Schema;
@@ -127,7 +129,28 @@ class NewsArticleForm
                 ->schema([
                     Select::make('status')
                         ->options(['draft' => 'Draft', 'published' => 'Published'])
-                        ->helperText('Drafts are hidden from the public. Published articles are live.')
+                        ->helperText('Drafts are hidden. Publishing requires all content essentials to be complete.')
+                        ->rules([
+                            fn (Get $get): \Closure => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
+                                if ($value !== 'published') {
+                                    return;
+                                }
+
+                                $missing = NewsArticleReadiness::missingItemsFromState([
+                                    'article_category_id' => $get('article_category_id'),
+                                    'title' => ['us' => $get('title.us')],
+                                    'slug' => $get('slug'),
+                                    'cover_image' => $get('cover_image'),
+                                    'cover_alt' => ['us' => $get('cover_alt.us')],
+                                    'excerpt' => ['us' => $get('excerpt.us')],
+                                    'sections' => $get('sections'),
+                                ]);
+
+                                if ($missing !== []) {
+                                    $fail('Cannot publish. Complete the following: '.implode(', ', $missing).'.');
+                                }
+                            },
+                        ])
                         ->required()
                         ->default('draft'),
                     Toggle::make('is_featured')->required()

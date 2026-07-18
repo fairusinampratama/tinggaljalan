@@ -7,6 +7,7 @@ use App\Filament\Resources\NewsArticles\Pages\EditNewsArticle;
 use App\Filament\Resources\NewsArticles\Pages\ListNewsArticles;
 use App\Filament\Resources\NewsArticles\Schemas\NewsArticleForm;
 use App\Filament\Resources\NewsArticles\Tables\NewsArticlesTable;
+use App\Filament\Support\NewsArticleReadiness;
 use App\Models\NewsArticle;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -26,7 +27,9 @@ class NewsArticleResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = \App\Filament\Support\NewsArticleReadiness::applyNeedsAttention(\App\Models\NewsArticle::query())->count();
+        $count = NewsArticle::query()
+            ->where('status', 'published')
+            ->where(fn ($query) => NewsArticleReadiness::applyIncomplete($query))->count();
 
         return $count > 0 ? (string) $count : null;
     }
