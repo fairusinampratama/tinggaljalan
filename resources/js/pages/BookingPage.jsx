@@ -131,9 +131,9 @@ export function BookingPage() {
         </div>
       </div>
       <div className="relative grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
-        <form className={`min-w-0 rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
+        <form className={`min-w-0 max-w-full rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
           <p className="mb-5 text-sm font-semibold leading-6 text-muted">{t.tripSetupText}</p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <Field label={t.destinationFilterLabel}>
               <Dropdown
                 value={selectedDestinationId}
@@ -176,8 +176,8 @@ export function BookingPage() {
               />
             </Field>
             <Field label={t.pax}>
-              <div>
-                <div className="flex overflow-hidden rounded-xl border border-line bg-canvas transition focus-within:border-secondary hover:border-secondary/40 hover:bg-surface">
+              <div className="w-full min-w-0 max-w-full">
+                <div className="flex w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-line bg-canvas transition focus-within:border-secondary hover:border-secondary/40 hover:bg-surface">
                   <button
                     type="button"
                     aria-label={t.decreaseGuests}
@@ -218,15 +218,15 @@ export function BookingPage() {
                 type="text"
                 value={booking.pickup}
                 placeholder={t.pickupPlaceholder}
-                className="w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
+                className="w-full min-w-0 max-w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
                 onChange={(event) => setBooking((current) => ({ ...current, pickup: event.target.value }))}
               />
             </Field>
           </div>
           {selectedRoute?.addOns?.length ? (
-            <div className="mt-5">
+            <div className="mt-5 min-w-0 max-w-full">
               <p className="mb-3 text-sm font-semibold text-ink">{t.addOns}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 {selectedRoute.addOns.map((addOn) => {
                   const checked = booking.addOns.includes(addOn.id);
                   const addOnPrice = booking.currency === 'USD' ? addOn.priceUsd : addOn.priceIdr;
@@ -235,20 +235,20 @@ export function BookingPage() {
                   return (
                     <label
                       key={addOn.id}
-                      className={`cursor-pointer rounded-xl border p-4 transition ${
+                      className={`min-w-0 max-w-full cursor-pointer rounded-xl border p-4 transition ${
                         checked ? 'border-secondary bg-subtle' : 'border-line bg-canvas hover:border-secondary/40 hover:bg-surface'
                       }`}
                     >
-                      <span className="flex items-start gap-3">
+                      <span className="flex min-w-0 max-w-full items-start gap-3">
                         <input
                           type="checkbox"
-                          className="mt-1 h-4 w-4 accent-secondary"
+                          className="mt-1 h-4 w-4 shrink-0 accent-secondary"
                           checked={checked}
                           onChange={() => toggleAddOn(addOn.id)}
                         />
-                        <span>
-                          <span className="block text-sm font-bold text-ink">{getLocalized(addOn.title, language)}</span>
-                          <span className="mt-1 block text-xs font-semibold leading-5 text-muted">{getLocalized(addOn.description, language)}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block break-words text-sm font-bold text-ink">{getLocalized(addOn.title, language)}</span>
+                          <span className="mt-1 block break-words text-xs font-semibold leading-5 text-muted">{getLocalized(addOn.description, language)}</span>
                           <span className="mt-2 block text-xs font-bold text-secondary">
                             {formatCurrency(addOnPrice, booking.currency)} {pricingLabel}
                           </span>

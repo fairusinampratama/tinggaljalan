@@ -79,11 +79,11 @@ export function Dropdown({
   }, [isOpen, searchable]);
 
   return (
-    <div ref={dropdownRef} className={`relative ${className}`}>
+    <div ref={dropdownRef} className={`relative w-full min-w-0 max-w-full ${className}`}>
       {label ? <span className="mb-2 block text-sm font-semibold text-ink">{label}</span> : null}
       <button
         type="button"
-        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-4 py-3 text-left text-sm font-semibold outline-none transition duration-200 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+        className={`flex w-full min-w-0 max-w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-4 py-3 text-left text-sm font-semibold outline-none transition duration-200 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
           invalid ? 'border-red-400 focus:border-red-500 focus-visible:outline-red-500' : 'border-line hover:border-secondary/40 focus:border-secondary'
         } ${isOpen ? 'bg-surface shadow-lg shadow-secondary/10' : ''} ${triggerClassName}`}
         aria-label={ariaLabel}
@@ -99,7 +99,7 @@ export function Dropdown({
           }
         }}
       >
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block truncate text-ink">{selectedOption?.selectedLabel ?? selectedOption?.label ?? placeholder}</span>
           {selectedOption?.meta && !selectedOption?.selectedLabel ? (
             <span className="mt-0.5 block truncate text-xs font-semibold text-muted">{selectedOption.meta}</span>
@@ -110,7 +110,7 @@ export function Dropdown({
 
       {isOpen ? (
         <div
-          className={`absolute left-0 ${menuClassName ? '' : 'right-0'} top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/12 ${menuClassName}`}
+          className={`absolute left-0 ${menuClassName ? '' : 'right-0 max-w-full'} top-[calc(100%+8px)] z-[80] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl shadow-black/12 ${menuClassName}`}
         >
           {searchable ? (
             <div className="sticky top-0 z-10 border-b border-line bg-surface p-2">
@@ -138,7 +138,7 @@ export function Dropdown({
                   type="button"
                   role="option"
                   aria-selected={selected}
-                  className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                  className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
                     selected ? 'bg-subtle text-secondary' : 'text-ink hover:bg-canvas hover:text-secondary'
                   }`}
                   onClick={() => {
@@ -146,7 +146,7 @@ export function Dropdown({
                     close();
                   }}
                 >
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate">{option.label}</span>
                     {option.meta ? <span className="mt-0.5 block truncate text-xs font-semibold text-muted">{option.meta}</span> : null}
                   </span>
