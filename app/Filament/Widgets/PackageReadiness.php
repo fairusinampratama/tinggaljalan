@@ -23,12 +23,11 @@ class PackageReadiness extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading('Package readiness')
-            ->description('Packages missing public-page essentials before they feel production-ready.')
+            ->heading('Package content completeness')
+            ->description('Packages with missing information, shown separately from their public status.')
             ->query(
-                TourPackageReadiness::applyNeedsAttention(TourPackage::query()
-                    ->with('destination')
-                    ->withCount('itineraryItems')
+                TourPackageReadiness::applyIncomplete(TourPackage::query()
+                    ->with(['destination', 'itineraryItems', 'priceTiers'])
                 )
                     ->latest('updated_at')
                     ->limit(8),
@@ -41,10 +40,10 @@ class PackageReadiness extends TableWidget
                     ->label('Destination')
                     ->placeholder('-'),
                 TextColumn::make('readiness')
-                    ->label('Needs')
+                    ->label('Missing information')
                     ->state(fn (TourPackage $record): string => TourPackageReadiness::summary($record)),
                 IconColumn::make('is_active')
-                    ->label('Active')
+                    ->label('Shown publicly')
                     ->boolean(),
             ])
             ->recordActions([
@@ -59,7 +58,7 @@ class PackageReadiness extends TableWidget
                     ->openUrlInNewTab(),
             ])
             ->paginated(false)
-            ->emptyStateHeading('Packages look ready')
-            ->emptyStateDescription('No active-status, image, price, or itinerary gaps found.');
+            ->emptyStateHeading('Package content is complete')
+            ->emptyStateDescription('No destination, content, pricing, image, or itinerary gaps found.');
     }
 }

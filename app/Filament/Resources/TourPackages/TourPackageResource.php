@@ -27,7 +27,9 @@ class TourPackageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = TourPackageReadiness::applyNeedsAttention(TourPackage::query())->count();
+        $count = TourPackage::query()
+            ->where('is_active', true)
+            ->where(fn ($query) => TourPackageReadiness::applyIncomplete($query))->count();
 
         return $count > 0 ? (string) $count : null;
     }

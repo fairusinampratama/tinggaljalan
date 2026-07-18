@@ -4,8 +4,10 @@ namespace App\Filament\Resources\TourPackages\Tables;
 
 use App\Filament\Support\TourPackageReadiness;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -19,17 +21,17 @@ class TourPackagesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('itineraryItems'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['itineraryItems', 'priceTiers']))
             ->columns([
                 TextColumn::make('title.us')->label('Title')->searchable(),
                 TextColumn::make('destination.name')->label('Destination')->searchable()->sortable(),
                 TextColumn::make('readiness_status')
-                    ->label('Readiness')
+                    ->label('Content status')
                     ->badge()
                     ->state(fn ($record): string => TourPackageReadiness::status($record))
                     ->color(fn ($record): string => TourPackageReadiness::color($record)),
                 TextColumn::make('readiness_summary')
-                    ->label('Needs')
+                    ->label('Missing information')
                     ->state(fn ($record): string => TourPackageReadiness::summary($record))
                     ->wrap()
                     ->toggleable(),
@@ -40,20 +42,20 @@ class TourPackagesTable
                 TextColumn::make('review_count')->numeric()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('sort_order')->numeric()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_featured')->boolean(),
-                IconColumn::make('is_active')->boolean(),
+                IconColumn::make('is_active')->label('Shown publicly')->boolean(),
                 TextColumn::make('updated_at')->dateTime()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('destination_id')->relationship('destination', 'name')->label('Destination'),
                 TernaryFilter::make('is_featured'),
                 TernaryFilter::make('is_active'),
-                Filter::make('needs_attention')
-                    ->label('Needs attention')
-                    ->query(fn (Builder $query): Builder => $query->where(fn (Builder $query) => TourPackageReadiness::applyNeedsAttention($query))),
+                Filter::make('incomplete_content')
+                    ->label('Incomplete content')
+                    ->query(fn (Builder $query): Builder => $query->where(fn (Builder $query) => TourPackageReadiness::applyIncomplete($query))),
             ])
             ->recordActions([
                 EditAction::make(),
-                \Filament\Actions\DeleteAction::make(),
+                DeleteAction::make(),
                 Action::make('view_site')
                     ->label('View on site')
                     ->icon('heroicon-o-arrow-top-right-on-square')
@@ -62,8 +64,8 @@ class TourPackagesTable
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
-                \Filament\Actions\BulkActionGroup::make([
-                    \Filament\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->toolbarActions([]);
