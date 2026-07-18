@@ -5,12 +5,13 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPaymentWhatsappController;
 use App\Http\Controllers\CheckoutPaymentController;
 use App\Http\Controllers\DokuWebhookController;
-use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\SitemapController;
+use App\Support\InertiaPublicData;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -45,4 +46,6 @@ Route::get('/admin/payment-handoffs/{payment}/whatsapp', BookingPaymentWhatsappC
     ->middleware('auth')
     ->name('admin.booking-payments.whatsapp');
 Route::get('/checkout/confirmation', [BookingController::class, 'confirmation'])->name('checkout.confirmation');
-Route::get('/test-articles', function () { return count(App\Support\InertiaPublicData::shared(request())['articles']); });
+Route::get('/test-articles', function () {
+    return count(InertiaPublicData::shared(request())['articles']);
+});

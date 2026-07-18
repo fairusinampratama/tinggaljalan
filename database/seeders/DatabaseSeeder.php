@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\EmailGatewaySetting;
 use App\Models\PaymentSetting;
-use App\Models\WhatsappGatewaySetting;
 use App\Models\User;
+use App\Models\WhatsappGatewaySetting;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder
                     'bank_name' => 'Mandiri',
                     'account_name' => 'Tinggal Jalan',
                     'account_number' => '0987654321',
-                ]
+                ],
             ],
         ]);
         $email = EmailGatewaySetting::current();
@@ -62,7 +62,7 @@ class DatabaseSeeder extends Seeder
             'username' => 'afe54a001@smtp-brevo.com',
             'password' => env('SMTP_PASSWORD', 'mock-brevo-smtp-key'),
             'from_address' => 'fairusinampratama@gmail.com',
-            'from_name' => 'Tinggal Jalan'
+            'from_name' => 'Tinggal Jalan',
         ]);
 
         $wa = WhatsappGatewaySetting::current();
@@ -71,7 +71,7 @@ class DatabaseSeeder extends Seeder
             'is_enabled' => true,
             'api_base_url' => 'https://api.whatspie.com/',
             'api_token' => env('WHATSPIE_API_TOKEN', 'mock-whatspie-api-token'),
-            'session_id' => '6289688597253'
+            'session_id' => '6289688597253',
         ]);
 
         $this->call([
