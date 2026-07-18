@@ -6,9 +6,12 @@
         "build": "vite build",
         "dev": "vite",
         "images:responsive": "node scripts/images/generate-responsive-images.mjs",
-        "build:performance": "npm run images:responsive && npm run build"
+        "build:performance": "npm run images:responsive && npm run build",
+        "test:browser:prepare": "node scripts/testing/prepare-browser-tests.mjs",
+        "test:browser": "npm run test:browser:prepare && playwright test"
     },
     "devDependencies": {
+        "@playwright/test": "^1.61.1",
         "@tailwindcss/vite": "^4.0.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^3.1",

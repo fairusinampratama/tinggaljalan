@@ -134,6 +134,15 @@ Build the frontend separately:
 npm run build
 ```
 
+Install the browser runtimes once, then run the responsive browser suite:
+
+```bash
+npx playwright install --with-deps chromium firefox webkit
+npm run test:browser
+```
+
+The browser suite prepares an isolated SQLite database, seeds representative content, and checks the booking layout in desktop Chromium, Firefox, WebKit, an iPhone-sized WebKit viewport, and an Android-sized Chromium viewport.
+
 ## Production Preview
 
 The preview stack runs Nginx and PHP-FPM with built assets and OPcache. Do not run it at the same time as the local `app` service because both bind port `8000`.

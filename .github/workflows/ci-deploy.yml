@@ -67,6 +67,12 @@ jobs:
       - name: Build frontend
         run: npm run build:performance
 
+      - name: Install browser test runtimes
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run cross-browser responsive tests
+        run: npm run test:browser
+
       - name: Run Laravel tests
         run: composer test
 

@@ -28,3 +28,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/.codex-remote-attachments/
+/tinggaljalan
+/playwright-report/
+/test-results/
