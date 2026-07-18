@@ -12,6 +12,7 @@ class EditTourPackage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ];
+            TourPackageResource::duplicateAction(),
+        ];
     }
 }

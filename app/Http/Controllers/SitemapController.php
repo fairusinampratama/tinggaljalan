@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AboutPage;
+use App\Models\CompanyMilestone;
 use App\Models\NewsArticle;
+use App\Models\TeamMember;
 use App\Models\TourPackage;
 use App\Support\Seo;
 use Illuminate\Http\Response;
@@ -13,6 +16,7 @@ class SitemapController extends Controller
     {
         $routes = TourPackage::query()->active()->ordered()->get();
         $articles = NewsArticle::query()->published()->latest('published_at')->get();
+        $about = AboutPage::query()->published()->first();
         $latestContentDate = collect([
             $routes->max('updated_at'),
             $articles->max(fn (NewsArticle $article) => $article->content_updated_at ?? $article->updated_at),
@@ -38,6 +42,20 @@ class SitemapController extends Controller
                 'priority' => '0.85',
             ],
         ]);
+
+        if ($about) {
+            $aboutLastModified = collect([
+                $about,
+                TeamMember::query()->active()->latest('updated_at')->first(),
+                CompanyMilestone::query()->active()->latest('updated_at')->first(),
+            ])->filter()->sortByDesc(fn ($record) => $record->updated_at)->first()?->updated_at;
+            $urls->push([
+                'loc' => Seo::canonical('/about-us'),
+                'lastmod' => optional($aboutLastModified)->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.8',
+            ]);
+        }
 
         $routes->each(function (TourPackage $package) use ($urls): void {
             $slug = trim((string) $package->slug);

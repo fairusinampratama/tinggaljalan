@@ -22,9 +22,10 @@ export function Footer({ t, whatsappUrl }) {
       title: t.footerSupport,
       links: [
         { label: t.footerFaq, href: '/#faq' },
+        site.aboutEnabled ? { label: t.footerAbout ?? 'About TinggalJalan', href: '/about-us' } : null,
         { label: t.nav?.[5] ?? 'Contact', href: '#contact' },
         { label: t.email, href: contactDetails.emailHref ?? `mailto:${contactDetails.email ?? ''}` },
-      ],
+      ].filter(Boolean),
     },
   ];
 

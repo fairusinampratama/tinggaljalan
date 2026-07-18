@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\AboutPage;
 use App\Models\NewsArticle;
 use App\Models\TourPackage;
 use Illuminate\Support\Collection;
@@ -69,6 +70,42 @@ class Seo
                 self::websiteJsonLd(),
                 self::organizationJsonLd(),
             ],
+        ]);
+    }
+
+    public static function about(AboutPage $page, string $language): array
+    {
+        $seo = $page->seo ?? [];
+        $profile = $page->profile_section ?? [];
+        $organization = self::organizationJsonLd();
+
+        if (($profile['show_legal_name'] ?? false) && filled($profile['legal_name'] ?? null)) {
+            $organization['legalName'] = $profile['legal_name'];
+        }
+        if (($profile['show_founding_year'] ?? false) && filled($profile['founding_year'] ?? null)) {
+            $organization['foundingDate'] = (string) $profile['founding_year'];
+        }
+        if (($profile['show_registration'] ?? false) && filled($profile['registration'] ?? null)) {
+            $organization['identifier'] = $profile['registration'];
+        }
+
+        $title = PublicSite::localized($seo['title'] ?? [], $language, 'About TinggalJalan');
+        $description = PublicSite::localized($seo['description'] ?? [], $language, self::DEFAULT_DESCRIPTION);
+        $image = $seo['image'] ?? ($page->hero['image'] ?? null);
+
+        return self::page([
+            'title' => $title,
+            'description' => $description,
+            'canonical' => self::canonical('/about-us'),
+            'image' => self::assetUrl($image),
+            'json_ld' => [[
+                '@context' => 'https://schema.org',
+                '@type' => 'AboutPage',
+                'name' => $title,
+                'description' => $description,
+                'url' => self::canonical('/about-us'),
+                'mainEntity' => $organization,
+            ]],
         ]);
     }
 
@@ -205,7 +242,7 @@ class Seo
     public static function productJsonLd(TourPackage $package, string $language): array
     {
         $currency = $language === 'id' ? 'IDR' : 'USD';
-        $price = $currency === 'USD' ? $package->base_price_usd : $package->base_price_idr;
+        $price = app(TierPricingResolver::class)->startingPrice($package, $currency);
 
         return [
             '@context' => 'https://schema.org',

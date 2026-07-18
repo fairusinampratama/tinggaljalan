@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">TinggalJalan team photograph placeholder</title>
+  <desc id="desc">A branded placeholder to replace with a real TinggalJalan team photograph.</desc>
+  <rect width="1200" height="900" fill="#102a36"/>
+  <circle cx="380" cy="350" r="115" fill="#2f6f6d"/>
+  <circle cx="600" cy="300" r="135" fill="#b99a5e" opacity=".8"/>
+  <circle cx="835" cy="360" r="110" fill="#2f6f6d"/>
+  <path d="M155 760c22-180 108-270 225-270s205 90 225 270M355 760c28-205 120-305 245-305s220 100 245 305M635 760c22-180 105-265 205-265s190 85 210 265" fill="#2f6f6d" opacity=".88"/>
+  <path d="M100 86h1000" stroke="#b99a5e" stroke-width="8"/>
+  <text x="600" y="840" fill="#fff" font-family="Arial,sans-serif" font-size="30" text-anchor="middle" letter-spacing="5">TINGGALJALAN TEAM PHOTO</text>
+</svg>

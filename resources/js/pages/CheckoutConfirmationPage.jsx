@@ -25,8 +25,8 @@ export function CheckoutConfirmationPage() {
       />
       <PageShell eyebrow="Booking" title={t.requestSentTitle}>
       <CheckoutSteps current={2} />
-      <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-        <section>
+      <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+        <section className="min-w-0">
           <h2 className="text-3xl font-bold text-ink">{t.waitingConfirmation}</h2>
           <p className="mt-3 text-sm leading-relaxed text-muted">
             {t.requestSentText}

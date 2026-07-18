@@ -11,6 +11,10 @@ function cleanPath(src) {
 export function isGeneratedVariantAvailable(src) {
   const path = cleanPath(src);
 
+  if (/\.svg$/i.test(path)) {
+    return false;
+  }
+
   return path.startsWith('/images/') || path.startsWith('/storage/');
 }
 

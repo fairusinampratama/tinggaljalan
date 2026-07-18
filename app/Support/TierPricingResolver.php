@@ -33,7 +33,7 @@ class TierPricingResolver
         if ($package->pricing_mode !== 'tiered') {
             return $currency === 'USD' ? (int) $package->base_price_usd : (int) $package->base_price_idr;
         }
-        $tier = $package->priceTiers()->orderBy($currency === 'USD' ? 'price_usd' : 'price_idr')->first();
+        $tier = $package->priceTiers()->reorder($currency === 'USD' ? 'price_usd' : 'price_idr')->first();
 
         return $currency === 'USD' ? (int) $tier?->price_usd : (int) $tier?->price_idr;
     }
