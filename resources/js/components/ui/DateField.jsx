@@ -126,17 +126,17 @@ export function DateField({ label, value, onChange, language = 'en', className =
   }
 
   return (
-    <div ref={pickerRef} className={`relative ${className}`}>
+    <div ref={pickerRef} className={`relative w-full min-w-0 max-w-full ${className}`}>
       {label ? <span className="mb-2 block text-sm font-semibold text-ink">{label}</span> : null}
       <button
         type="button"
-        className={`flex min-h-10 w-full items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3 text-left text-sm font-semibold text-ink outline-none transition duration-200 hover:border-secondary/40 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-11 ${
+        className={`flex min-h-10 w-full min-w-0 max-w-full items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3 text-left text-sm font-semibold text-ink outline-none transition duration-200 hover:border-secondary/40 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-11 ${
           isOpen ? 'border-secondary bg-surface shadow-lg shadow-secondary/10' : ''
         }`}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
       >
-        <span className="truncate">{displayValue}</span>
+        <span className="min-w-0 flex-1 truncate">{displayValue}</span>
         <CalendarDays className="h-4 w-4 shrink-0 text-secondary" />
       </button>
 
