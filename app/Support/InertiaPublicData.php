@@ -2,9 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\AboutPage;
 use App\Models\ArticleCategory;
 use App\Models\Destination;
-use App\Models\Faq;
 use App\Models\HeroSlide;
 use App\Models\NewsArticle;
 use App\Models\PackageAddOn;
@@ -83,9 +83,36 @@ class InertiaPublicData
         return [
             'logoUrl' => self::assetPath($site?->logo_url ?? '/images/logo-tj.png'),
             'trustBadges' => $site?->trust_badges ?? [],
+            'serviceAreas' => $site?->service_areas ?? [],
             'contactDetails' => $contact,
             'whatsappNumber' => preg_replace('/\D+/', '', $site?->whatsapp_number ?? '6281234567890'),
             'whatsappBaseUrl' => PublicSite::whatsappBase(),
+            'aboutEnabled' => AboutPage::query()->where('is_published', true)->exists(),
+        ];
+    }
+
+    public static function aboutPage(AboutPage $page): array
+    {
+        $hero = $page->hero ?? [];
+        $story = $page->story ?? [];
+        $seo = $page->seo ?? [];
+
+        $hero['image'] = filled($hero['image'] ?? null) ? self::assetPath($hero['image']) : null;
+        $story['image'] = filled($story['image'] ?? null) ? self::assetPath($story['image']) : null;
+        $seo['image'] = filled($seo['image'] ?? null) ? self::assetPath($seo['image']) : $hero['image'];
+
+        return [
+            'isPublished' => $page->is_published,
+            'sectionVisibility' => $page->section_visibility ?? [],
+            'hero' => $hero,
+            'story' => $story,
+            'values' => $page->values_section ?? [],
+            'team' => $page->team_section ?? [],
+            'milestones' => $page->milestones_section ?? [],
+            'workflow' => $page->workflow_section ?? [],
+            'profile' => $page->profile_section ?? [],
+            'cta' => $page->cta ?? [],
+            'seo' => $seo,
         ];
     }
 
@@ -378,7 +405,7 @@ class InertiaPublicData
         ];
     }
 
-    private static function assetPath(?string $path): string
+    public static function assetPath(?string $path): string
     {
         return PublicSite::assetPath($path);
     }
@@ -510,7 +537,7 @@ class InertiaPublicData
             ->all();
     }
 
-    private static function localizedArray(mixed $value): array|string|null
+    public static function localizedArray(mixed $value): array|string|null
     {
         if (is_string($value) || is_null($value)) {
             return $value;

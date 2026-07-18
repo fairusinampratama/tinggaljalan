@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TourPackages\Tables;
 
+use App\Filament\Resources\TourPackages\TourPackageResource;
 use App\Filament\Support\TourPackageReadiness;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -54,6 +55,7 @@ class TourPackagesTable
                     ->query(fn (Builder $query): Builder => $query->where(fn (Builder $query) => TourPackageReadiness::applyIncomplete($query))),
             ])
             ->recordActions([
+                TourPackageResource::duplicateAction(),
                 EditAction::make(),
                 DeleteAction::make(),
                 Action::make('view_site')

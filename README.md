@@ -16,15 +16,16 @@ Laravel lives at the repository root. Run all commands from this directory.
 ## Main Features
 
 - Multilingual public content in Indonesian, English, and Simplified Chinese
-- Tour packages with itineraries, galleries, add-ons, availability rules, and route filters
-- Tiered pricing configuration with support for contiguous traveler ranges and open-ended final limits (e.g., 5+)
+- Tour packages with itineraries, galleries, add-ons, availability rules, route filters, readiness checks, and safe draft duplication
+- Tiered pricing configuration with contiguous traveler ranges and open-ended final limits (e.g., 5+); public package pages show only the lowest available starting price
 - Custom group arrangement workflow: bookings exceeding standard price tiers automatically block checkout and direct the user to consult via WhatsApp or scale down their traveler count
 - Public booking requests with customer, trip, voucher, and pricing snapshots
 - Admin booking queues from availability confirmation through payment and custom quote adjustments to trip completion
 - Midtrans Snap payments with automatic USD-to-IDR conversion
 - Payment-request invoices and post-payment receipts through email and WhatsApp
 - Configurable SMTP, Whatspie, and Midtrans credentials in dedicated admin pages
-- Managed destinations, news, FAQs, reviews, trust stats, platform links, site details, and Why Choose Us content
+- Managed destinations, news, FAQs, reviews, trust stats, platform links, hero slides, site details, and Why Choose Us content
+- Database-managed multilingual About page, company profile, team members, and company milestones
 
 ## Local Setup
 

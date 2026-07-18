@@ -86,6 +86,9 @@ class DatabaseSeeder extends Seeder
             PlatformLinkSeeder::class,
             SiteSettingSeeder::class,
             ReviewSeeder::class,
+            AboutPageSeeder::class,
+            TeamMemberSeeder::class,
+            CompanyMilestoneSeeder::class,
         ]);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPaymentWhatsappController;
 use App\Http\Controllers\CheckoutPaymentController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/about-us', AboutController::class)->name('about.show');
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', fn () => response(
     "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /booking\nDisallow: /checkout/\n\nSitemap: https://tinggaljalan.com/sitemap.xml\n",

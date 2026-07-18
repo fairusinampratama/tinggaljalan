@@ -11,7 +11,7 @@ export function AppLayout({ children }) {
   const isRouteDetailPage = pathname.startsWith('/routes/');
 
   return (
-    <main className="min-h-screen bg-canvas text-ink">
+    <main className="min-h-screen w-full min-w-0 overflow-x-clip bg-canvas text-ink">
       <Navbar language={language} setLanguage={setLanguage} t={t} />
       {children}
       <Footer t={t} whatsappUrl={whatsappUrl} />

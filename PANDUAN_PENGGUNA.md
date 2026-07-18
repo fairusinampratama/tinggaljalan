@@ -55,7 +55,7 @@ Isi bagian utama berikut:
 - Slug yang singkat dan unik.
 - Destinasi.
 - Ringkasan, deskripsi, kategori, dan informasi traveler.
-- Harga dasar IDR dan USD.
+- Mode harga **Flat** dengan harga dasar IDR dan USD, atau mode **Tiered** dengan tier IDR dan USD.
 - Durasi, pickup, cakupan layanan, serta catatan penting.
 - Cover image dan galeri.
 - Highlights, includes, excludes, policies, dan good-to-know.
@@ -78,14 +78,20 @@ Untuk setiap add-on, tentukan:
 
 ### Readiness
 
-Kolom readiness menunjukkan apakah paket sudah cukup lengkap untuk dijual. Paket yang masih memiliki data penting kosong sebaiknya tidak diaktifkan atau dijadikan featured.
+Kolom **Readiness** menunjukkan kelengkapan konten, terpisah dari status publikasi. Status **Complete** berarti destinasi, judul English, slug, cover, durasi, harga, itinerary, highlights, dan includes sudah valid. Paket **Incomplete** dapat disimpan sebagai draft, tetapi tidak dapat dipublikasikan sampai kekurangannya diperbaiki.
+
+### Duplicate package
+
+Gunakan tindakan **Duplicate** dari tabel atau halaman edit untuk menyalin paket beserta itinerary, add-ons, dan tier harga. Salinan selalu dibuat sebagai draft non-featured dengan slug baru. Periksa judul, slug, harga, availability, dan seluruh konten sebelum mengaktifkannya.
 
 ### Traveler Price Tiers (Tier Harga Berdasarkan Jumlah Peserta)
 
-Paket dapat dikonfigurasi menggunakan harga berjenjang (tiered pricing) berdasarkan jumlah peserta (Guests):
-- **Rentang Berkelanjutan (Contiguous Ranges):** Rentang peserta harus dimulai dari 1 dan berlanjut secara berurutan (misal: Tier 1: 1-2 orang, Tier 2: 3-4 orang).
-- **Batas Terbuka (Open-Ended Tiers):** Untuk membuat batas atas terbuka (misalnya 5+ orang), kosongkan kolom **To travelers** pada jenjang terakhir. Sistem akan secara otomatis menganggapnya sebagai range tanpa batas atas (misal: 5+).
-- **Triger Kuotasi (Quote Trigger):** Jika jenjang terakhir memiliki batas atas tetap (misalnya berakhir di 6 orang), pemesanan yang melebihi jumlah tersebut (misalnya 7+ orang) akan otomatis dianggap sebagai **"Quote Required" (Butuh Pengaturan Grup Khusus)**. Sistem akan memblokir alur checkout langsung dan mengarahkan pelanggan untuk menghubungi admin via WhatsApp.
+Paket dapat dikonfigurasi menggunakan harga berjenjang berdasarkan jumlah peserta:
+
+- **Rentang berkelanjutan:** Mulai dari 1 dan lanjutkan tanpa celah atau tumpang tindih, misalnya 1-2, 3-4, 5-6.
+- **Batas terbuka:** Kosongkan **To travelers** hanya pada tier terakhir untuk membuat 7+ atau rentang terbuka lainnya.
+- **Pemicu kuotasi:** Jika tier terakhir berhenti pada angka tetap, jumlah di atasnya berubah menjadi **Quote Required** dan checkout langsung diblokir.
+- **Tampilan publik:** Rincian setiap tier tidak ditampilkan pada halaman paket. Website hanya menampilkan harga termurah sebagai harga mulai; harga yang benar untuk jumlah tamu tetap dihitung saat booking.
 
 ## 4. Destinations dan Route Filters
 
@@ -287,6 +293,16 @@ Trust Stats menampilkan angka atau bukti kepercayaan, misalnya jumlah traveler a
 
 Platform Links menampilkan tautan platform eksternal beserta logo. Maksimal empat item aktif. Gunakan logo yang jelas dan URL lengkap dengan `https://`.
 
+### Hero Slides
+
+Kelola gambar, alt text, link, urutan, jadwal, dan status aktif setiap slide. Tindakan **Duplicate** membuat salinan nonaktif dan tanpa jadwal agar tidak langsung tayang. Kontrol autoplay global berada di **Site Details**, bukan pada masing-masing slide.
+
+### About Us, Team Members, dan Company Milestones
+
+Menu **About Us** mengatur konten halaman, profil perusahaan, visibilitas section, CTA, dan SEO dalam tiga bahasa. Menu **Team Members** dan **Company Milestones** mengatur kartu yang tampil pada halaman tersebut.
+
+Data contoh awal diberi penanda sample. Ganti nama, foto, periode, dan deskripsi contoh melalui admin sebelum menjadikannya informasi resmi. Halaman About hanya tampil di navigasi dan sitemap ketika statusnya dipublikasikan dan konten wajibnya lengkap.
+
 ## 10. Site Details
 
 Menu **Site Details** mengatur identitas dan kontak publik:
@@ -299,8 +315,10 @@ Menu **Site Details** mengatur identitas dan kontak publik:
 - Jam layanan dalam tiga bahasa.
 - Area layanan.
 - Footer trust badges.
+- **Hero autoplay enabled** untuk mengaktifkan atau menghentikan perpindahan slide otomatis.
+- **Hero autoplay interval** untuk mengatur jeda perpindahan slide.
 
-Simpan perubahan lalu periksa header, footer, dan tombol WhatsApp pada website publik.
+Simpan perubahan lalu periksa header, footer, hero, dan tombol WhatsApp pada website publik. Jika autoplay dimatikan, pengunjung tetap dapat berpindah slide menggunakan kontrol manual.
 
 ## 11. Gateway Settings
 

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title desc">
+  <title id="title">TinggalJalan story image placeholder</title>
+  <desc id="desc">A branded placeholder to replace with a real basecamp or behind-the-scenes photograph.</desc>
+  <rect width="1200" height="800" fill="#f5f7f6"/>
+  <path d="M0 610 280 360l190 170 210-250 520 400v120H0Z" fill="#2f6f6d"/>
+  <circle cx="940" cy="180" r="90" fill="#b99a5e"/>
+  <text x="600" y="735" fill="#102a36" font-family="Arial,sans-serif" font-size="30" text-anchor="middle" letter-spacing="4">REPLACE WITH A REAL OPERATIONS PHOTO</text>
+</svg>

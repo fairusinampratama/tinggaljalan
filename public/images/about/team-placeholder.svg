@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">TinggalJalan team portrait placeholder</title>
+  <desc id="desc">A branded placeholder to replace with a real team portrait.</desc>
+  <rect width="800" height="1000" fill="#102a36"/>
+  <circle cx="400" cy="365" r="150" fill="#2f6f6d"/>
+  <path d="M140 900c25-225 135-330 260-330s235 105 260 330" fill="#2f6f6d"/>
+  <path d="M110 86h580" stroke="#b99a5e" stroke-width="8"/>
+  <text x="400" y="945" fill="#fff" font-family="Arial,sans-serif" font-size="28" text-anchor="middle" letter-spacing="4">REPLACE WITH A REAL PORTRAIT</text>
+</svg>

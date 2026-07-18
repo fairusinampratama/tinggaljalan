@@ -50,7 +50,8 @@ export function getLocalized(value, region = defaultRegion) {
   const normalizedRegion = normalizeRegion(region);
 
   if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value[normalizedRegion] ?? value.us ?? value.en ?? value.id ?? value.cn ?? '';
+    const candidates = [value[normalizedRegion], value.us, value.en, value.id, value.cn];
+    return candidates.find((candidate) => candidate !== null && candidate !== undefined && String(candidate).trim() !== '') ?? '';
   }
 
   return value ?? '';

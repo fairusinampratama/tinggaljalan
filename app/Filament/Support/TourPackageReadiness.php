@@ -119,14 +119,8 @@ class TourPackageReadiness
             ->orWhere(function (Builder $query) {
                 $query->whereNull('title->us')->orWhere('title->us', '');
             })
-            ->orWhere(function (Builder $query) {
-                $query->whereNull('highlights')
-                    ->orWhereJsonLength('highlights', 0);
-            })
-            ->orWhere(function (Builder $query) {
-                $query->whereNull('includes')
-                    ->orWhereJsonLength('includes', 0);
-            });
+            ->orWhere(fn (Builder $query) => self::applyMissingList($query, 'highlights'))
+            ->orWhere(fn (Builder $query) => self::applyMissingList($query, 'includes'));
     }
 
     private static function hasItinerary(TourPackage $package): bool
@@ -173,6 +167,37 @@ class TourPackageReadiness
         return collect($items ?? [])->contains(
             fn ($item): bool => is_array($item) && filled($item['title']['us'] ?? null),
         );
+    }
+
+    private static function applyMissingList(Builder $query, string $column): Builder
+    {
+        $driver = $query->getConnection()->getDriverName();
+
+        if (in_array($driver, ['mysql', 'mariadb'], true)) {
+            return $query
+                ->whereNull($column)
+                ->orWhereRaw(
+                    "(JSON_TYPE(`{$column}`) = 'ARRAY' AND JSON_LENGTH(`{$column}`) = 0)",
+                )
+                ->orWhereRaw(
+                    "(JSON_TYPE(`{$column}`) = 'OBJECT' AND (JSON_EXTRACT(`{$column}`, '$.us') IS NULL OR JSON_LENGTH(JSON_EXTRACT(`{$column}`, '$.us')) = 0))",
+                );
+        }
+
+        if ($driver === 'sqlite') {
+            return $query
+                ->whereNull($column)
+                ->orWhereRaw(
+                    "(json_type(\"{$column}\") = 'array' AND json_array_length(\"{$column}\") = 0)",
+                )
+                ->orWhereRaw(
+                    "(json_type(\"{$column}\") = 'object' AND (json_type(\"{$column}\", '$.us') IS NULL OR json_array_length(json_extract(\"{$column}\", '$.us')) = 0))",
+                );
+        }
+
+        return $query
+            ->whereNull($column)
+            ->orWhereJsonLength($column, 0);
     }
 
     private static function hasEnglishList(mixed $items): bool
