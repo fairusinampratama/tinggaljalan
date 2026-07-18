@@ -17,8 +17,31 @@ class NewsArticleReadiness
             filled($article->title['us'] ?? null) ? null : 'English title',
             filled($article->slug) ? null : 'Slug',
             filled($article->cover_image) ? null : 'Cover image',
+            filled($article->cover_alt['us'] ?? null) ? null : 'English cover alt text',
             filled($article->excerpt['us'] ?? null) ? null : 'English excerpt',
-            self::hasEnglishList($article->sections) ? null : 'Content sections',
+            self::hasCompleteEnglishSection($article->sections) ? null : 'Content sections',
+        ])
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Evaluate the complete Filament form state before it is saved.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<int, string>
+     */
+    public static function missingItemsFromState(array $state): array
+    {
+        return collect([
+            filled($state['article_category_id'] ?? null) ? null : 'Category',
+            filled($state['title']['us'] ?? null) ? null : 'English title',
+            filled($state['slug'] ?? null) ? null : 'Slug',
+            filled($state['cover_image'] ?? null) ? null : 'Cover image',
+            filled($state['cover_alt']['us'] ?? null) ? null : 'English cover alt text',
+            filled($state['excerpt']['us'] ?? null) ? null : 'English excerpt',
+            self::hasCompleteEnglishSection($state['sections'] ?? []) ? null : 'Content sections',
         ])
             ->filter()
             ->values()
@@ -27,18 +50,13 @@ class NewsArticleReadiness
 
     public static function status(NewsArticle $article): string
     {
-        if ($article->status !== 'published') {
-            return 'Draft';
-        }
-
-        return self::isReady($article) ? 'Ready' : 'Needs work';
+        return self::isReady($article) ? 'Complete' : 'Incomplete';
     }
 
     public static function color(NewsArticle $article): string
     {
         return match (self::status($article)) {
-            'Ready' => 'success',
-            'Draft' => 'gray',
+            'Complete' => 'success',
             default => 'warning',
         };
     }
@@ -48,7 +66,7 @@ class NewsArticleReadiness
         $missing = self::missingItems($article);
 
         if ($missing === []) {
-            return $article->status === 'published' ? 'Ready' : 'Draft ready';
+            return "\u{2014}";
         }
 
         return implode(', ', $missing);
@@ -59,39 +77,31 @@ class NewsArticleReadiness
         return self::missingItems($article) === [];
     }
 
-    public static function applyNeedsAttention(Builder $query): Builder
+    public static function applyIncomplete(Builder $query): Builder
     {
-        return $query
-            ->where('status', 'draft')
-            ->orWhereNull('article_category_id')
-            ->orWhereNull('slug')
-            ->orWhere('slug', '')
-            ->orWhereNull('cover_image')
-            ->orWhere('cover_image', '')
-            ->orWhere(function (Builder $query) {
-                $query->whereNull('title->us')->orWhere('title->us', '');
-            })
-            ->orWhere(function (Builder $query) {
-                $query->whereNull('excerpt->us')->orWhere('excerpt->us', '');
-            })
-            ->orWhere(function (Builder $query) {
-                $query->whereNull('sections')
-                    ->orWhereJsonLength('sections', 0);
-            });
+        $incompleteIds = NewsArticle::query()
+            ->get([
+                'id',
+                'article_category_id',
+                'title',
+                'slug',
+                'cover_image',
+                'cover_alt',
+                'excerpt',
+                'sections',
+            ])
+            ->reject(fn (NewsArticle $article): bool => self::isReady($article))
+            ->modelKeys();
+
+        return $query->whereKey($incompleteIds);
     }
 
-    private static function hasEnglishList(mixed $items): bool
+    private static function hasCompleteEnglishSection(mixed $sections): bool
     {
-        if (is_array($items) && isset($items['us']) && is_array($items['us'])) {
-            return collect($items['us'])->contains(fn ($item): bool => filled($item));
-        }
-
-        return collect($items ?? [])->contains(function ($item): bool {
-            if (is_array($item)) {
-                return filled($item['us'] ?? $item['id'] ?? $item['cn'] ?? $item['heading']['us'] ?? $item['body']['us'] ?? $item['content']['us'] ?? null);
-            }
-
-            return filled($item);
-        });
+        return collect($sections ?? [])->contains(
+            fn ($section): bool => is_array($section)
+                && filled($section['heading']['us'] ?? null)
+                && filled($section['body']['us'] ?? null),
+        );
     }
 }
