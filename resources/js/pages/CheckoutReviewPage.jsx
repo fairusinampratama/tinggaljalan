@@ -62,8 +62,8 @@ export function CheckoutReviewPage() {
       />
       <PageShell eyebrow="Booking" title={t.contactTitle}>
       <CheckoutSteps current={1} />
-      <div className="grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-        <form className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitBooking}>
+      <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+        <form className={`min-w-0 rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitBooking}>
           <h2 className="text-2xl font-bold">{t.contactDetails}</h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">{t.contactText}</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">

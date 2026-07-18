@@ -111,10 +111,12 @@ class TravelContentFoundationTest extends TestCase
         $package = TourPackage::where('slug', 'bromo-sunrise')->withCount('itineraryItems')->firstOrFail();
 
         $this->assertTrue(TourPackageReadiness::isReady($package));
-        $this->assertSame('Ready', TourPackageReadiness::status($package));
+        $this->assertSame('Complete', TourPackageReadiness::status($package));
+        $this->assertSame("\u{2014}", TourPackageReadiness::summary($package));
 
         $package->update([
             'cover_image' => null,
+            'pricing_mode' => 'flat',
             'duration' => null,
             'base_price_idr' => null,
             'base_price_usd' => null,
@@ -124,15 +126,78 @@ class TravelContentFoundationTest extends TestCase
         $package->itineraryItems()->delete();
         $package = $package->fresh()->loadCount('itineraryItems');
 
-        $this->assertSame('Needs work', TourPackageReadiness::status($package));
+        $this->assertSame('Incomplete', TourPackageReadiness::status($package));
         $this->assertSame([
             'Cover image',
             'Duration',
-            'Price',
+            'Pricing',
             'Itinerary',
             'Highlights',
             'Includes',
         ], TourPackageReadiness::missingItems($package));
+    }
+
+    public function test_tour_package_content_status_is_independent_from_publication_status(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['is_active' => false]);
+
+        $this->assertSame('Complete', TourPackageReadiness::status($package->fresh()));
+
+        $package->update(['cover_image' => null]);
+
+        $this->assertSame('Incomplete', TourPackageReadiness::status($package->fresh()));
+        $this->assertSame(['Cover image'], TourPackageReadiness::missingItems($package->fresh()));
+    }
+
+    public function test_tour_package_readiness_matches_flat_and_tiered_pricing_rules(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'pricing_mode' => 'flat',
+            'base_price_usd' => null,
+        ]);
+
+        $this->assertContains('Pricing', TourPackageReadiness::missingItems($package->fresh()));
+
+        $this->assertTrue(TourPackage::query()
+            ->whereKey($package)
+            ->where(fn ($query) => TourPackageReadiness::applyIncomplete($query))
+            ->exists());
+
+        $package->update([
+            'pricing_mode' => 'tiered',
+            'base_price_idr' => null,
+            'base_price_usd' => null,
+        ]);
+        $package->priceTiers()->delete();
+        $package->priceTiers()->createMany([
+            [
+                'min_pax' => 1,
+                'max_pax' => 2,
+                'price_idr' => 500000,
+                'price_usd' => 35,
+                'sort_order' => 1,
+            ],
+            [
+                'min_pax' => 3,
+                'max_pax' => null,
+                'price_idr' => 450000,
+                'price_usd' => 32,
+                'sort_order' => 2,
+            ],
+        ]);
+
+        $this->assertNotContains('Pricing', TourPackageReadiness::missingItems($package->fresh()->load('priceTiers')));
+        $this->assertFalse(TourPackage::query()
+            ->whereKey($package)
+            ->where(fn ($query) => TourPackageReadiness::applyIncomplete($query))
+            ->exists());
+
     }
 
     public function test_tour_package_can_use_english_primary_content_without_translations(): void

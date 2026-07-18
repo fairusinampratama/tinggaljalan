@@ -43,6 +43,26 @@ class SeoInfrastructureTest extends TestCase
                 ->where('seo.json_ld.1.@type', 'TouristTrip'));
     }
 
+    public function test_route_detail_product_schema_uses_the_lowest_tier_price(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['pricing_mode' => 'tiered']);
+        $package->priceTiers()->delete();
+        $package->priceTiers()->createMany([
+            ['min_pax' => 1, 'max_pax' => 1, 'price_idr' => 900000, 'price_usd' => 60, 'sort_order' => 1],
+            ['min_pax' => 2, 'max_pax' => null, 'price_idr' => 600000, 'price_usd' => 40, 'sort_order' => 2],
+        ]);
+
+        $this->get("/routes/{$package->slug}?lang=id")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('route.basePriceIdr', 600000)
+                ->where('seo.json_ld.0.offers.priceCurrency', 'IDR')
+                ->where('seo.json_ld.0.offers.price', 600000));
+    }
+
     public function test_route_detail_seo_is_generated_from_package_content_and_ignores_overrides(): void
     {
         $this->seed();

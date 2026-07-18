@@ -53,6 +53,15 @@ class TieredPricingTest extends TestCase
         $this->assertNull($price['tier']);
     }
 
+    public function test_starting_price_uses_the_lowest_tier_in_each_currency(): void
+    {
+        $package = $this->tieredPackage();
+        $package->priceTiers()->where('min_pax', 2)->update(['price_usd' => 25]);
+
+        $this->assertSame(400000, app(TierPricingResolver::class)->startingPrice($package, 'IDR'));
+        $this->assertSame(25, app(TierPricingResolver::class)->startingPrice($package, 'USD'));
+    }
+
     public function test_range_validation_rejects_gaps_overlaps_and_missing_prices(): void
     {
         foreach ([

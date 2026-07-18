@@ -108,11 +108,13 @@ export function RouteArticlesSection({
                         {formatCurrency(priceCurrency === 'USD' ? item.basePriceUsd : item.basePriceIdr ?? item.basePrice, priceCurrency)}
                       </p>
                       <p className="mt-1 text-xs font-semibold text-muted">{t.perPerson}</p>
+                      <p className="mt-1 text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
                     </div>
                   ) : (
-                    <p className="mt-2 text-sm font-semibold text-muted">
-                      {t.priceFrom} {formatCurrency(priceCurrency === 'USD' ? item.basePriceUsd : item.basePriceIdr ?? item.basePrice, priceCurrency)}{t.perPax}
-                    </p>
+                    <div className="mt-2 text-sm font-semibold text-muted">
+                      <p>{t.priceFrom} {formatCurrency(priceCurrency === 'USD' ? item.basePriceUsd : item.basePriceIdr ?? item.basePrice, priceCurrency)}{t.perPax}</p>
+                      <p className="mt-1 text-xs">{t.priceVariesByGroupSize}</p>
+                    </div>
                   )}
                   <div className={`${isCatalog ? 'mt-4 hidden' : 'mt-5'} flex flex-wrap gap-2`} onClick={(event) => event.stopPropagation()}>
                     <Link to={`/routes/${item.id}`} className={primaryButtonClass}>

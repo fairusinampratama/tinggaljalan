@@ -91,6 +91,18 @@ The remote deployment then:
 
 If any post-maintenance step fails, the script restores the previous code symlink, rebuilds its caches, and brings it online. Database migrations are not reversed, so production migrations must use the expand/contract pattern and remain compatible with the previous release.
 
+## One-time About content seed
+
+The About migration is additive and runs with the normal release. After the first release containing the About tables is healthy, seed only the approved About content classes:
+
+~~~bash
+php artisan db:seed --class=AboutPageSeeder --force
+php artisan db:seed --class=TeamMemberSeeder --force
+php artisan db:seed --class=CompanyMilestoneSeeder --force
+~~~
+
+Run these commands from the active release only after the deployment database backup has completed. The seeders use stable **seed_key** values, are idempotent, and preserve edited records. Do not run **DatabaseSeeder**, **migrate:fresh**, or a generic **--seed** command in production because the root seeder also changes admin and gateway configuration.
+
 ## Manual rollback
 
 List available releases and choose an exact SHA:
@@ -115,6 +127,6 @@ Rollback changes code only. It deliberately does not reverse migrations or resto
 - Database backups are stored under `deployments/shared/backups/database` and must remain outside the public document root.
 - Failed release directories are retained for diagnosis; pruning happens only after a successful health check.
 - A release is identifiable by its `REVISION` file and the GitHub Actions deployment summary.
-- Never run seeders in production deployment.
+- Never run the root **DatabaseSeeder** or generic **--seed** in production. Approved one-time content seeders must be run explicitly by class after a backup.
 - Never edit release files directly. Make a Git commit and let the workflow create a new immutable release.
 - Rotate and replace the dedicated deployment key immediately if GitHub or the Hostinger account is compromised.

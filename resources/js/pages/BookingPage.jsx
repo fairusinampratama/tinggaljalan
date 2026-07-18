@@ -130,8 +130,8 @@ export function BookingPage() {
           <CheckoutSteps current={0} />
         </div>
       </div>
-      <div className="relative grid gap-8 lg:grid-cols-[1fr_0.85fr]">
-        <form className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
+      <div className="relative grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+        <form className={`min-w-0 rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
           <p className="mb-5 text-sm font-semibold leading-6 text-muted">{t.tripSetupText}</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t.destinationFilterLabel}>

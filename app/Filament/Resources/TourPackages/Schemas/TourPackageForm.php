@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\TourPackages\Schemas;
 
 use App\Filament\Support\AdminForm;
+use App\Filament\Support\TourPackageReadiness;
 use App\Filament\Support\TourPackageTranslationHelper;
 use App\Models\PackagePriceTier;
 use App\Models\TourPackage;
@@ -191,7 +192,33 @@ class TourPackageForm
                         ->required(),
                     Toggle::make('is_active')->required()
                         ->label('Show publicly')
-                        ->helperText('Allows this route to appear on /routes and open its detail page.')
+                        ->helperText('Publishes this route after all required selling information is complete.')
+                        ->rules([
+                            fn (Get $get): \Closure => function (string $attribute, mixed $value, \Closure $fail) use ($get): void {
+                                if (! $value) {
+                                    return;
+                                }
+
+                                $missing = TourPackageReadiness::missingItemsFromState([
+                                    'destination_id' => $get('destination_id'),
+                                    'title' => ['us' => $get('title.us')],
+                                    'slug' => $get('slug'),
+                                    'cover_image' => $get('cover_image'),
+                                    'duration' => $get('duration'),
+                                    'pricing_mode' => $get('pricing_mode'),
+                                    'base_price_idr' => $get('base_price_idr'),
+                                    'base_price_usd' => $get('base_price_usd'),
+                                    'priceTiers' => $get('priceTiers'),
+                                    'itineraryItems' => $get('itineraryItems'),
+                                    'highlights' => $get('highlights'),
+                                    'includes' => $get('includes'),
+                                ]);
+
+                                if ($missing !== []) {
+                                    $fail('Cannot show publicly. Complete the following: '.implode(', ', $missing).'.');
+                                }
+                            },
+                        ])
                         ->required(),
                 ])
                 ->columns([

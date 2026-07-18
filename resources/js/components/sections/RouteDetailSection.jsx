@@ -155,28 +155,9 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                     {formatCurrency(packagePrice, priceCurrency)}
                   </p>
                   <p className="text-xs font-semibold text-muted">{t.perPerson}</p>
+                  <p className="mt-1 text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
                 </div>
               </div>
-              {selectedArticle.pricing?.mode === 'tiered' && selectedArticle.pricing.tiers?.length ? (
-                <div className="mt-5 overflow-hidden rounded-xl border border-line">
-                  <div className="grid grid-cols-2 bg-subtle px-4 py-2 text-xs font-bold uppercase tracking-[0.04em] text-muted">
-                    <span>{t.pax}</span>
-                    <span className="text-right">{t.perPersonPrice}</span>
-                  </div>
-                  {selectedArticle.pricing.tiers.map((tier, index, arr) => (
-                    <div key={tier.id} className="grid grid-cols-2 border-t border-line px-4 py-3 text-sm font-semibold">
-                      <span>
-                        {!tier.maxPax
-                          ? `${tier.minPax}+`
-                          : tier.minPax === tier.maxPax ? tier.minPax : `${tier.minPax}-${tier.maxPax}`} {t.pax}
-                      </span>
-                      <span className="text-right font-bold text-secondary">
-                        {formatCurrency(priceCurrency === 'USD' ? tier.priceUsd : tier.priceIdr, priceCurrency)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <MetaPill icon={CalendarDays}>{t.dateFlexible}</MetaPill>
                 <MetaPill icon={Car}>{getLocalized(packageOption.pickupLabel, language)}</MetaPill>
@@ -280,6 +261,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                   {formatCurrency(packagePrice, priceCurrency)}
                 </p>
                 <p className="mt-1 text-sm font-semibold text-muted">{t.perPerson}</p>
+                <p className="mt-1 text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
               </div>
               <div className="mt-5 grid gap-3 text-sm font-semibold text-muted">
                 <div className="flex items-center justify-between gap-3">
@@ -315,6 +297,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             <p className="truncate text-lg font-bold text-ink">
               {formatCurrency(packagePrice, priceCurrency)} <span className="text-xs text-muted">{t.perPerson}</span>
             </p>
+            <p className="truncate text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
           </div>
           <a href={whatsappUrl} target="_blank" rel="noreferrer" className={primaryButtonClass}>
             <MessageCircle className={iconSize} /> {t.askRoute}

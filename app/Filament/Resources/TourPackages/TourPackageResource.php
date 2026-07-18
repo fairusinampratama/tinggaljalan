@@ -9,7 +9,10 @@ use App\Filament\Resources\TourPackages\Schemas\TourPackageForm;
 use App\Filament\Resources\TourPackages\Tables\TourPackagesTable;
 use App\Filament\Support\TourPackageReadiness;
 use App\Models\TourPackage;
+use App\Support\TourPackageDuplicator;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -27,7 +30,9 @@ class TourPackageResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = TourPackageReadiness::applyNeedsAttention(TourPackage::query())->count();
+        $count = TourPackage::query()
+            ->where('is_active', true)
+            ->where(fn ($query) => TourPackageReadiness::applyIncomplete($query))->count();
 
         return $count > 0 ? (string) $count : null;
     }
@@ -45,6 +50,25 @@ class TourPackageResource extends Resource
     public static function table(Table $table): Table
     {
         return TourPackagesTable::configure($table);
+    }
+
+    public static function duplicateAction(): Action
+    {
+        return Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon('heroicon-o-square-2-stack')
+            ->color('gray')
+            ->action(function (TourPackage $record, Action $action, TourPackageDuplicator $duplicator): void {
+                $copy = $duplicator->duplicate($record);
+
+                Notification::make()
+                    ->title('Package duplicated')
+                    ->body('The copy was created as an unpublished draft. Review it before publishing.')
+                    ->success()
+                    ->send();
+
+                $action->redirect(static::getUrl('edit', ['record' => $copy]));
+            });
     }
 
     public static function getRelations(): array

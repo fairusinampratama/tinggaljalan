@@ -50,8 +50,8 @@ export function CheckoutPaymentStatusPage() {
             {payment.environment === 'sandbox' ? ' - test payment only; no real charge will be captured.' : ''}
           </div>
         ) : null}
-        <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr]">
-          <section className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
+          <section className={`min-w-0 rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
             <div className={`rounded-xl border p-4 ${toneStyles[payment.tone] ?? toneStyles.info}`}>
               <div className="flex items-start gap-3">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface/70">
@@ -142,7 +142,7 @@ export function CheckoutPaymentStatusPage() {
             </div>
           </section>
 
-          <aside className={`rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
+          <aside className={`min-w-0 rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`}>
             <h2 className="text-xl font-bold">{copy.booking_summary ?? 'Booking summary'}</h2>
             <dl className="mt-5 space-y-4 text-sm font-semibold">
               <div>

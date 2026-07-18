@@ -10,6 +10,7 @@ use App\Filament\Resources\ItineraryItems\ItineraryItemResource;
 use App\Filament\Resources\PackageAvailabilities\Pages\ListPackageAvailabilities;
 use App\Filament\Resources\PlatformLinks\Pages\CreatePlatformLink;
 use App\Filament\Resources\TourPackages\Pages\CreateTourPackage;
+use App\Filament\Resources\TourPackages\Pages\EditTourPackage;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\Booking;
@@ -43,6 +44,57 @@ class FilamentAdminResourcesTest extends TestCase
     public function test_package_owned_itinerary_items_are_hidden_from_navigation(): void
     {
         $this->assertFalse(ItineraryItemResource::shouldRegisterNavigation());
+    }
+
+    public function test_incomplete_tour_package_cannot_be_saved_as_public(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['cover_image' => null]);
+
+        $this->actingAs($admin);
+        Livewire::test(EditTourPackage::class, ['record' => $package->getRouteKey()])
+            ->set('data.is_active', true)
+            ->call('save')
+            ->assertHasFormErrors(['is_active']);
+
+        $this->assertTrue($package->fresh()->is_active);
+    }
+
+    public function test_incomplete_tour_package_can_be_saved_after_switching_off_public_visibility(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['cover_image' => null]);
+
+        $this->actingAs($admin);
+        Livewire::test(EditTourPackage::class, ['record' => $package->getRouteKey()])
+            ->set('data.is_active', false)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertFalse($package->fresh()->is_active);
+    }
+
+    public function test_complete_tour_package_can_be_published(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update(['is_active' => false]);
+
+        $this->actingAs($admin);
+        Livewire::test(EditTourPackage::class, ['record' => $package->getRouteKey()])
+            ->set('data.is_active', true)
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertTrue($package->fresh()->is_active);
     }
 
     public function test_tour_package_gallery_enforces_two_to_ten_images_when_used(): void
@@ -390,7 +442,7 @@ class FilamentAdminResourcesTest extends TestCase
             ->assertOk()
             ->assertSee('Today at a glance')
             ->assertSee('Booking action queue')
-            ->assertSee('Package readiness');
+            ->assertSee('Package content completeness');
     }
 
     public function test_authenticated_non_admin_cannot_access_admin_panel(): void
