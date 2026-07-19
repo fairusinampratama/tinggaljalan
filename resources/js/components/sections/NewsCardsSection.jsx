@@ -33,26 +33,26 @@ function getDestinationLabel(destinationId, destinations = []) {
   return destinations.find((destination) => destination.slug === destinationId || destination.id === destinationId)?.name ?? destinationId;
 }
 
-function MetaRow({ article, language }) {
+function MetaRow({ article, language, reserveSpace = false }) {
   const { publicData, regionConfig } = useBooking();
   const category = publicData.categories?.find((item) => item.value === article.category);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-muted">
-      <span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-3 py-1 text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white">
-        <Newspaper className="h-3.5 w-3.5" />
-        {getLocalized(category?.label, language)}
+    <div className={`flex min-w-0 flex-wrap content-start items-center gap-2 overflow-hidden text-xs font-bold text-muted ${reserveSpace ? 'sm:h-[3.25rem]' : ''}`}>
+      <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full bg-secondary/10 px-3 py-1 text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white">
+        <Newspaper className="h-3.5 w-3.5 shrink-0" />
+        <span className="truncate">{getLocalized(category?.label, language)}</span>
       </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-subtle px-3 py-1">
-        <Compass className="h-3.5 w-3.5 text-secondary" />
-        {getDestinationLabel(article.destinationId, publicData.destinations ?? [])}
+      <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full bg-subtle px-3 py-1">
+        <Compass className="h-3.5 w-3.5 shrink-0 text-secondary" />
+        <span className="truncate">{getDestinationLabel(article.destinationId, publicData.destinations ?? [])}</span>
       </span>
-      <span className="inline-flex items-center gap-1">
-        <CalendarDays className="h-3.5 w-3.5 text-secondary" />
+      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-secondary" />
         {formatDate(article.publishedDate, regionConfig.locale)}
       </span>
-      <span className="inline-flex items-center gap-1">
-        <Clock className="h-3.5 w-3.5 text-secondary" />
+      <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap">
+        <Clock className="h-3.5 w-3.5 shrink-0 text-secondary" />
         {getLocalized(article.readingTime, language)}
       </span>
     </div>
@@ -88,12 +88,27 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
   const isFeatured = variant === 'featured';
   const isCompact = variant === 'compact';
   const isHorizontal = variant === 'horizontal';
+  const usesCompactSlots = isCompact || isHorizontal;
   const imageClass = isFeatured
     ? 'aspect-[16/10] h-full min-h-72'
     : isHorizontal || isCompact
       ? 'aspect-[16/10] h-48 sm:aspect-[4/3] sm:h-full sm:min-h-40'
       : 'aspect-[16/10] h-52';
-  const titleClass = isFeatured ? 'text-3xl sm:text-4xl' : isCompact ? 'text-lg' : 'text-xl';
+  const titleClass = isFeatured
+    ? 'line-clamp-3 text-3xl sm:text-4xl'
+    : usesCompactSlots
+      ? 'line-clamp-2 text-lg sm:min-h-[2.85rem]'
+      : 'line-clamp-2 text-xl md:min-h-[3.15rem]';
+  const excerptClass = isFeatured
+    ? 'mt-4 line-clamp-3 text-sm leading-6'
+    : usesCompactSlots
+      ? 'mt-2 line-clamp-3 text-xs leading-5 sm:min-h-[3.75rem]'
+      : 'mt-4 line-clamp-3 text-sm leading-6 md:min-h-[4.5rem]';
+  const tagRowClass = isFeatured
+    ? 'mt-4 flex max-h-16 min-h-8 flex-wrap items-start gap-2 overflow-hidden'
+    : usesCompactSlots
+      ? 'mt-4 flex flex-wrap items-start gap-2 overflow-hidden sm:h-7'
+      : 'mt-4 flex flex-wrap items-start gap-2 overflow-hidden md:h-7';
 
   function openArticle() {
     navigate(`/news/${article.slug}`);
@@ -126,14 +141,14 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
         />
       </div>
       <div className={`flex min-w-0 flex-1 flex-col ${isFeatured ? 'p-6 sm:p-7' : isCompact ? 'p-4' : 'p-5'}`}>
-        <MetaRow article={article} language={language} />
-        <h3 className={`mt-4 line-clamp-3 font-display font-normal leading-tight text-primary transition duration-300 group-hover:text-secondary group-focus-within:text-secondary ${titleClass}`}>
+        <MetaRow article={article} language={language} reserveSpace={!isFeatured} />
+        <h3 className={`mt-4 font-display font-normal leading-tight text-primary transition duration-300 group-hover:text-secondary group-focus-within:text-secondary ${titleClass}`}>
           {getLocalized(article.title, language)}
         </h3>
-        <p className={`${isCompact ? 'mt-2 line-clamp-3 text-xs leading-5' : 'mt-4 line-clamp-3 text-sm leading-6'} font-medium text-muted`}>
+        <p className={`${excerptClass} font-medium text-muted`}>
           {getLocalized(article.excerpt, language)}
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className={tagRowClass}>
           {(article.tags ?? []).slice(0, isFeatured ? 4 : 2).map((tag, index) => {
             const label = getTagLabel(tag, language);
 
@@ -142,7 +157,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
             }
 
             return (
-              <span key={getTagKey(tag, language, index)} className="rounded-full border border-line bg-subtle px-3 py-1 text-xs font-bold text-muted">
+              <span key={getTagKey(tag, language, index)} className="max-w-full truncate rounded-full border border-line bg-subtle px-3 py-1 text-xs font-bold text-muted">
                 {label}
               </span>
             );
@@ -165,7 +180,7 @@ export function NewsCardGrid({ articles, language = 'id', variant = 'standard' }
   }
 
   return (
-    <div className={variant === 'compact' ? 'grid gap-5 lg:grid-cols-3' : 'grid gap-5 md:grid-cols-2 xl:grid-cols-3'}>
+    <div className={variant === 'compact' ? 'grid items-stretch gap-5 lg:grid-cols-3' : 'grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-3'}>
       {articles.map((article) => (
         <NewsCard key={article.slug} article={article} language={language} variant={variant} />
       ))}
@@ -181,7 +196,7 @@ export function FeaturedNewsPanel({ featured, latest = [], language = 'id' }) {
   return (
     <section className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
       <NewsCard article={featured} language={language} variant="featured" />
-      <div className="grid gap-5">
+      <div className="grid auto-rows-fr gap-5">
         {latest.map((article) => (
           <NewsCard key={article.slug} article={article} language={language} variant="compact" />
         ))}

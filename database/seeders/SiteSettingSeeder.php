@@ -22,7 +22,7 @@ class SiteSettingSeeder extends Seeder
                 'trust_badges' => $brand['trustBadges'] ?? [],
                 'contact_email' => $brand['contactDetails']['email'] ?? null,
                 'business_address' => $brand['contactDetails']['address'] ?? null,
-                'google_maps_url' => $brand['contactDetails']['map_url'] ?? null,
+                'google_maps_url' => $brand['contactDetails']['map_url'] ?? $brand['contactDetails']['mapHref'] ?? null,
                 'service_hours' => $brand['contactDetails']['hours'] ?? [],
                 'hero_autoplay_enabled' => true,
                 'hero_autoplay_interval' => 8000,

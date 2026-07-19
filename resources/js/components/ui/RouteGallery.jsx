@@ -221,7 +221,7 @@ export function RouteGallery({ images, alt, labels }) {
 
   return (
     <>
-      <div className="mt-8 grid gap-3 md:grid-cols-[112px_minmax(0,1fr)]">
+      <div className="mt-8 grid items-start gap-3 md:grid-cols-[112px_minmax(0,1fr)]">
         {hasMultiple ? (
           <div className="hidden max-h-[520px] flex-col gap-3 overflow-y-auto pr-1 md:flex">
             {safeImages.map((image, index) => (
