@@ -12,11 +12,11 @@ PHP_BIN="/opt/alt/php84/usr/bin/php"
 recycle_litespeed_workers() {
     command -v pgrep >/dev/null || return 0
 
-    local worker_pids=()
-    mapfile -t worker_pids < <(pgrep -u "$(id -u)" -x lsphp || true)
-    ((${#worker_pids[@]})) || return 0
+    local worker_pids
+    worker_pids="$(pgrep -u "$(id -u)" -x lsphp || true)"
+    [[ -n "$worker_pids" ]] || return 0
 
-    kill "${worker_pids[@]}" >/dev/null 2>&1 || true
+    kill $worker_pids >/dev/null 2>&1 || true
 }
 
 test -L "$CURRENT" || { echo "Current release symlink is missing." >&2; exit 1; }
