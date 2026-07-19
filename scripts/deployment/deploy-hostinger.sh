@@ -14,6 +14,16 @@ PUBLIC_HTML="$DOMAIN_ROOT/public_html"
 RELEASE="$RELEASES/$SHA"
 PHP_BIN="/opt/alt/php84/usr/bin/php"
 
+recycle_litespeed_workers() {
+    command -v pgrep >/dev/null || return 0
+
+    local worker_pids=()
+    mapfile -t worker_pids < <(pgrep -u "$(id -u)" -x lsphp || true)
+    ((${#worker_pids[@]})) || return 0
+
+    kill "${worker_pids[@]}" >/dev/null 2>&1 || true
+}
+
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full Git SHA is required." >&2; exit 1; }
 test -x "$PHP_BIN" || { echo "PHP 8.4 is unavailable." >&2; exit 1; }
 for command in composer mysqldump gzip tar curl; do command -v "$command" >/dev/null || { echo "$command is unavailable." >&2; exit 1; }; done
@@ -53,6 +63,7 @@ rollback_on_error() {
     "$PHP_BIN" "$PREVIOUS/artisan" route:cache >/dev/null 2>&1 || true
     "$PHP_BIN" "$PREVIOUS/artisan" view:cache >/dev/null 2>&1 || true
     "$PHP_BIN" "$PREVIOUS/artisan" up >/dev/null 2>&1 || true
+    recycle_litespeed_workers
 }
 trap rollback_on_error ERR
 
@@ -88,6 +99,7 @@ link_public_asset build
 link_public_asset images
 
 "$PHP_BIN" "$RELEASE/artisan" up
+recycle_litespeed_workers
 "$RELEASE/scripts/deployment/health-check.sh" "$BASE_URL" "$SHA" "$CURRENT" "$PHP_BIN"
 trap - ERR
 

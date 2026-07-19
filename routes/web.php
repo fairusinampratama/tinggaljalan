@@ -10,11 +10,13 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\RouteController;
+use App\Http\Controllers\RuntimeHealthController;
 use App\Http\Controllers\SitemapController;
 use App\Support\InertiaPublicData;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/up', RuntimeHealthController::class)->name('health');
 Route::get('/about-us', AboutController::class)->name('about.show');
 Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 Route::get('/robots.txt', fn () => response(
