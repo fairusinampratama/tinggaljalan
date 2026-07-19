@@ -1,6 +1,6 @@
 # Atomic GitHub-to-Hostinger Deployment
 
-Production is deployed from a validated GitHub `main` commit. The workflow builds an immutable artifact, uploads it to Hostinger, backs up MySQL, runs migrations and caches, switches the active release symlink, and verifies the live site.
+Production is deployed from a validated GitHub `main` commit. The workflow builds an immutable artifact, uploads it to Hostinger, backs up MySQL, runs migrations and caches, switches the active release symlink, recycles the account's LiteSpeed PHP workers, and verifies the live site.
 
 ## Production layout
 
@@ -86,10 +86,14 @@ The remote deployment then:
 5. Creates a compressed MySQL backup with `deploy:backup-database`.
 6. Runs forward-only migrations and Laravel cache generation.
 7. Atomically switches `deployments/current`.
-8. Runs live health, sitemap, route, news, admin, and revision checks.
-9. Retains five code releases and ten database backups after success.
+8. Recycles the account's LiteSpeed PHP workers so the new process reads the new release and Vite manifest.
+9. Confirms `/up` reports the expected runtime revision, live HTML references the expected Vite entry files, and every referenced frontend asset returns HTTP 200.
+10. Runs sitemap, route, news, and admin checks.
+11. Retains five code releases and ten database backups after success.
 
-If any post-maintenance step fails, the script restores the previous code symlink, rebuilds its caches, and brings it online. Database migrations are not reversed, so production migrations must use the expand/contract pattern and remain compatible with the previous release.
+If any post-maintenance step fails, the script restores the previous code symlink, rebuilds its caches, recycles LiteSpeed PHP workers again, and brings the previous release online. Database migrations are not reversed, so production migrations must use the expand/contract pattern and remain compatible with the previous release.
+
+The `/up` endpoint returns JSON containing `status` and the active `revision` read from the release's `REVISION` file. Its response disables caching so deployment checks cannot be satisfied by stale CDN or browser content.
 
 ## One-time About content seed
 
@@ -120,7 +124,7 @@ bash rollback-hostinger.sh \
   https://tinggaljalan.com
 ```
 
-Rollback changes code only. It deliberately does not reverse migrations or restore a database backup.
+Rollback changes code only. It deliberately does not reverse migrations or restore a database backup. It performs the same PHP-worker recycle and runtime/asset checks as a forward deployment; if validation fails after the switch, it restores the previously active release.
 
 ## Recovery and operations
 

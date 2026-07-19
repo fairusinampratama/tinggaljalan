@@ -64,6 +64,14 @@ jobs:
           GITHUB_EVENT_BEFORE: ${{ github.event.before }}
         run: bash scripts/ci/pint-changed.sh
 
+      - name: Validate deployment scripts
+        run: |
+          bash -n \
+            scripts/deployment/build-release.sh \
+            scripts/deployment/deploy-hostinger.sh \
+            scripts/deployment/health-check.sh \
+            scripts/deployment/rollback-hostinger.sh
+
       - name: Build frontend
         run: npm run build:performance
 
