@@ -47,30 +47,6 @@ function SmartLink({ href, className, children }) {
   return <a href={href} className={className} target="_blank" rel="noreferrer">{children}</a>;
 }
 
-function VerificationCard({ icon: Icon, label, value, href }) {
-  const baseClassName = 'flex min-h-14 items-start gap-3 rounded-xl border border-line bg-white p-3 lg:block lg:p-4';
-  const className = href
-    ? `group ${baseClassName} transition hover:border-secondary`
-    : baseClassName;
-  const content = (
-    <>
-      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-secondary lg:mt-0" aria-hidden="true" />
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-bold uppercase tracking-[0.07em] text-muted lg:mt-3">{label}</p>
-        <div className={`mt-1 break-words text-sm font-bold leading-6 text-primary ${href ? 'group-hover:text-secondary' : ''}`}>{value}</div>
-      </div>
-    </>
-  );
-
-  if (!href) return <div className={className}>{content}</div>;
-
-  return (
-    <a href={href} className={className} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noreferrer' : undefined}>
-      {content}
-    </a>
-  );
-}
-
 function getInitials(name = '') {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
 }
@@ -162,13 +138,8 @@ export function AboutUsPage() {
   const internalMembers = teamMembers.filter((member) => member.category !== 'field' && member.id !== featuredMember?.id);
   const fieldPartners = teamMembers.filter((member) => member.category === 'field');
   const teamCategories = ['leadership', 'booking', 'operations'];
+  const mapUrl = contact.map_url || (contact.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}` : null);
 
-  const verificationItems = [
-    contact.address ? { icon: MapPin, label: t.contactBaseTitle, value: contact.address, href: contact.map_url || null } : null,
-    contact.whatsapp ? { icon: MessageCircle, label: t.aboutDirectContact, value: contact.whatsapp, href: whatsappUrl } : null,
-    contact.email ? { icon: Mail, label: t.aboutEmail, value: contact.email, href: `mailto:${contact.email}` } : null,
-    serviceAreas.length ? { icon: Compass, label: t.aboutOperatingAreas, value: serviceAreas.join(' · ') } : null,
-  ].filter(Boolean);
   const legalDetails = [
     profile.show_legal_name && profile.legal_name ? { icon: Building2, label: getLocalized(profile.legal_name_label, language) || t.aboutLegalName, value: profile.legal_name } : null,
     profile.show_founding_year && profile.founding_year ? { icon: ShieldCheck, label: getLocalized(profile.founding_year_label, language) || t.aboutFounded, value: profile.founding_year } : null,
@@ -182,7 +153,7 @@ export function AboutUsPage() {
     { label: t.aboutMainServices, value: t.aboutMainServicesValue },
   ].filter((item) => item?.value);
   const profileActions = [
-    contact.map_url ? { icon: MapPin, label: t.aboutOpenMap, href: contact.map_url, className: secondaryButtonClass } : null,
+    mapUrl ? { icon: MapPin, label: t.aboutOpenMap, href: mapUrl, className: secondaryButtonClass } : null,
     contact.email ? { icon: Mail, label: t.aboutEmailUs, href: `mailto:${contact.email}`, className: secondaryButtonClass } : null,
     contact.whatsapp ? { icon: MessageCircle, label: t.aboutChatWhatsapp, href: whatsappUrl, className: whatsappButtonClass } : null,
   ].filter(Boolean);
@@ -220,20 +191,6 @@ export function AboutUsPage() {
             </div>
           </div>
         </section>
-
-        {verificationItems.length ? (
-          <section aria-labelledby="about-verification-title" className="border-b border-line bg-subtle px-4 py-10 sm:px-8 lg:px-10">
-            <div className="public-container">
-              <div className="grid gap-7 lg:grid-cols-[0.65fr_1.35fr] lg:items-end">
-                <div>
-                  <p className="public-eyebrow text-secondary">{t.aboutVerificationEyebrow}</p>
-                  <h2 id="about-verification-title" className="mt-2 font-display text-3xl leading-tight text-primary">{t.aboutVerificationTitle}</h2>
-                </div>
-                {verificationItems.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{verificationItems.map((item) => <VerificationCard key={`${item.label}-${item.value}`} {...item} />)}</div> : null}
-              </div>
-            </div>
-          </section>
-        ) : null}
 
         {visibility.team !== false && teamMembers.length ? (
           <section className="public-section bg-subtle">
