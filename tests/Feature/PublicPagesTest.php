@@ -12,9 +12,12 @@ use App\Models\PackageAvailability;
 use App\Models\RouteFilter;
 use App\Models\SiteSetting;
 use App\Models\TourPackage;
+use App\Models\Voucher;
+use App\Support\PublicSite;
 use App\Support\TierPricingResolver;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -663,6 +666,51 @@ class PublicPagesTest extends TestCase
                 ->has('booking.summary.addOns.0')
                 ->where('booking.summary.addOns.0.priceIdr', $packageAddOn->price_idr)
                 ->where('booking.summary.currency', 'IDR'));
+    }
+
+    public function test_percentage_voucher_uses_allowed_currencies_instead_of_fixed_amount_currency(): void
+    {
+        $this->seed();
+        $this->withoutMiddleware(PreventRequestForgery::class);
+
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        DB::table('vouchers')->where('id', $voucher->id)->update([
+            'discount_type' => 'percent',
+            'currency' => 'USD',
+            'allowed_currencies' => json_encode(['IDR', 'USD']),
+        ]);
+        $voucher->refresh();
+
+        $this->assertSame('BROMO10', PublicSite::activeVoucher(' bromo10 ', 'IDR')?->code);
+        $this->assertSame('BROMO10', PublicSite::activeVoucher('BROMO10', 'USD')?->code);
+
+        $package = TourPackage::query()->where('slug', 'bromo-sunrise')->firstOrFail();
+
+        $this->post('/booking/recalculate', [
+            'route' => $package->slug,
+            'date' => '2030-08-01',
+            'pax' => 2,
+            'pickup' => 'Malang Hotel',
+            'traveler_type' => 'local',
+            'add_ons' => [],
+            'voucher' => ' bromo10 ',
+        ])->assertRedirect();
+
+        $this->get('/checkout/review')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('booking.draft.voucher', 'BROMO10')
+                ->where('booking.summary.currency', 'IDR')
+                ->where('booking.summary.voucher.code', 'BROMO10')
+                ->where('booking.summary.discount', fn ($discount) => $discount > 0));
+
+        $voucher->update([
+            'discount_type' => 'fixed',
+            'currency' => 'USD',
+        ]);
+
+        $this->assertNull(PublicSite::activeVoucher('BROMO10', 'IDR'));
+        $this->assertSame('BROMO10', PublicSite::activeVoucher('BROMO10', 'USD')?->code);
     }
 
     public function test_traveler_type_selects_price_list_and_ignores_submitted_currency(): void

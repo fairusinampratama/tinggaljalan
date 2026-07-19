@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Gateways\Email\EmailGatewayService;
+use App\Gateways\WhatsApp\NewBookingAdminWhatsAppMessage;
+use App\Gateways\WhatsApp\WhatsAppGatewayService;
 use App\Jobs\SendNewBookingAdminNotification;
 use App\Models\Booking;
 use App\Models\TourPackage;
@@ -10,8 +13,11 @@ use App\Support\InertiaPublicData;
 use App\Support\PhoneNumber;
 use App\Support\PublicSite;
 use App\Support\Seo;
+use App\Support\VoucherEligibilityService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Propaganistas\LaravelPhone\Rules\Phone;
 
@@ -69,6 +75,7 @@ class BookingController extends Controller
     {
         $data = $request->validate($this->draftRules());
         $data['add_ons'] = $data['add_ons'] ?? [];
+        $data['voucher'] = app(VoucherEligibilityService::class)->normalizeCode($data['voucher'] ?? null);
         $data['voucher_applied'] = filled($data['voucher'] ?? null);
         $request->session()->put('booking_draft', $data);
 
@@ -112,6 +119,7 @@ class BookingController extends Controller
             'voucher' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]));
+        $draft['voucher'] = app(VoucherEligibilityService::class)->normalizeCode($draft['voucher'] ?? null);
         $package = PublicSite::packageFromDraft($draft);
         $availability = PublicSite::availability($package, $draft['date']);
 
@@ -129,53 +137,69 @@ class BookingController extends Controller
             return redirect()->route('booking.create')->with('large_group_message', $this->largeGroupMessage());
         }
 
-        $booking = Booking::create([
-            'booking_code' => PublicSite::bookingCode(),
-            'tour_package_id' => $package?->id,
-            'destination_id' => $package?->destination_id,
-            'name' => $draft['name'],
-            'email' => $draft['email'] ?? null,
-            'whatsapp' => $draft['whatsapp'],
-            'whatsapp_country' => $draft['whatsapp_country'],
-            'communication_language' => BookingLanguage::normalize(PublicSite::language($request)),
-            'travel_date' => $draft['date'],
-            'pax' => $summary['pax'],
-            'pickup' => $draft['pickup'] ?? null,
-            'traveler_type' => $draft['traveler_type'] ?? 'international',
-            'currency' => $summary['currency'],
-            'pricing_mode' => $summary['pricing_mode'],
-            'pricing_status' => $summary['pricing_status'],
-            'price_tier_id' => data_get($summary, 'selected_tier.id'),
-            'tier_min_pax' => data_get($summary, 'selected_tier.min_pax'),
-            'tier_max_pax' => data_get($summary, 'selected_tier.max_pax'),
-            'unit_price' => $summary['unit_price'],
-            'package_subtotal' => $summary['package_subtotal'],
-            'selected_add_ons' => collect($summary['addOns'])->map(fn ($packageAddOn) => [
-                'id' => $packageAddOn->id,
-                'slug' => (string) $packageAddOn->id,
-                'title' => $packageAddOn->title,
-                'description' => $packageAddOn->description,
-                'price_idr' => $packageAddOn->price_idr,
-                'price_usd' => $packageAddOn->price_usd,
-                'pricing_type' => $packageAddOn->pricing_type,
-            ])->values()->toArray(),
-            'voucher_code' => $summary['voucher']?->code,
-            'subtotal' => $summary['subtotal'] ?? 0,
-            'discount_total' => $summary['discount'],
-            'total' => $summary['total'] ?? 0,
-            'payment_gateway' => $summary['payment_gateway'],
-            'notes' => $draft['notes'] ?? null,
-            'status' => 'new',
-        ]);
+        $booking = DB::transaction(function () use ($draft, $package, $request): Booking {
+            $eligibility = app(VoucherEligibilityService::class)->evaluate(
+                $draft['voucher'],
+                PublicSite::bookingCurrency($draft['traveler_type'] ?? null),
+                lockForUpdate: true,
+            );
+
+            if ($draft['voucher'] !== '' && $eligibility['state'] !== VoucherEligibilityService::APPLIED) {
+                throw ValidationException::withMessages([
+                    'voucher' => 'This voucher is invalid or unavailable for this booking.',
+                ]);
+            }
+
+            $summary = PublicSite::bookingSummary($package, $draft, $eligibility);
+
+            return Booking::create([
+                'booking_code' => PublicSite::bookingCode(),
+                'tour_package_id' => $package?->id,
+                'destination_id' => $package?->destination_id,
+                'name' => $draft['name'],
+                'email' => $draft['email'] ?? null,
+                'whatsapp' => $draft['whatsapp'],
+                'whatsapp_country' => $draft['whatsapp_country'],
+                'communication_language' => BookingLanguage::normalize(PublicSite::language($request)),
+                'travel_date' => $draft['date'],
+                'pax' => $summary['pax'],
+                'pickup' => $draft['pickup'] ?? null,
+                'traveler_type' => $draft['traveler_type'] ?? 'international',
+                'currency' => $summary['currency'],
+                'pricing_mode' => $summary['pricing_mode'],
+                'pricing_status' => $summary['pricing_status'],
+                'price_tier_id' => data_get($summary, 'selected_tier.id'),
+                'tier_min_pax' => data_get($summary, 'selected_tier.min_pax'),
+                'tier_max_pax' => data_get($summary, 'selected_tier.max_pax'),
+                'unit_price' => $summary['unit_price'],
+                'package_subtotal' => $summary['package_subtotal'],
+                'selected_add_ons' => collect($summary['addOns'])->map(fn ($packageAddOn) => [
+                    'id' => $packageAddOn->id,
+                    'slug' => (string) $packageAddOn->id,
+                    'title' => $packageAddOn->title,
+                    'description' => $packageAddOn->description,
+                    'price_idr' => $packageAddOn->price_idr,
+                    'price_usd' => $packageAddOn->price_usd,
+                    'pricing_type' => $packageAddOn->pricing_type,
+                ])->values()->toArray(),
+                'voucher_code' => $summary['voucher']?->code,
+                'subtotal' => $summary['subtotal'] ?? 0,
+                'discount_total' => $summary['discount'],
+                'total' => $summary['total'] ?? 0,
+                'payment_gateway' => $summary['payment_gateway'],
+                'notes' => $draft['notes'] ?? null,
+                'status' => 'new',
+            ]);
+        }, attempts: 3);
 
         $request->session()->put('booking_id', $booking->id);
         $request->session()->put('booking_draft', $draft);
 
         app()->terminating(function () use ($booking): void {
             app(SendNewBookingAdminNotification::class, ['bookingId' => $booking->id])->handle(
-                app(\App\Gateways\Email\EmailGatewayService::class),
-                app(\App\Gateways\WhatsApp\WhatsAppGatewayService::class),
-                app(\App\Gateways\WhatsApp\NewBookingAdminWhatsAppMessage::class),
+                app(EmailGatewayService::class),
+                app(WhatsAppGatewayService::class),
+                app(NewBookingAdminWhatsAppMessage::class),
             );
         });
 
