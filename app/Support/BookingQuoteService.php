@@ -23,7 +23,7 @@ class BookingQuoteService
                 return ($item['pricing_type'] ?? 'per_booking') === 'per_pax' ? $price * $pax : $price;
             });
             $subtotal = $packageSubtotal + $addOnTotal;
-            $voucher = PublicSite::activeVoucher($booking->voucher_code, $booking->currency);
+            $voucher = app(VoucherEligibilityService::class)->existingBookingVoucher($booking->voucher_code, $booking->currency);
             $discount = $voucher
                 ? ($voucher->discount_type === 'percent'
                     ? (int) floor($subtotal * ((float) $voucher->discount_value / 100))

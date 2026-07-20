@@ -52,6 +52,7 @@ function emptySummary(currency = 'USD') {
     paymentNote: '',
     usdPaymentNote: '',
     voucher: null,
+    voucherState: 'idle',
     addOns: [],
     addOnsTotal: 0,
   };
@@ -150,7 +151,7 @@ export function BookingProvider({ children }) {
     recalculateBooking(nextBooking, routeId);
   }
 
-  function recalculateBooking(nextBooking = booking, routeId = selectedRouteId) {
+  function recalculateBooking(nextBooking = booking, routeId = selectedRouteId, visitOptions = {}) {
     router.post('/booking/recalculate', {
       route: routeId,
       date: nextBooking.date,
@@ -164,6 +165,7 @@ export function BookingProvider({ children }) {
       preserveState: true,
       replace: true,
       only: ['booking', 'route', 'routes', 'publicData', 'errors'],
+      ...visitOptions,
     });
   }
 

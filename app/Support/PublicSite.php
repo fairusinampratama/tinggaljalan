@@ -107,36 +107,7 @@ class PublicSite
 
     public static function activeVoucher(?string $code, string $currency): ?Voucher
     {
-        if (! $code) {
-            return null;
-        }
-
-        $voucher = Voucher::query()
-            ->active()
-            ->where('code', strtoupper($code))
-            ->where(function ($query) {
-                $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
-            })
-            ->where(function ($query) {
-                $query->whereNull('ends_at')->orWhere('ends_at', '>=', now());
-            })
-            ->first();
-
-        if (! $voucher) {
-            return null;
-        }
-
-        $allowed = $voucher->allowed_currencies;
-
-        if ($voucher->currency && $voucher->currency !== $currency) {
-            return null;
-        }
-
-        if (is_array($allowed) && $allowed !== [] && ! in_array($currency, $allowed, true)) {
-            return null;
-        }
-
-        return $voucher;
+        return app(VoucherEligibilityService::class)->evaluate($code, $currency)['voucher'];
     }
 
     public static function bookingDraft(Request $request, ?TourPackage $fallbackPackage = null): array
@@ -198,7 +169,7 @@ class PublicSite
         return $travelerType === 'local' ? 'IDR' : 'USD';
     }
 
-    public static function bookingSummary(?TourPackage $package, array $draft): array
+    public static function bookingSummary(?TourPackage $package, array $draft, ?array $voucherEligibility = null): array
     {
         $currency = self::bookingCurrency($draft['traveler_type'] ?? $draft['travelerType'] ?? null);
         $pax = max(1, (int) ($draft['pax'] ?? 1));
@@ -217,7 +188,8 @@ class PublicSite
         });
         $packageSubtotal = $pricing['package_subtotal'];
         $subtotal = $pricing['quote_required'] ? null : $packageSubtotal + $addOnTotal;
-        $voucher = self::activeVoucher($draft['voucher'] ?? null, $currency);
+        $voucherEligibility ??= app(VoucherEligibilityService::class)->evaluate($draft['voucher'] ?? null, $currency);
+        $voucher = $voucherEligibility['voucher'];
         $discount = 0;
 
         if ($voucher && $subtotal !== null) {
@@ -242,6 +214,7 @@ class PublicSite
             'payment_gateway' => $paymentSettings->publicLabel(),
             'payment_note' => $paymentSettings->bookingNote(),
             'usd_payment_note' => $paymentSettings->usdNote(),
+            'voucher_state' => $voucherEligibility['state'],
         ];
     }
 

@@ -13,6 +13,8 @@ use App\Filament\Resources\TourPackages\Pages\CreateTourPackage;
 use App\Filament\Resources\TourPackages\Pages\EditTourPackage;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\ListUsers;
+use App\Filament\Resources\Vouchers\Pages\CreateVoucher;
+use App\Filament\Resources\Vouchers\Pages\ListVouchers;
 use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\Faq;
@@ -429,6 +431,100 @@ class FilamentAdminResourcesTest extends TestCase
                 ->get($path)
                 ->assertOk();
         }
+    }
+
+    public function test_admin_voucher_form_normalizes_discount_currency_rules(): void
+    {
+        $this->seed();
+        $this->actingAs(User::where('email', 'admin@tinggaljalan.test')->firstOrFail());
+
+        Livewire::test(CreateVoucher::class)
+            ->set('data.code', ' summer10 ')
+            ->set('data.label', 'Summer promotion')
+            ->set('data.discount_type', 'percent')
+            ->set('data.discount_value', 10)
+            ->set('data.currency', 'USD')
+            ->set('data.allowed_currencies', ['IDR', 'USD'])
+            ->set('data.usage_limit', 2)
+            ->set('data.starts_at', now()->subHour())
+            ->set('data.ends_at', now()->addWeek())
+            ->set('data.is_active', true)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $percent = Voucher::query()->where('code', 'SUMMER10')->firstOrFail();
+        $this->assertNull($percent->currency);
+        $this->assertSame(['IDR', 'USD'], $percent->allowed_currencies);
+
+        Livewire::test(CreateVoucher::class)
+            ->set('data.code', 'idr50')
+            ->set('data.label', 'Fixed IDR promotion')
+            ->set('data.discount_type', 'fixed')
+            ->set('data.discount_value', 50000)
+            ->set('data.currency', 'IDR')
+            ->set('data.allowed_currencies', ['IDR', 'USD'])
+            ->set('data.is_active', true)
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $fixed = Voucher::query()->where('code', 'IDR50')->firstOrFail();
+        $this->assertSame('IDR', $fixed->currency);
+        $this->assertSame(['IDR'], $fixed->allowed_currencies);
+    }
+
+    public function test_admin_voucher_form_rejects_invalid_limits_values_and_dates(): void
+    {
+        $this->seed();
+        $this->actingAs(User::where('email', 'admin@tinggaljalan.test')->firstOrFail());
+
+        Livewire::test(CreateVoucher::class)
+            ->set('data.code', 'INVALID')
+            ->set('data.label', 'Invalid voucher')
+            ->set('data.discount_type', 'percent')
+            ->set('data.discount_value', 101)
+            ->set('data.allowed_currencies', [])
+            ->set('data.usage_limit', 0)
+            ->set('data.starts_at', now()->addDay())
+            ->set('data.ends_at', now())
+            ->set('data.is_active', true)
+            ->call('create')
+            ->assertHasFormErrors([
+                'discount_value' => 'max',
+                'allowed_currencies' => 'required',
+                'usage_limit' => 'min',
+                'ends_at' => 'after',
+            ]);
+    }
+
+    public function test_admin_voucher_table_shows_non_cancelled_usage(): void
+    {
+        $this->seed();
+        $this->actingAs(User::where('email', 'admin@tinggaljalan.test')->firstOrFail());
+
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        $voucher->update(['usage_limit' => 2]);
+        $package = TourPackage::query()->firstOrFail();
+
+        foreach (['new', 'cancelled'] as $index => $status) {
+            Booking::create([
+                'booking_code' => "TJ-ADMIN-VOUCHER-{$index}",
+                'tour_package_id' => $package->id,
+                'destination_id' => $package->destination_id,
+                'name' => 'Voucher Usage',
+                'travel_date' => now()->addMonth(),
+                'pax' => 2,
+                'currency' => 'IDR',
+                'voucher_code' => $voucher->code,
+                'subtotal' => 100000,
+                'discount_total' => 10000,
+                'total' => 90000,
+                'status' => $status,
+            ]);
+        }
+
+        Livewire::test(ListVouchers::class)
+            ->assertCanSeeTableRecords([$voucher])
+            ->assertTableColumnStateSet('usage', '1 / 2', $voucher);
     }
 
     public function test_authenticated_admin_can_access_dashboard_with_operations_widgets(): void
