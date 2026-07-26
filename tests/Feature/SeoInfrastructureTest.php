@@ -18,6 +18,14 @@ class SeoInfrastructureTest extends TestCase
 
         $this->get('/')
             ->assertOk()
+            ->assertSee('<html lang="en">', false)
+            ->assertSee('<title>Tinggal Jalan | Indonesia Tours &amp; Private Trips</title>', false)
+            ->assertSee('<meta data-inertia="description" name="description" content="Plan private Indonesia tours with Tinggal Jalan.', false)
+            ->assertSee('<meta data-inertia="robots" name="robots" content="index,follow">', false)
+            ->assertSee('<link data-inertia="canonical" rel="canonical" href="http://localhost:8000/">', false)
+            ->assertSee('<meta data-inertia="og:title" property="og:title" content="Tinggal Jalan | Indonesia Tours &amp; Private Trips">', false)
+            ->assertSee('<meta data-inertia="twitter:card" name="twitter:card" content="summary_large_image">', false)
+            ->assertSee('<script data-inertia="json-ld" type="application/ld+json">', false)
             ->assertInertia(fn (Assert $page) => $page
                 ->component('HomePage')
                 ->where('seo.canonical', 'http://localhost:8000/')

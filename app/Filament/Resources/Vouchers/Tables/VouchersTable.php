@@ -27,12 +27,26 @@ class VouchersTable
                 TextColumn::make('label')->searchable(),
                 TextColumn::make('discount_type')->badge()->searchable(),
                 TextColumn::make('discount_value')->numeric()->sortable(),
-                TextColumn::make('currency')->badge()->searchable(),
+                TextColumn::make('currency')
+                    ->label('Fixed currency')
+                    ->badge()
+                    ->placeholder('-')
+                    ->searchable(),
+                TextColumn::make('eligible_currencies')
+                    ->label('Eligible currencies')
+                    ->state(fn (Voucher $record): string => $record->discount_type === 'fixed'
+                        ? ($record->currency ?: '-')
+                        : (collect($record->allowed_currencies ?? [])->join(', ') ?: '-')),
                 TextColumn::make('starts_at')->dateTime()->sortable(),
                 TextColumn::make('ends_at')->dateTime()->sortable(),
-                TextColumn::make('usage')
-                    ->label('Usage')
-                    ->state(fn (Voucher $record): string => $record->active_redemptions_count.' / '.($record->usage_limit ?? 'Unlimited')),
+                TextColumn::make('active_redemptions_count')
+                    ->label('Used')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('usage_limit')
+                    ->label('Limit')
+                    ->state(fn (Voucher $record): string => (string) ($record->usage_limit ?? 'Unlimited'))
+                    ->sortable(),
                 IconColumn::make('is_active')->boolean(),
             ])
             ->filters([

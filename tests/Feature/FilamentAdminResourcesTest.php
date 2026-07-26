@@ -524,7 +524,9 @@ class FilamentAdminResourcesTest extends TestCase
 
         Livewire::test(ListVouchers::class)
             ->assertCanSeeTableRecords([$voucher])
-            ->assertTableColumnStateSet('usage', '1 / 2', $voucher);
+            ->assertTableColumnStateSet('active_redemptions_count', 1, $voucher)
+            ->assertTableColumnStateSet('usage_limit', '2', $voucher)
+            ->assertTableColumnStateSet('eligible_currencies', 'IDR, USD', $voucher);
     }
 
     public function test_authenticated_admin_can_access_dashboard_with_operations_widgets(): void
