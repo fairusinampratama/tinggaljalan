@@ -38,9 +38,9 @@
                                 >
                             @endif
                             @if (! empty($item['url']) && ! empty($item['title']))
-                                <h3><a href="{{ $item['url'] }}">{{ $item['title'] }}</a></h3>
+                                <p><a href="{{ $item['url'] }}"><strong>{{ $item['title'] }}</strong></a></p>
                             @elseif (! empty($item['title']))
-                                <h3>{{ $item['title'] }}</h3>
+                                <p><strong>{{ $item['title'] }}</strong></p>
                             @endif
                             @if (! empty($item['text']))
                                 <p>{{ $item['text'] }}</p>

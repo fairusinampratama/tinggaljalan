@@ -7,7 +7,7 @@ export const siteName = 'Tinggal Jalan';
 export const defaultSeo = {
   title: 'Tinggal Jalan | Indonesia Tours & Private Trips',
   description:
-    'Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan routes with clear itineraries, flexible pickup, and WhatsApp support.',
+    'Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan trips with clear itineraries and WhatsApp support.',
   path: '/',
   image: defaultOgImage,
 };
