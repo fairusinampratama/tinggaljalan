@@ -384,6 +384,7 @@ class InertiaPublicData
                     'code' => $summary['voucher']->code,
                     'label' => $summary['voucher']->label,
                 ] : null,
+                'voucherState' => $summary['voucher_state'],
                 'addOns' => $summary['addOns']->map(function (PackageAddOn $packageAddOn) use ($summary) {
                     $addOnPayload = self::packageAddOn($packageAddOn);
                     $unitPrice = $summary['currency'] === 'USD' ? (int) $packageAddOn->price_usd : (int) $packageAddOn->price_idr;

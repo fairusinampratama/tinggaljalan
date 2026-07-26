@@ -64,3 +64,39 @@ test('booking controls stay inside narrow and desktop viewports', async ({ page 
 
     expect(overflow.documentWidth).toBeLessThanOrEqual(overflow.viewportWidth + 1);
 });
+
+test('voucher feedback is localized and usable across viewports', async ({ page }) => {
+    await page.goto('/booking?route=jogja-heritage');
+    await page.getByRole('button', { name: /continue to contact/i }).click();
+    await expect(page).toHaveURL(/\/checkout\/review/);
+
+    const messages = {
+        us: {
+            applied: 'Voucher applied successfully.',
+            unavailable: 'This voucher is invalid or unavailable for this booking.',
+        },
+        id: {
+            applied: 'Voucher berhasil digunakan.',
+            unavailable: 'Voucher tidak valid atau tidak tersedia untuk booking ini.',
+        },
+        cn: {
+            applied: '优惠券已成功应用。',
+            unavailable: '此优惠券无效或不适用于当前预订。',
+        },
+    };
+
+    for (const [language, copy] of Object.entries(messages)) {
+        await page.goto(`/language/${language}`);
+        await page.goto('/checkout/review');
+        await expect(page).toHaveURL(/\/checkout\/review/);
+
+        await page.getByTestId('voucher-code').fill(' not-a-voucher ');
+        await page.getByTestId('apply-voucher').click();
+        await expect(page.getByTestId('voucher-result')).toHaveText(copy.unavailable);
+
+        await page.getByTestId('voucher-code').fill(' bromo10 ');
+        await page.getByTestId('apply-voucher').click();
+        await expect(page.getByTestId('voucher-result')).toHaveText(copy.applied);
+        await expectInsideViewport(page.getByTestId('voucher-result'));
+    }
+});

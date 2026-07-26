@@ -45,22 +45,22 @@ export function Seo({
   return (
     <Head>
       <title>{pageTitle}</title>
-      <meta name="description" content={pageDescription} />
-      <meta name="robots" content={robots || (noindex ? 'noindex,nofollow' : 'index,follow')} />
-      <link rel="canonical" href={canonicalUrl} />
-      <meta property="og:site_name" content={siteName} />
-      <meta property="og:title" content={pageTitle} />
-      <meta property="og:description" content={pageDescription} />
-      <meta property="og:type" content={pageType} />
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:image" content={imageUrl} />
-      {published ? <meta property="article:published_time" content={published} /> : null}
-      {modified ? <meta property="article:modified_time" content={modified} /> : null}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={pageTitle} />
-      <meta name="twitter:description" content={pageDescription} />
-      <meta name="twitter:image" content={imageUrl} />
-      {schema ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} /> : null}
+      <meta head-key="description" name="description" content={pageDescription} />
+      <meta head-key="robots" name="robots" content={robots || (noindex ? 'noindex,nofollow' : 'index,follow')} />
+      <link head-key="canonical" rel="canonical" href={canonicalUrl} />
+      <meta head-key="og:site_name" property="og:site_name" content={siteName} />
+      <meta head-key="og:title" property="og:title" content={pageTitle} />
+      <meta head-key="og:description" property="og:description" content={pageDescription} />
+      <meta head-key="og:type" property="og:type" content={pageType} />
+      <meta head-key="og:url" property="og:url" content={canonicalUrl} />
+      <meta head-key="og:image" property="og:image" content={imageUrl} />
+      {published ? <meta head-key="article:published_time" property="article:published_time" content={published} /> : null}
+      {modified ? <meta head-key="article:modified_time" property="article:modified_time" content={modified} /> : null}
+      <meta head-key="twitter:card" name="twitter:card" content="summary_large_image" />
+      <meta head-key="twitter:title" name="twitter:title" content={pageTitle} />
+      <meta head-key="twitter:description" name="twitter:description" content={pageDescription} />
+      <meta head-key="twitter:image" name="twitter:image" content={imageUrl} />
+      {schema ? <script head-key="json-ld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} /> : null}
     </Head>
   );
 }

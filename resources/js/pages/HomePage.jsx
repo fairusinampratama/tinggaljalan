@@ -6,7 +6,6 @@ import { RouteArticlesSection } from '../components/sections/RouteArticlesSectio
 import { TrustStripSection } from '../components/sections/TrustStripSection';
 import { Seo } from '../components/seo/Seo';
 import { useBooking } from '../context/BookingContext';
-import { defaultSeo } from '../utils/seo';
 
 const FaqSection = lazy(() => import('../components/sections/FaqSection').then((module) => ({ default: module.FaqSection })));
 const HomeCtaSection = lazy(() => import('../components/sections/HomeCtaSection').then((module) => ({ default: module.HomeCtaSection })));
@@ -19,10 +18,11 @@ export function HomePage() {
   const latestArticles = props.latestArticles ?? [];
   const featuredRouteItems = props.featuredRoutes ?? [];
   const faqItems = props.faqs ?? [];
+  const seo = props.seo ?? {};
 
   return (
     <>
-      <Seo {...defaultSeo} language={language} />
+      <Seo {...seo} language={language} />
       <div className="home-page">
         <Hero
           t={t}

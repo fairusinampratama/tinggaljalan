@@ -1,5 +1,6 @@
 import { router, usePage } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { Send, Ticket } from 'lucide-react';
 import { isPossiblePhoneNumber } from 'react-phone-number-input';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
@@ -20,6 +21,7 @@ export function CheckoutReviewPage() {
     selectedRoute,
     voucherCode,
     setVoucherCode,
+    appliedVoucher,
     setAppliedVoucher,
     recalculateBooking,
     bookingSummary,
@@ -28,11 +30,13 @@ export function CheckoutReviewPage() {
     whatsappUrl,
   } = useBooking();
   const { errors = {} } = usePage().props;
+  const [voucherApplying, setVoucherApplying] = useState(false);
   const whatsappValid = booking.whatsapp ? isPossiblePhoneNumber(booking.whatsapp) : false;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.email.trim());
   const contactComplete = booking.name.trim() && whatsappValid && emailValid;
   const dateUnavailable = bookingBlock.blocked || dateAvailability.status === 'booked';
   const quoteRequired = Boolean(bookingSummary.quoteRequired);
+  const voucherState = bookingSummary.voucherState ?? 'idle';
 
   function submitBooking(event) {
     event.preventDefault();
@@ -46,7 +50,7 @@ export function CheckoutReviewPage() {
       whatsapp: booking.whatsapp,
       whatsapp_country: booking.whatsappCountry,
       email: booking.email,
-      voucher: voucherCode,
+      voucher: appliedVoucher,
       notes: booking.notes,
     });
   }
@@ -113,24 +117,39 @@ export function CheckoutReviewPage() {
               <div className="flex gap-2">
                 <input
                   className="min-w-0 flex-1 rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold uppercase outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
+                  data-testid="voucher-code"
                   value={voucherCode}
                   onChange={(event) => setVoucherCode(event.target.value)}
                   placeholder={t.voucherPlaceholder}
                 />
                 <button
                   type="button"
+                  data-testid="apply-voucher"
+                  disabled={voucherApplying}
                   className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-secondary px-4 text-white transition duration-200 hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-secondary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                   onClick={() => {
-                    setAppliedVoucher(voucherCode);
-                    recalculateBooking({ ...booking, voucher: voucherCode });
+                    const normalizedVoucher = voucherCode.trim().toUpperCase();
+
+                    setVoucherCode(normalizedVoucher);
+                    setAppliedVoucher(normalizedVoucher);
+                    setVoucherApplying(true);
+                    recalculateBooking({ ...booking, voucher: normalizedVoucher }, undefined, {
+                      onFinish: () => setVoucherApplying(false),
+                    });
                   }}
                   aria-label={t.applyVoucher}
                 >
                   <Ticket className="h-4 w-4" />
-                  <span className="text-sm font-semibold">{t.applyVoucher}</span>
+                  <span className="text-sm font-semibold">{voucherApplying ? t.applyingVoucher : t.applyVoucher}</span>
                 </button>
               </div>
-              <p className="mt-1.5 text-xs font-semibold text-muted">{t.voucherHelp}</p>
+              {errors.voucher || voucherState !== 'idle' ? (
+                <p aria-live="polite" data-testid="voucher-result" className={`mt-1.5 text-xs font-bold ${voucherState === 'applied' && !errors.voucher ? 'text-emerald-600' : 'text-red-600'}`}>
+                  {voucherState === 'applied' && !errors.voucher ? t.voucherApplied : t.voucherUnavailable}
+                </p>
+              ) : (
+                <p className="mt-1.5 text-xs font-semibold text-muted">{t.voucherHelp}</p>
+              )}
             </Field>
             <div className="sm:col-span-2">
               <Field label={t.notes}>

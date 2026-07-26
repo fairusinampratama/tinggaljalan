@@ -12,7 +12,7 @@ const applicationEnvironment = {
     DB_DATABASE: databasePath,
     MAIL_MAILER: 'array',
     QUEUE_CONNECTION: 'sync',
-    SESSION_DRIVER: 'array',
+    SESSION_DRIVER: 'database',
 };
 
 export default defineConfig({
