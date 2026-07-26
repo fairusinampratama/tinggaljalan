@@ -35,7 +35,17 @@ Create a GitHub environment named `production`, then add these environment secre
 
 Create an environment variable named `PRODUCTION_DEPLOY_ENABLED` with value `false` during initial setup. The CI workflow will validate `main` without attempting deployment until bootstrap is complete. Change it to `true` only after the first atomic layout health check succeeds.
 
-Protect `main` and require the `Validate application` check. Pull requests run validation but never deploy. After deployment is enabled, every successful push or merge to `main` deploys automatically. Production deployments are queued and never cancel an active deployment.
+Production deployment uses a self-hosted GitHub Actions runner because GitHub-hosted runners can intermittently time out when opening SSH connections to Hostinger shared hosting. Register one runner with these labels:
+
+```text
+self-hosted
+linux
+hostinger-production
+```
+
+The self-hosted runner only runs the deploy job. It must be on a network that can reach Hostinger SSH, have `ssh`, `scp`, and `bash` available, and have outbound HTTPS access to GitHub for Actions artifacts. Keep it dedicated to this repository or production environment; do not run untrusted pull request code on it. Pull requests continue to use GitHub-hosted validation and never deploy.
+
+Protect `main` and require the `Validate application` check. After deployment is enabled, every successful push or merge to `main` deploys automatically. Production deployments are queued and never cancel an active deployment.
 
 ## Dedicated SSH key
 

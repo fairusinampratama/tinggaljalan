@@ -109,7 +109,7 @@ jobs:
     name: Deploy production
     needs: validate
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, linux, hostinger-production]
     timeout-minutes: 20
     environment: production
     concurrency:
@@ -154,18 +154,47 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/production" "$HOME/.ssh/known_hosts"
 
+      - name: Verify production SSH reachability
+        run: |
+          ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
+            "$SSH_USER@$SSH_HOST" \
+            "printf 'Production SSH reachable\n'"
+
       - name: Upload release
         env:
           ARCHIVE: ${{ runner.temp }}/release/release-${{ github.sha }}.tar.gz
         run: |
           REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
-          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$DOMAIN_ROOT/deployments/incoming'"
-          scp -i "$HOME/.ssh/production" -P "$SSH_PORT" "$ARCHIVE" "$SSH_USER@$SSH_HOST:$REMOTE_ARCHIVE"
+          ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "mkdir -p '$DOMAIN_ROOT/deployments/incoming'"
+          scp \
+            -i "$HOME/.ssh/production" \
+            -P "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$ARCHIVE" \
+            "$SSH_USER@$SSH_HOST:$REMOTE_ARCHIVE"
 
       - name: Deploy atomic release
         run: |
           REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
-          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+          ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
             "bash -s -- '$DOMAIN_ROOT' '$GITHUB_SHA' '$REMOTE_ARCHIVE' '$PRODUCTION_URL'" \
             < scripts/deployment/deploy-hostinger.sh
 

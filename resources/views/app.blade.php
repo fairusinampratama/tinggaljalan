@@ -25,6 +25,17 @@
         @inertiaHead
     </head>
     <body>
-        @inertia
+        @php
+            $__inertiaSsrResponse = app(\Inertia\Ssr\SsrState::class)->setPage($page)->dispatch();
+        @endphp
+
+        @if ($__inertiaSsrResponse)
+            {!! $__inertiaSsrResponse->body !!}
+        @else
+            <script data-page="app" type="application/json">{!! json_encode($page) !!}</script>
+            <div id="app">
+                @include('partials.server-page-content')
+            </div>
+        @endif
     </body>
 </html>

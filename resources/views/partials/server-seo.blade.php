@@ -11,6 +11,7 @@
     $publishedTime = data_get($seo, 'published_time');
     $modifiedTime = data_get($seo, 'modified_time');
     $jsonLd = collect(data_get($seo, 'json_ld', []))->filter()->values();
+    $hreflangLinks = \App\Support\ServerPageContent::hreflang($page ?? []);
 @endphp
 
 <title>{{ $title }}</title>
@@ -23,6 +24,9 @@
 @if ($canonical)
     <link data-inertia="canonical" rel="canonical" href="{{ $canonical }}">
 @endif
+@foreach ($hreflangLinks as $alternate)
+    <link rel="alternate" hreflang="{{ $alternate['hreflang'] }}" href="{{ $alternate['href'] }}">
+@endforeach
 <meta data-inertia="og:site_name" property="og:site_name" content="{{ $siteName }}">
 <meta data-inertia="og:title" property="og:title" content="{{ $title }}">
 @if ($description)

@@ -16,13 +16,18 @@ class SeoInfrastructureTest extends TestCase
     {
         $this->seed();
 
-        $this->get('/')
+        $response = $this->get('/');
+
+        $response
             ->assertOk()
             ->assertSee('<html lang="en">', false)
             ->assertSee('<title>Tinggal Jalan | Indonesia Tours &amp; Private Trips</title>', false)
             ->assertSee('<meta data-inertia="description" name="description" content="Plan private Indonesia tours with Tinggal Jalan.', false)
             ->assertSee('<meta data-inertia="robots" name="robots" content="index,follow">', false)
             ->assertSee('<link data-inertia="canonical" rel="canonical" href="http://localhost:8000/">', false)
+            ->assertSee('<link rel="alternate" hreflang="en" href="http://localhost:8000/">', false)
+            ->assertSee('<link rel="alternate" hreflang="id" href="http://localhost:8000/?lang=id">', false)
+            ->assertSee('<link rel="alternate" hreflang="zh-CN" href="http://localhost:8000/?lang=cn">', false)
             ->assertSee('<meta data-inertia="og:title" property="og:title" content="Tinggal Jalan | Indonesia Tours &amp; Private Trips">', false)
             ->assertSee('<meta data-inertia="twitter:card" name="twitter:card" content="summary_large_image">', false)
             ->assertSee('<script data-inertia="json-ld" type="application/ld+json">', false)
@@ -33,6 +38,17 @@ class SeoInfrastructureTest extends TestCase
                 ->where('seo.twitter_card', 'summary_large_image')
                 ->has('seo.json_ld.0')
                 ->has('seo.json_ld.1'));
+
+        $main = $this->serverMain($response->getContent());
+
+        $this->assertSame(1, substr_count($main, '<h1>'));
+        $this->assertGreaterThanOrEqual(250, $this->wordCount($main));
+        $this->assertGreaterThanOrEqual(2, substr_count($main, '<h2>'));
+        $this->assertStringContainsString('<a href="/routes"', $main);
+        $this->assertStringContainsString('<a href="/news"', $main);
+        $this->assertStringContainsString('<a href="/about-us"', $main);
+        $this->assertStringContainsString('<img', $main);
+        $this->assertStringContainsString('alt="', $main);
     }
 
     public function test_route_detail_has_product_metadata_and_schema(): void
@@ -41,7 +57,9 @@ class SeoInfrastructureTest extends TestCase
 
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
 
-        $this->get("/routes/{$package->slug}")
+        $response = $this->get("/routes/{$package->slug}");
+
+        $response
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('RouteDetailPage')
@@ -49,6 +67,16 @@ class SeoInfrastructureTest extends TestCase
                 ->where('seo.canonical', 'http://localhost:8000/routes/'.$package->slug)
                 ->where('seo.json_ld.0.@type', 'Product')
                 ->where('seo.json_ld.1.@type', 'TouristTrip'));
+
+        $main = $this->serverMain($response->getContent());
+
+        $this->assertSame(1, substr_count($main, '<h1>'));
+        $this->assertStringContainsString(e($package->title['us']), $main);
+        $this->assertStringContainsString('Route Highlights', $main);
+        $this->assertStringContainsString('Itinerary', $main);
+        $this->assertStringContainsString('Related Travel Guides', $main);
+        $this->assertStringContainsString('<img', $main);
+        $this->assertStringContainsString('alt="', $main);
     }
 
     public function test_route_detail_product_schema_uses_the_lowest_tier_price(): void
@@ -130,7 +158,9 @@ class SeoInfrastructureTest extends TestCase
 
         $article = NewsArticle::where('slug', 'paket-wisata-bromo-dari-malang')->firstOrFail();
 
-        $this->get("/news/{$article->slug}")
+        $response = $this->get("/news/{$article->slug}");
+
+        $response
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('NewsDetailPage')
@@ -140,6 +170,46 @@ class SeoInfrastructureTest extends TestCase
                 ->has('seo.modified_time')
                 ->has('seo.json_ld.0.mainEntityOfPage')
                 ->has('seo.json_ld.0.publisher'));
+
+        $main = $this->serverMain($response->getContent());
+
+        $this->assertSame(1, substr_count($main, '<h1>'));
+        $this->assertStringContainsString(e($article->title['us']), $main);
+        $this->assertStringContainsString('Article Guide', $main);
+        $this->assertStringContainsString('Related Tour Routes', $main);
+        $this->assertStringContainsString('<img', $main);
+        $this->assertStringContainsString('alt="', $main);
+    }
+
+    public function test_public_indexes_render_server_visible_links_to_detail_pages(): void
+    {
+        $this->seed();
+
+        $route = TourPackage::query()->active()->firstOrFail();
+        $article = NewsArticle::query()->published()->firstOrFail();
+
+        $routesMain = $this->serverMain($this->get('/routes')->assertOk()->getContent());
+        $newsMain = $this->serverMain($this->get('/news')->assertOk()->getContent());
+
+        $this->assertSame(1, substr_count($routesMain, '<h1>'));
+        $this->assertStringContainsString('/routes/'.trim((string) $route->slug), $routesMain);
+        $this->assertStringContainsString('Available Tour Packages', $routesMain);
+        $this->assertSame(1, substr_count($newsMain, '<h1>'));
+        $this->assertStringContainsString('/news/'.trim((string) $article->slug), $newsMain);
+        $this->assertStringContainsString('Latest Travel Articles', $newsMain);
+    }
+
+    public function test_about_page_renders_server_visible_company_content(): void
+    {
+        $this->seed();
+
+        $main = $this->serverMain($this->get('/about-us')->assertOk()->getContent());
+
+        $this->assertSame(1, substr_count($main, '<h1>'));
+        $this->assertStringContainsString('Tinggal Jalan', $main);
+        $this->assertStringContainsString('Tinggal Jalan Team', $main);
+        $this->assertStringContainsString('<img', $main);
+        $this->assertStringContainsString('<a href="/routes"', $main);
     }
 
     public function test_search_pages_are_noindex_follow_and_booking_is_noindex_nofollow(): void
@@ -160,6 +230,7 @@ class SeoInfrastructureTest extends TestCase
 
         $this->get('/booking')
             ->assertOk()
+            ->assertDontSee('server-seo-content')
             ->assertInertia(fn (Assert $page) => $page
                 ->component('BookingPage')
                 ->where('seo.robots', 'noindex,nofollow'));
@@ -220,5 +291,19 @@ class SeoInfrastructureTest extends TestCase
             ->assertSee('Disallow: /booking')
             ->assertSee('Disallow: /checkout/')
             ->assertSee('Sitemap: https://tinggaljalan.com/sitemap.xml');
+    }
+
+    private function serverMain(string $html): string
+    {
+        preg_match('/<main class="server-seo-content".*?<\/main>/s', $html, $matches);
+
+        $this->assertNotEmpty($matches[0] ?? null, 'Expected server-rendered SEO fallback content.');
+
+        return $matches[0];
+    }
+
+    private function wordCount(string $html): int
+    {
+        return str_word_count(strip_tags($html));
     }
 }
