@@ -12,7 +12,7 @@ class Seo
 {
     public const SITE_NAME = 'Tinggal Jalan';
 
-    public const DEFAULT_DESCRIPTION = 'Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan routes with clear itineraries, flexible pickup, and WhatsApp support.';
+    public const DEFAULT_DESCRIPTION = 'Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan trips with clear itineraries and WhatsApp support.';
 
     public const DEFAULT_IMAGE = 'images/hero-bromo.jpg';
 

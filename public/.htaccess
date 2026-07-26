@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Canonical host: keep all public traffic on the non-www domain.
+    RewriteCond %{HTTP_HOST} ^www\.tinggaljalan\.com$ [NC]
+    RewriteRule ^ https://tinggaljalan.com%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

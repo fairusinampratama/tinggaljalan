@@ -22,7 +22,8 @@ class SeoInfrastructureTest extends TestCase
             ->assertOk()
             ->assertSee('<html lang="en">', false)
             ->assertSee('<title>Tinggal Jalan | Indonesia Tours &amp; Private Trips</title>', false)
-            ->assertSee('<meta data-inertia="description" name="description" content="Plan private Indonesia tours with Tinggal Jalan.', false)
+            ->assertSee('<meta data-inertia="description" name="description" content="Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan trips with clear itineraries and WhatsApp support.">', false)
+            ->assertSee('<link rel="apple-touch-icon" href="/images/logo-tj.png">', false)
             ->assertSee('<meta data-inertia="robots" name="robots" content="index,follow">', false)
             ->assertSee('<link data-inertia="canonical" rel="canonical" href="http://localhost:8000/">', false)
             ->assertSee('<link rel="alternate" hreflang="en" href="http://localhost:8000/">', false)
@@ -44,9 +45,12 @@ class SeoInfrastructureTest extends TestCase
         $this->assertSame(1, substr_count($main, '<h1>'));
         $this->assertGreaterThanOrEqual(250, $this->wordCount($main));
         $this->assertGreaterThanOrEqual(2, substr_count($main, '<h2>'));
+        $this->assertSame(0, substr_count($main, '<h3>'));
         $this->assertStringContainsString('<a href="/routes"', $main);
         $this->assertStringContainsString('<a href="/news"', $main);
         $this->assertStringContainsString('<a href="/about-us"', $main);
+        $this->assertStringNotContainsString('?destination=', $main);
+        $this->assertStringContainsString('<a href="https://wa.me/62811388330"', $main);
         $this->assertStringContainsString('<img', $main);
         $this->assertStringContainsString('alt="', $main);
     }
@@ -291,6 +295,13 @@ class SeoInfrastructureTest extends TestCase
             ->assertSee('Disallow: /booking')
             ->assertSee('Disallow: /checkout/')
             ->assertSee('Sitemap: https://tinggaljalan.com/sitemap.xml');
+    }
+
+    public function test_www_host_redirects_to_canonical_non_www_url(): void
+    {
+        $this->get('https://www.tinggaljalan.com/routes/BROMO?lang=id')
+            ->assertRedirect('https://tinggaljalan.com/routes/BROMO?lang=id')
+            ->assertStatus(301);
     }
 
     private function serverMain(string $html): string

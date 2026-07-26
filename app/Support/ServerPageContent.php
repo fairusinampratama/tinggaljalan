@@ -88,7 +88,6 @@ class ServerPageContent
                 self::section('Featured Indonesia Destinations', $destinations->map(fn ($item) => [
                     'title' => $item['name'] ?? null,
                     'text' => self::localized($item['copy'] ?? null, $language),
-                    'url' => '/routes?destination='.rawurlencode((string) ($item['slug'] ?? $item['id'] ?? '')),
                     'image' => self::image($item['image'] ?? null, ($item['name'] ?? 'Destination').' tour'),
                 ])->all()),
                 self::section('Popular Private Tour Routes', $routes->map(fn ($item) => [
@@ -139,7 +138,6 @@ class ServerPageContent
                 self::section('Browse by Destination', $destinations->map(fn ($item) => [
                     'title' => $item['name'] ?? null,
                     'text' => self::localized($item['copy'] ?? null, $language),
-                    'url' => '/routes?destination='.rawurlencode((string) ($item['slug'] ?? $item['id'] ?? '')),
                 ])->all()),
             ],
             'links' => self::coreLinks(),
@@ -334,7 +332,8 @@ class ServerPageContent
             ['label' => 'Indonesia tour packages', 'url' => '/routes'],
             ['label' => 'Travel guides and news', 'url' => '/news'],
             ['label' => 'About Tinggal Jalan', 'url' => '/about-us'],
-            ['label' => 'Bromo tour packages', 'url' => '/routes?destination=bromo'],
+            ['label' => 'Bromo tour packages', 'url' => '/routes/BROMO'],
+            ['label' => 'Chat with Tinggal Jalan on WhatsApp', 'url' => 'https://wa.me/62811388330'],
         ];
     }
 
