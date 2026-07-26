@@ -36,6 +36,8 @@ rm -rf \
 cp -a "$ROOT/vendor" "$STAGE/vendor"
 mkdir -p "$STAGE/public"
 cp -a "$ROOT/public/build" "$STAGE/public/build"
+find "$STAGE/public/build" -type d -exec chmod 755 {} +
+find "$STAGE/public/build" -type f -exec chmod 644 {} +
 if test -d "$ROOT/public/images/generated"; then
     mkdir -p "$STAGE/public/images"
     cp -a "$ROOT/public/images/generated" "$STAGE/public/images/generated"
