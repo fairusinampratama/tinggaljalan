@@ -38,6 +38,7 @@ test "$(df -Pk "$DOMAIN_ROOT" | awk 'NR==2 {print $4}')" -gt 262144 || { echo "A
 PREVIOUS="$(readlink -f "$CURRENT")"
 mkdir -p "$RELEASE"
 tar -xzf "$ARCHIVE" -C "$RELEASE"
+find "$RELEASE" -type d -exec chmod 755 {} +
 test "$(tr -d '[:space:]' < "$RELEASE/REVISION")" == "$SHA" || { echo "Release revision mismatch." >&2; exit 1; }
 
 rm -rf "$RELEASE/storage" "$RELEASE/public/storage"

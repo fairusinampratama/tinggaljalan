@@ -14,6 +14,21 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <link rel="icon" type="image/png" href="/images/logo-tj.png">
         <link rel="apple-touch-icon" href="/images/logo-tj.png">
+        <script>
+            document.documentElement.classList.add('js');
+        </script>
+        <style>
+            .js .server-seo-content {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0 0 0 0);
+                clip-path: inset(50%);
+                white-space: nowrap;
+            }
+        </style>
 
         @include('partials.server-seo')
 

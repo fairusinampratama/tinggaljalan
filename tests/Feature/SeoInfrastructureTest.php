@@ -234,7 +234,7 @@ class SeoInfrastructureTest extends TestCase
 
         $this->get('/booking')
             ->assertOk()
-            ->assertDontSee('server-seo-content')
+            ->assertDontSee('<main class="server-seo-content"', false)
             ->assertInertia(fn (Assert $page) => $page
                 ->component('BookingPage')
                 ->where('seo.robots', 'noindex,nofollow'));

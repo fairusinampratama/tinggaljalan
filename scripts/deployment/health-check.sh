@@ -98,6 +98,9 @@ while IFS= read -r asset; do
         /*) asset_url="$BASE_URL$asset" ;;
         *) asset_url="$BASE_URL/$asset" ;;
     esac
+    separator='?'
+    [[ "$asset_url" == *\?* ]] && separator='&'
+    asset_url="$asset_url${separator}deployment_revision=$EXPECTED_SHA"
     request_200 "$asset_url"
 done < "$LIVE_ASSETS"
 
