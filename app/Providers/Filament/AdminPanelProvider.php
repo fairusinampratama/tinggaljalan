@@ -29,7 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Tinggal Jalan Admin')
-            ->favicon(asset('images/logo-tj.png'))
+            ->favicon(asset('favicon.png'))
             ->colors([
                 'primary' => Color::hex('#102A36'),
             ])

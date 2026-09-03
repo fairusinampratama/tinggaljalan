@@ -139,4 +139,6 @@ while IFS= read -r url; do
     request_200 "$url"
 done < "$SAMPLE_URL_FILE"
 
-echo "Production runtime, Vite assets, and public pages passed for $EXPECTED_SHA."
+"$ACTIVE_RELEASE/scripts/deployment/seo-smoke-test.sh" "$BASE_URL" "$PHP_BIN" "$EXPECTED_SHA"
+
+echo "Production runtime, Vite assets, public pages, and SEO checks passed for $EXPECTED_SHA."

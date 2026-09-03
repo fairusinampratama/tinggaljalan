@@ -98,6 +98,11 @@ link_public_asset() {
 
 link_public_asset build
 link_public_asset images
+link_public_asset robots.txt
+link_public_asset favicon.ico
+link_public_asset favicon.png
+link_public_asset favicon-96x96.png
+link_public_asset apple-touch-icon.png
 
 "$PHP_BIN" "$RELEASE/artisan" up
 recycle_litespeed_workers

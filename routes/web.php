@@ -11,19 +11,12 @@ use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RuntimeHealthController;
-use App\Http\Controllers\SitemapController;
 use App\Support\InertiaPublicData;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/up', RuntimeHealthController::class)->name('health');
 Route::get('/about-us', AboutController::class)->name('about.show');
-Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
-Route::get('/robots.txt', fn () => response(
-    "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /booking\nDisallow: /checkout/\n\nSitemap: https://tinggaljalan.com/sitemap.xml\n",
-    200,
-    ['Content-Type' => 'text/plain; charset=UTF-8']
-))->name('robots');
 Route::get('/language/{language}', LanguageController::class)->name('language');
 
 Route::get('/routes', [RouteController::class, 'index'])->name('routes.index');
