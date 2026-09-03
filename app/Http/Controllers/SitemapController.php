@@ -87,8 +87,14 @@ class SitemapController extends Controller
             ]);
         });
 
-        return response()
-            ->view('public.sitemap', ['urls' => $urls])
-            ->header('Content-Type', 'application/xml; charset=UTF-8');
+        $response = response()->view('public.sitemap', [
+            'urls' => $urls->unique('loc')->values(),
+        ]);
+        $response->headers->set('Content-Type', 'application/xml; charset=UTF-8');
+        $response->setPublic();
+        $response->setMaxAge(3600);
+        $response->setSharedMaxAge(3600);
+
+        return $response;
     }
 }

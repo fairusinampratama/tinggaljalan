@@ -70,6 +70,7 @@ jobs:
             scripts/deployment/build-release.sh \
             scripts/deployment/deploy-hostinger.sh \
             scripts/deployment/health-check.sh \
+            scripts/deployment/seo-smoke-test.sh \
             scripts/deployment/rollback-hostinger.sh
 
       - name: Build frontend
@@ -110,7 +111,7 @@ jobs:
     needs: validate
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     runs-on: [self-hosted, linux, hostinger-production]
-    timeout-minutes: 20
+    timeout-minutes: 90
     environment: production
     concurrency:
       group: production
@@ -206,4 +207,5 @@ jobs:
             echo "- Revision: \`$GITHUB_SHA\`"
             echo "- URL: $PRODUCTION_URL"
             echo '- Strategy: atomic symlink release'
+            echo '- SEO smoke test: passed (automatic rollback gate)'
           } >> "$GITHUB_STEP_SUMMARY"

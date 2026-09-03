@@ -23,7 +23,9 @@ class SeoInfrastructureTest extends TestCase
             ->assertSee('<html lang="en">', false)
             ->assertSee('<title>Tinggal Jalan | Indonesia Tours &amp; Private Trips</title>', false)
             ->assertSee('<meta data-inertia="description" name="description" content="Plan private Indonesia tours with Tinggal Jalan. Compare Bromo, Tumpak Sewu, Jogja, and Medan trips with clear itineraries and WhatsApp support.">', false)
-            ->assertSee('<link rel="apple-touch-icon" href="/images/logo-tj.png">', false)
+            ->assertSee('<link rel="icon" href="/favicon.ico" sizes="any">', false)
+            ->assertSee('<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">', false)
+            ->assertSee('<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">', false)
             ->assertSee('<meta data-inertia="robots" name="robots" content="index,follow">', false)
             ->assertSee('<link data-inertia="canonical" rel="canonical" href="http://localhost:8000/">', false)
             ->assertSee('<link rel="alternate" hreflang="en" href="http://localhost:8000/">', false)
@@ -249,7 +251,9 @@ class SeoInfrastructureTest extends TestCase
         $draft = NewsArticle::firstOrFail();
         $draft->update(['status' => 'draft']);
 
-        $this->get('/sitemap.xml')
+        $response = $this->get('/sitemap.xml');
+
+        $response
             ->assertOk()
             ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
             ->assertSee('<loc>http://localhost:8000/</loc>', false)
@@ -261,6 +265,24 @@ class SeoInfrastructureTest extends TestCase
             ->assertDontSee('/checkout', false)
             ->assertDontSee('/routes/'.$inactive->slug, false)
             ->assertDontSee('/news/'.$draft->slug, false);
+
+        $this->assertFalse($response->headers->has('Set-Cookie'));
+        $this->assertStringContainsString('public', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('max-age=3600', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringNotContainsString('private', (string) $response->headers->get('Cache-Control'));
+
+        $xml = simplexml_load_string($response->getContent());
+        $this->assertNotFalse($xml);
+        $locations = [];
+        foreach ($xml->url as $entry) {
+            $locations[] = (string) $entry->loc;
+        }
+        $this->assertSame($locations, array_values(array_unique($locations)));
+
+        foreach ($xml->url as $entry) {
+            $lastModified = trim((string) $entry->lastmod);
+            $this->assertTrue($lastModified === '' || strtotime($lastModified) !== false);
+        }
     }
 
     public function test_sitemap_and_route_detail_canonicalize_dirty_route_slugs(): void
@@ -289,12 +311,35 @@ class SeoInfrastructureTest extends TestCase
 
     public function test_robots_txt_declares_private_paths_and_sitemap(): void
     {
-        $this->get('/robots.txt')
-            ->assertOk()
-            ->assertSee('Disallow: /admin')
-            ->assertSee('Disallow: /booking')
-            ->assertSee('Disallow: /checkout/')
-            ->assertSee('Sitemap: https://tinggaljalan.com/sitemap.xml');
+        $robots = file_get_contents(public_path('robots.txt'));
+
+        $this->assertIsString($robots);
+        $this->assertStringContainsString("Allow: /\n", $robots);
+        $this->assertStringContainsString("Disallow: /admin\n", $robots);
+        $this->assertStringContainsString("Disallow: /booking\n", $robots);
+        $this->assertStringContainsString("Disallow: /checkout/\n", $robots);
+        $this->assertStringContainsString('Sitemap: https://tinggaljalan.com/sitemap.xml', $robots);
+    }
+
+    public function test_favicon_assets_are_valid_square_images(): void
+    {
+        foreach ([
+            'favicon-96x96.png' => 96,
+            'favicon.png' => 512,
+            'apple-touch-icon.png' => 180,
+        ] as $filename => $expectedSize) {
+            $image = getimagesize(public_path($filename));
+
+            $this->assertIsArray($image, $filename.' must be a valid image.');
+            $this->assertSame($expectedSize, $image[0]);
+            $this->assertSame($expectedSize, $image[1]);
+            $this->assertSame('image/png', $image['mime']);
+        }
+
+        $ico = file_get_contents(public_path('favicon.ico'));
+        $this->assertIsString($ico);
+        $this->assertGreaterThan(100, strlen($ico));
+        $this->assertSame("\x00\x00\x01\x00", substr($ico, 0, 4));
     }
 
     public function test_www_host_redirects_to_canonical_non_www_url(): void

@@ -12,8 +12,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <link rel="icon" type="image/png" href="/images/logo-tj.png">
-        <link rel="apple-touch-icon" href="/images/logo-tj.png">
+        <link rel="icon" href="/favicon.ico" sizes="any">
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
         <script>
             document.documentElement.classList.add('js');
         </script>

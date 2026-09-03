@@ -104,7 +104,7 @@ export function buildNewsArticleJsonLd(article, language = 'us') {
       name: siteName,
       logo: {
         '@type': 'ImageObject',
-        url: absoluteUrl('/favicon.svg'),
+        url: absoluteUrl('/favicon.png'),
       },
     },
     mainEntityOfPage: {
