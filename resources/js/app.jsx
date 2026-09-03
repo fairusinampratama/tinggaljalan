@@ -7,7 +7,15 @@ import { BookingProvider } from './context/BookingContext';
 const pages = import.meta.glob('./pages/**/*.jsx');
 
 createInertiaApp({
-  title: (title) => (title ? `${title} | Tinggal Jalan` : 'Tinggal Jalan'),
+  title: (title) => {
+    const pageTitle = title?.trim();
+
+    if (!pageTitle) return 'Tinggal Jalan';
+
+    return /\|\s*tinggal jalan$/i.test(pageTitle)
+      ? pageTitle
+      : `${pageTitle} | Tinggal Jalan`;
+  },
   resolve: async (name) => {
     const loadPage = pages[`./pages/${name}.jsx`];
 

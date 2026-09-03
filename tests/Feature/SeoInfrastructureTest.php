@@ -187,6 +187,29 @@ class SeoInfrastructureTest extends TestCase
         $this->assertStringContainsString('alt="', $main);
     }
 
+    public function test_news_detail_normalizes_and_limits_long_meta_descriptions(): void
+    {
+        $this->seed();
+
+        $article = NewsArticle::query()->published()->firstOrFail();
+        $article->update([
+            'excerpt' => [
+                'us' => '<p>'.str_repeat('A detailed Mount Bromo travel guide with practical planning advice. ', 8)."</p>\n\n",
+                'id' => '',
+                'cn' => '',
+            ],
+            'seo' => [],
+        ]);
+
+        $this->get('/news/'.$article->slug)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('seo.description', fn (string $description): bool => mb_strlen($description) <= 160
+                    && str_ends_with($description, '...')
+                    && ! str_contains($description, '<p>')
+                    && ! str_contains($description, "\n")));
+    }
+
     public function test_public_indexes_render_server_visible_links_to_detail_pages(): void
     {
         $this->seed();
