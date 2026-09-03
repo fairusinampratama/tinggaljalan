@@ -179,6 +179,7 @@ class Seo
     {
         $title = PublicSite::localized($article->seo['title'] ?? $article->title, $language);
         $description = PublicSite::localized($article->seo['description'] ?? $article->excerpt, $language);
+        $description = self::metaDescription($description);
         $modified = $article->content_updated_at ?? $article->updated_at;
 
         return self::page([
@@ -193,6 +194,13 @@ class Seo
                 self::articleJsonLd($article, $language),
             ],
         ]);
+    }
+
+    private static function metaDescription(string $description): string
+    {
+        $description = Str::squish(strip_tags($description));
+
+        return Str::limit($description, 157, '...');
     }
 
     public static function websiteJsonLd(): array
