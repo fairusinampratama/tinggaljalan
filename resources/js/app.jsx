@@ -12,7 +12,7 @@ createInertiaApp({
 
     if (!pageTitle) return 'Tinggal Jalan';
 
-    return /\|\s*tinggal jalan$/i.test(pageTitle)
+    return /^(?:tinggal jalan)(?:\s*\||$)|\|\s*tinggal jalan$/i.test(pageTitle)
       ? pageTitle
       : `${pageTitle} | Tinggal Jalan`;
   },
