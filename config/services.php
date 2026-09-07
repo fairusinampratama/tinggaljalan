@@ -47,6 +47,10 @@ return [
         'is_production' => env('DOKU_IS_PRODUCTION', false),
     ],
 
+    'google_ads' => [
+        'id' => env('GOOGLE_ADS_ID', 'AW-18427027980'),
+    ],
+
     'exchange_rates' => [
         'provider' => env('EXCHANGE_RATE_PROVIDER', 'frankfurter'),
         'usd_idr_buffer_percent' => (float) env('EXCHANGE_RATE_USD_IDR_BUFFER_PERCENT', 2),

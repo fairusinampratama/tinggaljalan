@@ -3,7 +3,14 @@ import { expect, test } from '@playwright/test';
 const brandedTitle = /^(?:Tinggal Jalan)(?:\s*\||$)|\|\s*Tinggal Jalan$/i;
 
 test.describe('rendered SEO metadata', () => {
-  for (const path of ['/', '/routes', '/news', '/booking']) {
+  for (const path of [
+    '/',
+    '/routes',
+    '/routes/bromo-sunrise',
+    '/news',
+    '/news/paket-wisata-bromo-dari-malang',
+    '/booking',
+  ]) {
     test(`${path} has one brand occurrence after hydration`, async ({ page }) => {
       await page.goto(path);
 

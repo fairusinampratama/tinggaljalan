@@ -1,4 +1,4 @@
-import { ArrowUp, ExternalLink, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { ArrowUp, Cookie, ExternalLink, Mail, MapPin, MessageCircle } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
 import { iconSize, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 
@@ -31,6 +31,7 @@ export function Footer({ t, whatsappUrl }) {
       ].filter(Boolean),
     },
   ];
+  const consentEnabled = typeof window !== 'undefined' && Boolean(window.TinggalJalanConsent);
 
   return (
     <footer id="contact" className="bg-ink px-4 py-10 text-white sm:px-8 lg:px-10">
@@ -106,12 +107,24 @@ export function Footer({ t, whatsappUrl }) {
 
         <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs font-semibold text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Tinggal Jalan. All rights reserved.</p>
-          <a
-            href="#home"
-            className="inline-flex items-center gap-1 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-          >
-            {t.backToTop} <ArrowUp className="h-4 w-4" />
-          </a>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            {consentEnabled ? (
+              <button
+                type="button"
+                className="inline-flex items-center gap-1 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                onClick={() => window.TinggalJalanConsent.openSettings()}
+                data-testid="cookie-settings"
+              >
+                <Cookie className="h-4 w-4" /> {t.cookieSettings ?? 'Cookie settings'}
+              </button>
+            ) : null}
+            <a
+              href="#home"
+              className="inline-flex items-center gap-1 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            >
+              {t.backToTop} <ArrowUp className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </div>
     </footer>

@@ -33,7 +33,7 @@ class HomeController extends Controller
             'reviews' => Review::query()->active()->featured()->ordered()->limit(Review::MAX_ACTIVE_FEATURED)->get(),
             'trustStats' => TrustStat::query()->active()->ordered()->limit(TrustStat::MAX_ACTIVE)->get(),
             'platformLinks' => PlatformLink::query()->active()->ordered()->limit(PlatformLink::MAX_ACTIVE)->get(),
-            'seo' => Seo::home(),
+            'seo' => Seo::home($request),
         ]);
     }
 }

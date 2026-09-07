@@ -39,7 +39,7 @@ class RouteController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $seo = Seo::routesIndex($packages->getCollection(), $search !== '');
+        $seo = Seo::routesIndex($packages->getCollection(), $search !== '', $request);
 
         $packages->getCollection()->transform(fn ($package) => InertiaPublicData::routeCard($package));
 
@@ -97,7 +97,7 @@ class RouteController extends Controller
                     'answer' => $faq->answer,
                 ])
                 ->values(),
-            'seo' => Seo::routeDetail($package, $language),
+            'seo' => Seo::routeDetail($package, $language, $request),
         ]);
     }
 }

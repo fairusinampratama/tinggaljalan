@@ -16,8 +16,17 @@ async function expectInsideViewport(locator) {
     expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
 }
 
+async function declineOptionalConsent(page) {
+    const decline = page.getByTestId('consent-decline');
+
+    if (await decline.isVisible()) {
+        await decline.click();
+    }
+}
+
 test('booking controls stay inside narrow and desktop viewports', async ({ page }) => {
     await page.goto('/booking');
+    await declineOptionalConsent(page);
 
     const form = page.locator('form').first();
     await expect(form).toBeVisible();
@@ -67,6 +76,7 @@ test('booking controls stay inside narrow and desktop viewports', async ({ page 
 
 test('voucher feedback is localized and usable across viewports', async ({ page }) => {
     await page.goto('/booking?route=jogja-heritage');
+    await declineOptionalConsent(page);
     await page.getByRole('button', { name: /continue to contact/i }).click();
     await expect(page).toHaveURL(/\/checkout\/review/);
 

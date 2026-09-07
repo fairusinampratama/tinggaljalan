@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\AboutPage;
 use App\Models\NewsArticle;
 use App\Models\TourPackage;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -43,7 +44,7 @@ class Seo
 
     public static function page(array $overrides = []): array
     {
-        return array_merge([
+        $page = array_merge([
             'title' => 'Tinggal Jalan | Indonesia Tours & Private Trips',
             'description' => self::DEFAULT_DESCRIPTION,
             'canonical' => self::canonical('/'),
@@ -55,6 +56,10 @@ class Seo
             'modified_time' => null,
             'json_ld' => [],
         ], $overrides);
+
+        $page['title'] = self::brandedTitle((string) $page['title']);
+
+        return $page;
     }
 
     public static function noindex(array $overrides = []): array
@@ -62,10 +67,11 @@ class Seo
         return self::page(array_merge(['robots' => 'noindex,nofollow'], $overrides));
     }
 
-    public static function home(): array
+    public static function home(Request $request): array
     {
         return self::page([
             'canonical' => self::canonical('/'),
+            'robots' => self::robotsForRequest($request),
             'json_ld' => [
                 self::websiteJsonLd(),
                 self::organizationJsonLd(),
@@ -73,7 +79,7 @@ class Seo
         ]);
     }
 
-    public static function about(AboutPage $page, string $language): array
+    public static function about(AboutPage $page, string $language, Request $request): array
     {
         $seo = $page->seo ?? [];
         $profile = $page->profile_section ?? [];
@@ -97,6 +103,7 @@ class Seo
             'title' => $title,
             'description' => $description,
             'canonical' => self::canonical('/about-us'),
+            'robots' => self::robotsForRequest($request),
             'image' => self::assetUrl($image),
             'json_ld' => [[
                 '@context' => 'https://schema.org',
@@ -109,13 +116,13 @@ class Seo
         ]);
     }
 
-    public static function routesIndex(Collection $packages, bool $hasSearch): array
+    public static function routesIndex(Collection $packages, bool $hasSearch, Request $request): array
     {
         return self::page([
             'title' => 'Indonesia Tour Packages | Tinggal Jalan',
             'description' => 'Compare private Indonesia tour packages for Bromo, Tumpak Sewu, Jogja, and Medan with clear itineraries, pickup options, prices, and traveler reviews.',
             'canonical' => self::canonical('/routes'),
-            'robots' => $hasSearch ? 'noindex,follow' : 'index,follow',
+            'robots' => self::robotsForRequest($request, $hasSearch ? 'noindex,follow' : 'index,follow'),
             'json_ld' => [
                 self::collectionJsonLd('Indonesia Tour Packages', '/routes', $packages->map(fn (TourPackage $package) => [
                     '@type' => 'ListItem',
@@ -127,16 +134,17 @@ class Seo
         ]);
     }
 
-    public static function routeDetail(TourPackage $package, string $language): array
+    public static function routeDetail(TourPackage $package, string $language, Request $request): array
     {
         $title = PublicSite::localized($package->title, $language);
         $description = PublicSite::localized($package->excerpt, $language);
         $description = filled($description) ? $description : PublicSite::localized($package->intro, $language);
 
         return self::page([
-            'title' => "{$title} | Tinggal Jalan",
+            'title' => $title,
             'description' => $description,
             'canonical' => self::canonical('/routes/'.trim((string) $package->slug)),
+            'robots' => self::robotsForRequest($request),
             'og_type' => 'product',
             'image' => self::assetUrl($package->cover_image),
             'json_ld' => [
@@ -146,7 +154,7 @@ class Seo
         ]);
     }
 
-    public static function newsIndex(Collection $articles, bool $hasSearch, string $language = 'us'): array
+    public static function newsIndex(Collection $articles, bool $hasSearch, string $language, Request $request): array
     {
         $title = match ($language) {
             'id' => 'Berita & Panduan Wisata | Tinggal Jalan',
@@ -163,7 +171,7 @@ class Seo
             'title' => $title,
             'description' => $description,
             'canonical' => self::canonical('/news'),
-            'robots' => $hasSearch ? 'noindex,follow' : 'index,follow',
+            'robots' => self::robotsForRequest($request, $hasSearch ? 'noindex,follow' : 'index,follow'),
             'json_ld' => [
                 self::collectionJsonLd($title, '/news', $articles->map(fn (NewsArticle $article) => [
                     '@type' => 'ListItem',
@@ -175,7 +183,7 @@ class Seo
         ]);
     }
 
-    public static function articleDetail(NewsArticle $article, string $language): array
+    public static function articleDetail(NewsArticle $article, string $language, Request $request): array
     {
         $title = PublicSite::localized($article->seo['title'] ?? $article->title, $language);
         $description = PublicSite::localized($article->seo['description'] ?? $article->excerpt, $language);
@@ -183,9 +191,10 @@ class Seo
         $modified = $article->content_updated_at ?? $article->updated_at;
 
         return self::page([
-            'title' => "{$title} | Tinggal Jalan",
+            'title' => $title,
             'description' => $description,
             'canonical' => self::canonical('/news/'.trim((string) $article->slug)),
+            'robots' => self::robotsForRequest($request),
             'og_type' => 'article',
             'image' => self::assetUrl($article->cover_image),
             'published_time' => optional($article->published_at)->toIso8601String(),
@@ -201,6 +210,32 @@ class Seo
         $description = Str::squish(strip_tags($description));
 
         return Str::limit($description, 157, '...');
+    }
+
+    private static function brandedTitle(string $title): string
+    {
+        $title = Str::squish(strip_tags($title));
+        $siteName = preg_quote(self::SITE_NAME, '/');
+        $title = trim((string) preg_replace("/(?:\\s*\\|\\s*{$siteName})+$/i", '', $title));
+
+        if ($title === '') {
+            return self::SITE_NAME;
+        }
+
+        if (preg_match("/^{$siteName}(?:\\s*\\||$)/i", $title) === 1) {
+            return $title;
+        }
+
+        $title = trim((string) preg_replace("/{$siteName}/i", '', $title), " \t\n\r\0\x0B|-");
+
+        return $title.' | '.self::SITE_NAME;
+    }
+
+    private static function robotsForRequest(Request $request, string $default = 'index,follow'): string
+    {
+        return in_array($request->query('lang'), ['id', 'cn'], true)
+            ? 'noindex,follow'
+            : $default;
     }
 
     public static function websiteJsonLd(): array

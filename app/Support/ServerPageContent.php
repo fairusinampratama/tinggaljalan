@@ -46,10 +46,8 @@ class ServerPageContent
         }
 
         return [
-            ['hreflang' => 'en', 'href' => self::languageUrl($canonical, 'us')],
-            ['hreflang' => 'id', 'href' => self::languageUrl($canonical, 'id')],
-            ['hreflang' => 'zh-CN', 'href' => self::languageUrl($canonical, 'cn')],
-            ['hreflang' => 'x-default', 'href' => self::languageUrl($canonical, 'us')],
+            ['hreflang' => 'en', 'href' => $canonical],
+            ['hreflang' => 'x-default', 'href' => $canonical],
         ];
     }
 
@@ -337,27 +335,4 @@ class ServerPageContent
         ];
     }
 
-    private static function languageUrl(string $canonical, string $language): string
-    {
-        $parts = parse_url($canonical);
-        $query = [];
-
-        if (isset($parts['query'])) {
-            parse_str($parts['query'], $query);
-        }
-
-        if ($language === 'us') {
-            unset($query['lang']);
-        } else {
-            $query['lang'] = $language;
-        }
-
-        $path = $parts['path'] ?? '/';
-        $authority = $parts['host'] ?? parse_url(Seo::baseUrl(), PHP_URL_HOST);
-        $authority .= isset($parts['port']) ? ':'.$parts['port'] : '';
-        $url = ($parts['scheme'] ?? 'https').'://'.$authority.$path;
-        $queryString = http_build_query($query);
-
-        return $queryString ? $url.'?'.$queryString : $url;
-    }
 }
