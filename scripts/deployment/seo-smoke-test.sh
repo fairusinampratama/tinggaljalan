@@ -51,6 +51,41 @@ fetch() {
     fi
 }
 
+fetch_static_asset() {
+    local url="$1"
+    local user_agent="$2"
+    local name="$3"
+    local attempt metrics status elapsed size
+
+    for attempt in 1 2 3; do
+        status=000
+        size=0
+        if metrics="$(curl --silent --show-error --max-time 30 \
+            --user-agent "$user_agent" \
+            --dump-header "$WORK/$name.headers" \
+            --output "$WORK/$name.body" \
+            --write-out '%{http_code} %{time_total} %{size_download}' \
+            "$url")"; then
+            read -r status elapsed size <<< "$metrics"
+        fi
+
+        if [[ "$status" == "200" ]] && (( size > 0 )); then
+            return 0
+        fi
+
+        echo "SEO warning: $url returned HTTP $status with ${size:-0} bytes (attempt $attempt/3)." >&2
+        if (( attempt < 3 )); then
+            sleep "$((attempt * 2))"
+        fi
+    done
+
+    echo "SEO asset response headers for $url:" >&2
+    if [[ -f "$WORK/$name.headers" ]]; then
+        tr -d '\r' < "$WORK/$name.headers" >&2
+    fi
+    fail "$url did not return a non-empty asset after 3 attempts"
+}
+
 header_value() {
     local name="$1"
     local header="$2"
@@ -131,27 +166,30 @@ SAMPLE_URLS="$WORK/sample-urls"
     ]))."\n");
 ' "$WORK/sitemap.body" "$CANONICAL_URL" "$SITEMAP_URLS" "$SAMPLE_URLS" || fail 'sitemap.xml did not pass structural validation'
 
+PAGE_METADATA="$WORK/page-metadata.tsv"
 url_number=0
 while IFS= read -r url; do
     url_number=$((url_number + 1))
     request_url="$BASE_URL${url#"$CANONICAL_URL"}"
     fetch "$(fresh_url "$request_url")" "$GOOGLEBOT" "sitemap-url-$url_number"
-done < "$SITEMAP_URLS"
-
-sample_number=0
-while IFS= read -r url; do
-    sample_number=$((sample_number + 1))
-    request_url="$BASE_URL${url#"$CANONICAL_URL"}"
-    fetch "$(fresh_url "$request_url")" "$GOOGLEBOT" "sample-$sample_number"
     "$PHP_BIN" -r '
         libxml_use_internal_errors(true);
         $document = new DOMDocument();
         if (! $document->loadHTMLFile($argv[1])) { fwrite(STDERR, "Invalid HTML.\n"); exit(1); }
         $xpath = new DOMXPath($document);
+        $nodes = fn (string $query) => $xpath->query($query);
         $text = fn (string $query): string => trim((string) $xpath->evaluate("string($query)"));
-        if ($text("//title") === "") { fwrite(STDERR, "Missing title.\n"); exit(1); }
-        if ($text("//meta[translate(@name, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\")=\"description\"]/@content") === "") {
-            fwrite(STDERR, "Missing description.\n"); exit(1);
+        $titleNodes = $nodes("//title");
+        $descriptionNodes = $nodes("//meta[translate(@name, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\")=\"description\"]");
+        if ($titleNodes->length !== 1 || trim($titleNodes->item(0)->textContent) === "") {
+            fwrite(STDERR, "Page needs exactly one non-empty title.\n"); exit(1);
+        }
+        if ($descriptionNodes->length !== 1 || trim($descriptionNodes->item(0)->getAttribute("content")) === "") {
+            fwrite(STDERR, "Page needs exactly one non-empty description.\n"); exit(1);
+        }
+        $title = trim($titleNodes->item(0)->textContent);
+        if (preg_match("/(?:\\|\\s*Tinggal Jalan){2,}$/i", $title)) {
+            fwrite(STDERR, "Title repeats the Tinggal Jalan suffix.\n"); exit(1);
         }
         $robots = strtolower($text("//meta[translate(@name, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\")=\"robots\"]/@content"));
         if (! str_contains($robots, "index") || str_contains($robots, "noindex")) {
@@ -160,14 +198,58 @@ while IFS= read -r url; do
         if ($text("//link[contains(concat(\" \", normalize-space(@rel), \" \"), \" canonical \")]/@href") !== $argv[2]) {
             fwrite(STDERR, "Canonical mismatch.\n"); exit(1);
         }
-        $main = $xpath->query("//main[contains(concat(\" \", normalize-space(@class), \" \"), \" server-seo-content \")]");
+        $main = $nodes("//main[contains(concat(\" \", normalize-space(@class), \" \"), \" server-seo-content \")]");
         if ($main->length !== 1 || $xpath->query(".//h1", $main->item(0))->length !== 1) {
             fwrite(STDERR, "Crawler content needs exactly one H1.\n"); exit(1);
         }
         if (str_word_count($main->item(0)->textContent) < 40) {
             fwrite(STDERR, "Crawler content is too short.\n"); exit(1);
         }
-    ' "$WORK/sample-$sample_number.body" "$url" || fail "$url failed public-page SEO validation"
+        $path = parse_url($argv[2], PHP_URL_PATH) ?: "/";
+        if (preg_match("#^/(routes|news)/[^/]+$#", $path)) {
+            $normalize = function (string $value): array {
+                $value = strtolower(preg_replace("/[^a-z0-9]+/i", " ", str_ireplace("Tinggal Jalan", "", $value)));
+                $ignored = ["with", "from", "your", "this", "that", "the", "and", "for", "into"];
+                return array_values(array_filter(explode(" ", trim($value)), fn ($word) => strlen($word) >= 4 && ! in_array($word, $ignored, true)));
+            };
+            $titleWords = $normalize($title);
+            $h1Words = $normalize($text("//main[contains(concat(\" \", normalize-space(@class), \" \"), \" server-seo-content \")]//h1"));
+            if (count(array_unique(array_intersect($titleWords, $h1Words))) < 1) {
+                fwrite(STDERR, "Title and H1 do not describe the same subject.\n"); exit(1);
+            }
+        }
+        file_put_contents($argv[3], $argv[2]."\t".strtolower($title)."\n", FILE_APPEND);
+    ' "$WORK/sitemap-url-$url_number.body" "$url" "$PAGE_METADATA" || fail "$url failed public-page SEO validation"
+done < "$SITEMAP_URLS"
+
+"$PHP_BIN" -r '
+    $titles = [];
+    foreach (file($argv[1], FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        [$url, $title] = explode("\t", $line, 2);
+        if (isset($titles[$title])) {
+            fwrite(STDERR, "Duplicate title for {$titles[$title]} and $url: $title\n"); exit(1);
+        }
+        $titles[$title] = $url;
+    }
+' "$PAGE_METADATA" || fail 'sitemap pages do not have unique titles'
+
+while IFS= read -r url; do
+    for language in id cn; do
+        request_url="$BASE_URL${url#"$CANONICAL_URL"}?lang=$language"
+        variant_name="language-${language}-$(printf '%s' "$url" | cksum | cut -d " " -f 1)"
+        fetch "$request_url" "$GOOGLEBOT" "$variant_name"
+        "$PHP_BIN" -r '
+            libxml_use_internal_errors(true);
+            $document = new DOMDocument();
+            if (! $document->loadHTMLFile($argv[1])) exit(1);
+            $xpath = new DOMXPath($document);
+            $text = fn (string $query): string => trim((string) $xpath->evaluate("string($query)"));
+            $robots = strtolower($text("//meta[translate(@name, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\")=\"robots\"]/@content"));
+            if ($robots !== "noindex,follow") exit(1);
+            if ($text("//link[contains(concat(\" \", normalize-space(@rel), \" \"), \" canonical \")]/@href") !== $argv[2]) exit(1);
+            if ($xpath->query("//link[@rel=\"alternate\" and contains(@href, \"?lang=\")]")->length !== 0) exit(1);
+        ' "$WORK/$variant_name.body" "$url" || fail "$request_url has incorrect legacy-language indexing controls"
+    done
 done < "$SAMPLE_URLS"
 
 fetch "$(fresh_url "$BASE_URL/booking")" "$GOOGLEBOT" booking
@@ -177,13 +259,13 @@ fetch "$(fresh_url "$BASE_URL/booking")" "$GOOGLEBOT" booking
     if (str_contains($html, "<main class=\"server-seo-content\"")) exit(1);
 ' "$WORK/booking.body" || fail 'booking page indexing controls are incorrect'
 
-grep -Fq '<link rel="icon" href="/favicon.ico" sizes="any">' "$WORK/sample-1.body" || fail 'homepage does not declare favicon.ico'
-grep -Fq '<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">' "$WORK/sample-1.body" || fail 'homepage does not declare the PNG favicon'
-grep -Fq '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">' "$WORK/sample-1.body" || fail 'homepage does not declare the Apple touch icon'
+grep -Fq '<link rel="icon" href="/favicon.ico" sizes="any">' "$WORK/sitemap-url-1.body" || fail 'homepage does not declare favicon.ico'
+grep -Fq '<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">' "$WORK/sitemap-url-1.body" || fail 'homepage does not declare the PNG favicon'
+grep -Fq '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">' "$WORK/sitemap-url-1.body" || fail 'homepage does not declare the Apple touch icon'
 
 for icon in favicon.ico favicon-96x96.png favicon.png apple-touch-icon.png; do
     icon_name="icon-${icon//./-}"
-    fetch "$(fresh_url "$BASE_URL/$icon")" "$GOOGLEBOT_IMAGE" "$icon_name"
+    fetch_static_asset "$BASE_URL/$icon" "$GOOGLEBOT_IMAGE" "$icon_name"
     [[ "$(header_value "$icon_name" content-type)" == image/* ]] || fail "$icon has the wrong content type"
     test -s "$WORK/$icon_name.body" || fail "$icon is empty"
 done

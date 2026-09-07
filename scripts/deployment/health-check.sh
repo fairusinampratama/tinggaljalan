@@ -75,6 +75,32 @@ test "$(wc -l < "$EXPECTED_ASSETS")" -ge 2 || { echo "Vite app entry needs JavaS
 LIVE_HTML="$WORK/live-home.html"
 fresh_request "$BASE_URL/?deployment_revision=$EXPECTED_SHA" > "$LIVE_HTML"
 
+CONFIGURED_GOOGLE_ADS_ID="$(cd "$ACTIVE_RELEASE" && "$PHP_BIN" -r '
+    require "vendor/autoload.php";
+    $app = require "bootstrap/app.php";
+    $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+    echo trim((string) config("services.google_ads.id"));
+')"
+
+if [[ -n "$CONFIGURED_GOOGLE_ADS_ID" ]]; then
+    GOOGLE_ADS_BOOTSTRAP_COUNT="$(grep -Fc "data-google-ads-consent=\"$CONFIGURED_GOOGLE_ADS_ID\"" "$LIVE_HTML" || true)"
+    [[ "$GOOGLE_ADS_BOOTSTRAP_COUNT" == "1" ]] || {
+        echo "Live HTML must contain exactly one Google Ads consent bootstrap for $CONFIGURED_GOOGLE_ADS_ID; found $GOOGLE_ADS_BOOTSTRAP_COUNT." >&2
+        exit 1
+    }
+    grep -Fq "window.TinggalJalanConsent" "$LIVE_HTML" || {
+        echo "Live HTML is missing the Google Ads consent interface." >&2
+        exit 1
+    }
+    grep -Fq "ad_storage: value" "$LIVE_HTML" || {
+        echo "Live HTML is missing the denied-by-default consent bootstrap." >&2
+        exit 1
+    }
+elif grep -Fq 'data-google-ads-consent=' "$LIVE_HTML"; then
+    echo "Live HTML contains a Google Ads bootstrap although the integration is disabled." >&2
+    exit 1
+fi
+
 while IFS= read -r asset; do
     grep -Fq "/build/$asset" "$LIVE_HTML" || {
         echo "Live HTML does not reference expected Vite asset /build/$asset." >&2

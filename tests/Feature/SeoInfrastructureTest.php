@@ -29,8 +29,10 @@ class SeoInfrastructureTest extends TestCase
             ->assertSee('<meta data-inertia="robots" name="robots" content="index,follow">', false)
             ->assertSee('<link data-inertia="canonical" rel="canonical" href="http://localhost:8000/">', false)
             ->assertSee('<link rel="alternate" hreflang="en" href="http://localhost:8000/">', false)
-            ->assertSee('<link rel="alternate" hreflang="id" href="http://localhost:8000/?lang=id">', false)
-            ->assertSee('<link rel="alternate" hreflang="zh-CN" href="http://localhost:8000/?lang=cn">', false)
+            ->assertSee('<link rel="alternate" hreflang="x-default" href="http://localhost:8000/">', false)
+            ->assertDontSee('hreflang="id"', false)
+            ->assertDontSee('hreflang="zh-CN"', false)
+            ->assertDontSee('?lang=', false)
             ->assertSee('<meta data-inertia="og:title" property="og:title" content="Tinggal Jalan | Indonesia Tours &amp; Private Trips">', false)
             ->assertSee('<meta data-inertia="twitter:card" name="twitter:card" content="summary_large_image">', false)
             ->assertSee('<script data-inertia="json-ld" type="application/ld+json">', false)
@@ -210,6 +212,33 @@ class SeoInfrastructureTest extends TestCase
                     && ! str_contains($description, "\n")));
     }
 
+    public function test_news_detail_appends_the_brand_exactly_once(): void
+    {
+        $this->seed();
+
+        $article = NewsArticle::query()->published()->firstOrFail();
+        $article->update([
+            'seo' => [
+                'title' => [
+                    'us' => 'Bromo Tour Package from Malang | Tinggal Jalan | Tinggal Jalan',
+                    'id' => '',
+                    'cn' => '',
+                ],
+                'description' => $article->excerpt,
+            ],
+        ]);
+
+        $response = $this->get('/news/'.$article->slug)->assertOk();
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->where('seo.title', 'Bromo Tour Package from Malang | Tinggal Jalan'));
+        $this->assertSame(1, substr_count($response->getContent(), '<title>'));
+        $this->assertStringContainsString(
+            '<title>Bromo Tour Package from Malang | Tinggal Jalan</title>',
+            html_entity_decode($response->getContent()),
+        );
+    }
+
     public function test_public_indexes_render_server_visible_links_to_detail_pages(): void
     {
         $this->seed();
@@ -263,6 +292,72 @@ class SeoInfrastructureTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('BookingPage')
                 ->where('seo.robots', 'noindex,nofollow'));
+    }
+
+    public function test_legacy_language_query_variants_are_not_index_targets(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::query()->active()->firstOrFail();
+        $article = NewsArticle::query()->published()->firstOrFail();
+        $paths = [
+            '/?lang=id' => 'http://localhost:8000/',
+            '/routes/'.$package->slug.'?lang=cn' => 'http://localhost:8000/routes/'.$package->slug,
+            '/news/'.$article->slug.'?lang=id' => 'http://localhost:8000/news/'.$article->slug,
+        ];
+
+        foreach ($paths as $path => $canonical) {
+            $response = $this->get($path)->assertOk();
+
+            $response
+                ->assertDontSee('<main class="server-seo-content"', false)
+                ->assertDontSee('hreflang="id"', false)
+                ->assertDontSee('hreflang="zh-CN"', false)
+                ->assertInertia(fn (Assert $page) => $page
+                    ->where('seo.robots', 'noindex,follow')
+                    ->where('seo.canonical', $canonical));
+        }
+    }
+
+    public function test_publishing_an_article_makes_it_discoverable_and_future_articles_stay_hidden(): void
+    {
+        $this->seed();
+
+        $draft = NewsArticle::factory()->create([
+            'slug' => 'automatic-indexing-test',
+            'title' => ['us' => 'Automatic Indexing Test', 'id' => '', 'cn' => ''],
+            'status' => 'draft',
+            'published_at' => null,
+        ]);
+        $future = NewsArticle::factory()->create([
+            'slug' => 'future-indexing-test',
+            'status' => 'published',
+            'published_at' => now()->addDay(),
+        ]);
+
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertDontSee('/news/'.$draft->slug, false)
+            ->assertDontSee('/news/'.$future->slug, false);
+
+        $draft->update(['status' => 'published']);
+        $draft->refresh();
+
+        $this->assertNotNull($draft->published_at);
+        $this->get('/sitemap.xml')
+            ->assertOk()
+            ->assertSee('<loc>http://localhost:8000/news/'.$draft->slug.'</loc>', false)
+            ->assertSee('<lastmod>'.$draft->updated_at->toAtomString().'</lastmod>', false)
+            ->assertDontSee('/news/'.$future->slug, false);
+
+        $newsMain = $this->serverMain($this->get('/news')->assertOk()->getContent());
+        $this->assertStringContainsString('<a href="/news/'.$draft->slug.'"', $newsMain);
+        $this->get('/news/'.$draft->slug)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('seo.robots', 'index,follow')
+                ->where('seo.canonical', 'http://localhost:8000/news/'.$draft->slug));
+        $this->get('/news/'.$future->slug)->assertRedirect('/news');
     }
 
     public function test_sitemap_includes_public_database_pages_and_excludes_private_or_unpublished_pages(): void

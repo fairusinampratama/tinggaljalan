@@ -47,7 +47,7 @@ class NewsController extends Controller
         $featuredModel = (clone $query)->where('is_featured', true)->first() ?? (clone $query)->first();
 
         $articles = $query->paginate(12)->withQueryString();
-        $seo = Seo::newsIndex($articles->getCollection(), $search !== '', $language);
+        $seo = Seo::newsIndex($articles->getCollection(), $search !== '', $language, $request);
         
         $articles->getCollection()->transform(fn ($article) => InertiaPublicData::articleCard($article));
 
@@ -96,7 +96,7 @@ class NewsController extends Controller
             'relatedRoutes' => InertiaPublicData::routeCards($article->tourPackages->isNotEmpty()
                 ? $article->tourPackages
                 : TourPackage::query()->with(['destination', 'packageAddOns', 'itineraryItems', 'newsArticles'])->active()->where('destination_id', $article->destination_id)->limit(3)->get()),
-            'seo' => Seo::articleDetail($article, $language),
+            'seo' => Seo::articleDetail($article, $language, $request),
         ]);
     }
 }

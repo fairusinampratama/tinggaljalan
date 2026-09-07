@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { FloatingWhatsAppButton } from '../sections/FloatingWhatsAppButton';
+import { ConsentBanner } from '../sections/ConsentBanner';
 import { Footer } from '../sections/Footer';
 import { Navbar } from '../sections/Navbar';
 import { useBooking } from '../../context/BookingContext';
@@ -16,6 +17,7 @@ export function AppLayout({ children }) {
       {children}
       <Footer t={t} whatsappUrl={whatsappUrl} />
       <FloatingWhatsAppButton whatsappUrl={whatsappUrl} label={t.chat} avoidMobileBottomBar={isRouteDetailPage} />
+      <ConsentBanner t={t} />
     </main>
   );
 }

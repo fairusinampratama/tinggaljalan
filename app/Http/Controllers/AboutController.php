@@ -49,7 +49,7 @@ class AboutController extends Controller
                 'url' => $link->url,
                 'logo' => InertiaPublicData::assetPath($link->logo),
             ])->values(),
-            'seo' => Seo::about($aboutPage, $language),
+            'seo' => Seo::about($aboutPage, $language, $request),
         ]);
     }
 }
