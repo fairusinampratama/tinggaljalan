@@ -268,6 +268,7 @@ const copy = {
   "footerPickupHelp": "Pickup help",
   "footerAbout": "About Tinggal Jalan",
   "footerReviews": "Reviews",
+  "footerOfficeAddress": "Office address",
   "backToTop": "Back to top",
   "aboutVerificationEyebrow": "Verified details",
   "aboutVerificationTitle": "A local team you can reach directly.",

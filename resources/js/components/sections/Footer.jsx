@@ -1,4 +1,4 @@
-import { ArrowUp, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { ArrowUp, ExternalLink, Mail, MapPin, MessageCircle } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
 import { iconSize, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 
@@ -39,7 +39,26 @@ export function Footer({ t, whatsappUrl }) {
           <div>
             <img src={logoUrl} alt="Tinggal Jalan" className="h-11 w-auto rounded bg-surface px-3 py-2" />
             <p className="mt-4 max-w-lg text-sm font-semibold leading-6 text-white/65">{t.footerText}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            {address ? (
+              <a
+                href={mapUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="group mt-5 flex max-w-lg items-start gap-3 text-white/70 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-secondary"
+              >
+                <MapPin className="mt-1 h-4 w-4 shrink-0 text-secondary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-bold uppercase text-white/55">
+                    {t.footerOfficeAddress ?? 'Office address'}
+                  </span>
+                  <address className="mt-1 whitespace-pre-line text-sm font-semibold leading-6 not-italic">
+                    {address}
+                  </address>
+                </span>
+                <ExternalLink className="mt-1 h-4 w-4 shrink-0 opacity-60 transition group-hover:opacity-100" aria-hidden="true" />
+              </a>
+            ) : null}
+            <div className="mt-5 flex flex-wrap gap-2">
               {trustBadges.map((item) => (
                 <span key={item} className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/75">
                   {item}
@@ -75,17 +94,6 @@ export function Footer({ t, whatsappUrl }) {
             <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
             <div className="mt-5 flex flex-col gap-3">
-              {address ? (
-                <a
-                  href={mapUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-start gap-2 text-sm font-semibold leading-6 text-white/70 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                >
-                  <MapPin className={`${iconSize} mt-1 shrink-0`} />
-                  <address className="whitespace-pre-line not-italic">{address}</address>
-                </a>
-              ) : null}
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
                 <MessageCircle className={iconSize} /> {t.sendToWhatsapp ?? 'WhatsApp'}
               </a>

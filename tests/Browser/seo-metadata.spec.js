@@ -24,9 +24,13 @@ test.describe('rendered SEO metadata', () => {
     await page.goto('/');
 
     const address = page.locator('footer address');
+    const addressLink = address.locator('../..');
 
+    await expect(address).toHaveCount(1);
     await expect(address).toBeVisible();
     await expect(address).toContainText('Jalan Danau Tondano Dalam A2 D28 Sawojajar, Kota Malang');
-    await expect(address.locator('..')).toHaveAttribute('href', /google\.com\/maps/);
+    await expect(addressLink).toHaveAttribute('href', /google\.com\/maps/);
+    await expect(addressLink).toHaveAttribute('target', '_blank');
+    await expect(addressLink).toHaveAttribute('rel', 'noreferrer');
   });
 });

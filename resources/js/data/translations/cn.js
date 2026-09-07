@@ -262,6 +262,7 @@ const copy = {
   "footerPickupHelp": "接送帮助",
   "footerAbout": "关于 Tinggal Jalan",
   "footerReviews": "评价",
+  "footerOfficeAddress": "办公地址",
   "backToTop": "返回顶部",
   "aboutVerificationEyebrow": "已验证信息",
   "aboutVerificationTitle": "可以直接联系的本地团队。",

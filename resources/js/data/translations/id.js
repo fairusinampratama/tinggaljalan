@@ -268,6 +268,7 @@ const copy = {
   "footerPickupHelp": "Pickup help",
   "footerAbout": "About Tinggal Jalan",
   "footerReviews": "Reviews",
+  "footerOfficeAddress": "Alamat kantor",
   "backToTop": "Back to top",
   "aboutVerificationEyebrow": "Informasi terverifikasi",
   "aboutVerificationTitle": "Tim lokal yang dapat kamu hubungi langsung.",
