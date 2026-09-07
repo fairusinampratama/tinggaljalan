@@ -1,4 +1,4 @@
-import { ArrowUp, Mail, MessageCircle } from 'lucide-react';
+import { ArrowUp, Mail, MapPin, MessageCircle } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
 import { iconSize, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 
@@ -6,6 +6,9 @@ export function Footer({ t, whatsappUrl }) {
   const { publicData } = useBooking();
   const site = publicData.site ?? {};
   const contactDetails = site.contactDetails ?? {};
+  const address = contactDetails.address?.trim();
+  const mapUrl = contactDetails.map_url
+    || (address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null);
   const logoUrl = site.logoUrl ?? '/images/logo-tj.png';
   const trustBadges = site.trustBadges ?? [];
   const footerColumns = [
@@ -72,6 +75,17 @@ export function Footer({ t, whatsappUrl }) {
             <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
             <div className="mt-5 flex flex-col gap-3">
+              {address ? (
+                <a
+                  href={mapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-start gap-2 text-sm font-semibold leading-6 text-white/70 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                >
+                  <MapPin className={`${iconSize} mt-1 shrink-0`} />
+                  <address className="whitespace-pre-line not-italic">{address}</address>
+                </a>
+              ) : null}
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
                 <MessageCircle className={iconSize} /> {t.sendToWhatsapp ?? 'WhatsApp'}
               </a>
