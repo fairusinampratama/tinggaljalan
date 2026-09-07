@@ -19,4 +19,14 @@ test.describe('rendered SEO metadata', () => {
       }).toEqual({ hasValidBrandPosition: true, brandCount: 1 });
     });
   }
+
+  test('footer exposes the configured business address', async ({ page }) => {
+    await page.goto('/');
+
+    const address = page.locator('footer address');
+
+    await expect(address).toBeVisible();
+    await expect(address).toContainText('Jalan Danau Tondano Dalam A2 D28 Sawojajar, Kota Malang');
+    await expect(address.locator('..')).toHaveAttribute('href', /google\.com\/maps/);
+  });
 });
