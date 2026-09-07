@@ -334,5 +334,4 @@ class ServerPageContent
             ['label' => 'Chat with Tinggal Jalan on WhatsApp', 'url' => 'https://wa.me/62811388330'],
         ];
     }
-
 }

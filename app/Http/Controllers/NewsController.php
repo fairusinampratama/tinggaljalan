@@ -48,7 +48,7 @@ class NewsController extends Controller
 
         $articles = $query->paginate(12)->withQueryString();
         $seo = Seo::newsIndex($articles->getCollection(), $search !== '', $language, $request);
-        
+
         $articles->getCollection()->transform(fn ($article) => InertiaPublicData::articleCard($article));
 
         return Inertia::render('NewsPage', [
