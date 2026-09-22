@@ -15,6 +15,7 @@
 @theme {
     --font-sans: Inter, Arial, Helvetica, ui-sans-serif, system-ui, sans-serif;
     --font-display: Fraunces, Georgia, 'Times New Roman', serif;
+    --font-cjk: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans SC', ui-sans-serif, system-ui, sans-serif;
 
     --color-primary: #102a36;
     --color-secondary: #2f6f6d;
@@ -43,6 +44,15 @@ body {
     font-size: 1rem;
     line-height: 1.55;
     text-rendering: optimizeLegibility;
+}
+
+html:lang(zh-CN) {
+    --font-sans: var(--font-cjk);
+    --font-display: var(--font-cjk);
+}
+
+html:lang(zh-CN) body {
+    font-family: var(--font-cjk);
 }
 
 ::selection {
@@ -124,8 +134,7 @@ body {
         text-wrap: balance;
     }
 
-    .type-section-title,
-    .public-heading-section {
+    .type-section-title {
         font-family: var(--font-display);
         font-size: 1.75rem;
         font-weight: 500;
@@ -144,8 +153,7 @@ body {
         text-wrap: balance;
     }
 
-    .type-editorial-card,
-    .public-heading-card {
+    .type-editorial-card {
         font-family: var(--font-display);
         font-size: 1.375rem;
         font-weight: 500;
@@ -155,9 +163,7 @@ body {
         overflow-wrap: anywhere;
     }
 
-    .type-detail-title,
-    .public-heading-hero {
-        max-width: 14ch;
+    .type-detail-title {
         font-family: var(--font-display);
         font-size: 2rem;
         font-weight: 500;
@@ -214,6 +220,13 @@ body {
         line-height: 1.4286;
     }
 
+    .type-language {
+        font-family: var(--font-sans);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        line-height: 1.5385;
+    }
+
     .type-button {
         font-family: var(--font-sans);
         font-size: 1rem;
@@ -221,7 +234,14 @@ body {
         line-height: 1.5;
     }
 
-    .public-copy {
+    .type-button-compact {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.4286;
+    }
+
+    .type-body {
         color: var(--color-muted);
         font-family: var(--font-sans);
         font-size: 1rem;
@@ -231,14 +251,77 @@ body {
         overflow-wrap: anywhere;
     }
 
+    .type-body-compact {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+
+    .type-body-compact-strong {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .type-label,
+    .type-control {
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.4286;
+    }
+
+    .type-meta {
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .type-ui-title {
+        font-family: var(--font-sans);
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.333;
+    }
+
+    .type-price {
+        font-family: var(--font-sans);
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .type-decorative-value {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 400;
+        line-height: 1.1;
+    }
+
+    .type-quotation {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 400;
+        line-height: 1.375;
+    }
+
+    .type-initial {
+        font-family: var(--font-display);
+        font-size: 3rem;
+        font-weight: 400;
+        line-height: 1;
+    }
+
     @media (min-width: 640px) {
         .type-home-hero {
             font-size: 2.75rem;
             letter-spacing: -0.8px;
         }
 
-        .type-section-title,
-        .public-heading-section {
+        .type-section-title {
             font-size: 2.125rem;
             letter-spacing: -0.8px;
         }
@@ -247,8 +330,7 @@ body {
             font-size: 3rem;
         }
 
-        .type-detail-title,
-        .public-heading-hero {
+        .type-detail-title {
             font-size: 3rem;
         }
 
@@ -270,20 +352,9 @@ body {
         .type-promo-card {
             font-size: 1.125rem;
         }
+
+        .type-quotation {
+            font-size: 1.5rem;
+        }
     }
-}
-
-h1,
-h2,
-h3 {
-    text-wrap: balance;
-    overflow-wrap: anywhere;
-}
-
-p,
-li,
-a,
-button,
-label {
-    overflow-wrap: anywhere;
 }

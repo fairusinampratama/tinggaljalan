@@ -30,10 +30,10 @@ function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIc
 
   return (
     <section className={`rounded-xl border border-line bg-surface p-5 shadow-soft`}>
-      <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
+      <h3 className="type-ui-title flex items-center gap-2 text-ink">
         <Icon className="h-4 w-4 text-secondary" /> {title}
       </h3>
-      <ul className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-muted">
+      <ul className="type-body-compact-strong mt-4 grid gap-3 text-muted">
         {visibleItems.map((item) => (
           <li key={item} className="flex gap-3">
             {BulletIcon ? (
@@ -51,7 +51,7 @@ function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIc
 
 function MetaPill({ icon: Icon, children }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-ink shadow-sm">
+    <div className="type-body-compact-strong inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-ink shadow-sm">
       <Icon className="h-4 w-4 text-secondary" />
       {children}
     </div>
@@ -79,7 +79,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
           <article>
             <div className="flex flex-wrap items-center gap-2">
               <p className="public-eyebrow text-secondary">{t.routeDetailEyebrow}</p>
-              <span className="rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold text-secondary">
+              <span className="type-meta rounded-full bg-secondary/10 px-3 py-1 text-secondary">
                 {getLocalized(selectedArticle.badge, language)}
               </span>
             </div>
@@ -87,13 +87,13 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             <h1 className="type-detail-title mt-3 max-w-4xl text-primary">
               {localizedTitle}
             </h1>
-            <p className="mt-5 max-w-3xl text-sm font-semibold leading-7 text-muted sm:text-base">
+            <p className="type-body mt-5 max-w-3xl text-muted">
               {getLocalized(selectedArticle.why, language)}
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <RatingDisplay rating={selectedArticle.rating} reviewCount={selectedArticle.reviewCount} size="md" />
-              <span className="text-sm font-semibold text-muted">{getLocalized(selectedArticle.reviewSource, language)}</span>
+              <span className="type-body-compact-strong text-muted">{getLocalized(selectedArticle.reviewSource, language)}</span>
             </div>
 
             <div className="mt-6 flex flex-wrap gap-2">
@@ -107,8 +107,8 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               <div className="mt-8 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden="true" />
                 <div>
-                  <p className="font-bold">{t.temporaryClosure}</p>
-                  {activeClosure.reason ? <p className="mt-1 text-sm leading-6">{activeClosure.reason}</p> : null}
+                  <p className="type-body-compact-strong">{t.temporaryClosure}</p>
+                  {activeClosure.reason ? <p className="type-body-compact mt-1">{activeClosure.reason}</p> : null}
                 </div>
               </div>
             ) : null}
@@ -130,7 +130,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               <h2 className="type-detail-section text-primary">{t.routeHighlights}</h2>
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 {localizeList(selectedArticle.highlights, language).map((highlight) => (
-                  <div key={highlight} className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-sm font-bold text-ink shadow-sm">
+                  <div key={highlight} className="type-body-compact-strong inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-ink shadow-sm">
                     <Sparkles className="h-4 w-4 text-secondary" />
                     {highlight}
                   </div>
@@ -145,17 +145,17 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                   <h2 className="type-detail-section mt-2 text-primary">
                     {getLocalized(packageOption.title, language) || localizedTitle}
                   </h2>
-                  <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-muted">
+                  <p className="type-body-compact mt-3 max-w-2xl text-muted">
                     {getLocalized(packageOption.description, language) || getLocalized(selectedArticle.intro, language)}
                   </p>
                 </div>
                 <div className="rounded-xl bg-secondary/10 px-4 py-3 text-right">
-                  <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.fromPrice}</p>
-                  <p className="font-display text-3xl font-normal leading-[1.08] text-primary">
+                  <p className="type-meta uppercase tracking-[0.04em] text-secondary">{t.fromPrice}</p>
+                  <p className="type-price text-primary">
                     {formatCurrency(packagePrice, priceCurrency)}
                   </p>
-                  <p className="text-xs font-semibold text-muted">{t.perPerson}</p>
-                  <p className="mt-1 text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
+                  <p className="type-meta text-muted">{t.perPerson}</p>
+                  <p className="type-meta mt-1 text-muted">{t.priceVariesByGroupSize}</p>
                 </div>
               </div>
               <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -172,7 +172,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                     <p className="public-eyebrow text-secondary">{t.addOns}</p>
                     <h2 className="type-detail-section mt-2 text-primary">{t.packageOptions}</h2>
                   </div>
-                  <p className="text-xs font-bold text-muted">{priceCurrency}</p>
+                  <p className="type-meta text-muted">{priceCurrency}</p>
                 </div>
                 <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {selectedArticle.addOns.map((addOn) => {
@@ -180,9 +180,9 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
 
                     return (
                       <div key={addOn.id} className="flex h-full flex-col rounded-xl border border-line bg-canvas p-5 shadow-sm">
-                        <p className="text-sm font-bold text-ink">{getLocalized(addOn.title, language)}</p>
-                        <p className="mt-2 text-sm leading-relaxed text-muted">{getLocalized(addOn.description, language)}</p>
-                        <p className="mt-auto pt-4 text-sm font-bold text-secondary">
+                        <p className="type-body-compact-strong text-ink">{getLocalized(addOn.title, language)}</p>
+                        <p className="type-body-compact mt-2 text-muted">{getLocalized(addOn.description, language)}</p>
+                        <p className="type-body-compact-strong mt-auto pt-4 text-secondary">
                           {formatCurrency(addOnPrice, priceCurrency)} {addOn.pricing === 'perPax' ? t.perPax : t.perBooking}
                         </p>
                       </div>
@@ -203,18 +203,18 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
 
             <section className="mt-8 grid gap-5 lg:grid-cols-2">
               <div className="rounded-xl border border-line bg-surface p-5 shadow-soft">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
+                <h3 className="type-ui-title flex items-center gap-2 text-ink">
                   <ShieldCheck className="h-4 w-4 text-secondary" /> {t.cancellationPolicy}
                 </h3>
-                <p className="mt-3 text-sm font-semibold leading-6 text-muted">
+                <p className="type-body-compact-strong mt-3 text-muted">
                   {getLocalized(selectedArticle.policies?.cancellation, language)}
                 </p>
               </div>
               <div className="rounded-xl border border-line bg-surface p-5 shadow-soft">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
+                <h3 className="type-ui-title flex items-center gap-2 text-ink">
                   <MessageCircle className="h-4 w-4 text-secondary" /> {t.confirmationPolicy}
                 </h3>
-                <p className="mt-3 text-sm font-semibold leading-6 text-muted">
+                <p className="type-body-compact-strong mt-3 text-muted">
                   {getLocalized(selectedArticle.policies?.confirmation, language)}
                 </p>
               </div>
@@ -225,7 +225,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="type-detail-section text-primary">{t.travelerProof}</h2>
-                    <p className="mt-2 text-sm font-semibold leading-6 text-muted">{t.verifiedNote}</p>
+                    <p className="type-body-compact-strong mt-2 text-muted">{t.verifiedNote}</p>
                   </div>
                   <div className="shrink-0 sm:pt-2">
                     <RatingDisplay rating={selectedArticle.rating} reviewCount={selectedArticle.reviewCount} />
@@ -235,12 +235,12 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                   {selectedArticle.testimonials.map((item) => (
                     <figure key={`${item.name}-${getLocalized(item.meta, language)}`} className="flex flex-col rounded-xl border border-line bg-canvas p-5 shadow-sm">
                       <RatingDisplay rating={5} className="mb-4" />
-                      <blockquote className="text-sm font-semibold leading-relaxed text-muted">
+                      <blockquote className="type-body-compact text-muted">
                         "{getLocalized(item.quote, language)}"
                       </blockquote>
-                      <figcaption className="mt-auto pt-4 text-sm font-bold text-ink">
+                      <figcaption className="type-body-compact-strong mt-auto pt-4 text-ink">
                         {item.name}
-                        <span className="mt-1 block text-xs font-bold text-secondary">{getLocalized(item.meta, language)}</span>
+                        <span className="type-meta mt-1 block text-secondary">{getLocalized(item.meta, language)}</span>
                       </figcaption>
                     </figure>
                   ))}
@@ -256,14 +256,14 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                 {getLocalized(packageOption.title, language) || localizedTitle}
               </h2>
               <div className="mt-5">
-                <p className="text-xs font-bold uppercase tracking-[0.04em] text-muted">{t.fromPrice}</p>
-                <p className="mt-1 font-display text-4xl font-normal leading-[1.08] text-primary">
+                <p className="type-meta uppercase tracking-[0.04em] text-muted">{t.fromPrice}</p>
+                <p className="type-price mt-1 text-primary">
                   {formatCurrency(packagePrice, priceCurrency)}
                 </p>
-                <p className="mt-1 text-sm font-semibold text-muted">{t.perPerson}</p>
-                <p className="mt-1 text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
+                <p className="type-body-compact-strong mt-1 text-muted">{t.perPerson}</p>
+                <p className="type-meta mt-1 text-muted">{t.priceVariesByGroupSize}</p>
               </div>
-              <div className="mt-5 grid gap-3 text-sm font-semibold text-muted">
+              <div className="type-body-compact-strong mt-5 grid gap-3 text-muted">
                 <div className="flex items-center justify-between gap-3">
                   <span className="inline-flex items-center gap-2"><Clock className="h-4 w-4 text-secondary" />{t.itinerary}</span>
                   <span className="text-ink">{localizeDuration(selectedArticle.duration, language)}</span>
@@ -293,11 +293,11 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 shadow-2xl backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-3">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.fromPrice}</p>
-            <p className="truncate text-lg font-bold text-ink">
-              {formatCurrency(packagePrice, priceCurrency)} <span className="text-xs text-muted">{t.perPerson}</span>
+            <p className="type-meta truncate uppercase tracking-[0.04em] text-secondary">{t.fromPrice}</p>
+            <p className="type-ui-title truncate text-ink">
+              {formatCurrency(packagePrice, priceCurrency)} <span className="type-meta text-muted">{t.perPerson}</span>
             </p>
-            <p className="truncate text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
+            <p className="type-meta truncate text-muted">{t.priceVariesByGroupSize}</p>
           </div>
           <a href={whatsappUrl} target="_blank" rel="noreferrer" className={primaryButtonClass}>
             <MessageCircle className={iconSize} /> {t.askRoute}

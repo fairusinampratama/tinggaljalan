@@ -35,8 +35,8 @@ function SectionHeading({ content, language, centered = false }) {
   return (
     <div className={`mb-6 max-w-3xl lg:mb-8 ${centered ? 'mx-auto text-center' : ''}`}>
       {getLocalized(content?.eyebrow, language) ? <p className="public-eyebrow text-secondary">{getLocalized(content.eyebrow, language)}</p> : null}
-      {getLocalized(content?.title, language) ? <h2 className="public-heading-section mt-3 text-primary">{getLocalized(content.title, language)}</h2> : null}
-      {getLocalized(content?.intro, language) ? <p className="public-copy mt-3">{getLocalized(content.intro, language)}</p> : null}
+      {getLocalized(content?.title, language) ? <h2 className="type-section-title mt-3 text-primary">{getLocalized(content.title, language)}</h2> : null}
+      {getLocalized(content?.intro, language) ? <p className="type-body mt-3">{getLocalized(content.intro, language)}</p> : null}
     </div>
   );
 }
@@ -80,7 +80,7 @@ function Portrait({ member, language, t, className }) {
 
   return (
     <div className={`${className} flex items-center justify-center bg-primary text-white`} role="img" aria-label={`${member.name} — ${t.aboutPortraitFallback}`}>
-      <span className="font-display text-5xl">{getInitials(member.name) || 'TJ'}</span>
+      <span className="type-initial">{getInitials(member.name) || 'TJ'}</span>
     </div>
   );
 }
@@ -88,17 +88,17 @@ function Portrait({ member, language, t, className }) {
 function MemberDetails({ member, language, t }) {
   return (
     <>
-      <h3 className="public-heading-card text-primary">{member.name}</h3>
-      <p className="mt-1 text-sm font-bold text-secondary">{getLocalized(member.role, language)}</p>
-      <p className="public-copy mt-3">{getLocalized(member.biography, language)}</p>
-      {member.location ? <p className="mt-4 flex items-center gap-2 text-xs font-semibold text-muted"><MapPin className="h-3.5 w-3.5 text-secondary" aria-hidden="true" />{member.location}</p> : null}
+      <h3 className="type-editorial-card text-primary">{member.name}</h3>
+      <p className="type-body-compact-strong mt-1 text-secondary">{getLocalized(member.role, language)}</p>
+      <p className="type-body mt-3">{getLocalized(member.biography, language)}</p>
+      {member.location ? <p className="type-meta mt-4 flex items-center gap-2 text-muted"><MapPin className="h-3.5 w-3.5 text-secondary" aria-hidden="true" />{member.location}</p> : null}
       {member.languages?.length ? (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {member.languages.map((item) => <span key={item} className="rounded-full bg-subtle px-2.5 py-1 text-[10px] font-bold text-muted">{localizedLanguageName(item, t)}</span>)}
+          {member.languages.map((item) => <span key={item} className="type-meta rounded-full bg-subtle px-2.5 py-1 text-muted">{localizedLanguageName(item, t)}</span>)}
         </div>
       ) : null}
       {member.profileUrl ? (
-        <a href={member.profileUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-secondary hover:text-primary">
+        <a href={member.profileUrl} target="_blank" rel="noreferrer" className="type-meta mt-4 inline-flex items-center gap-1.5 text-secondary hover:text-primary">
           <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />{t.aboutProfileLink}
         </a>
       ) : null}
@@ -166,8 +166,8 @@ export function AboutUsPage() {
           <div className="public-container grid lg:min-h-[620px] lg:grid-cols-[1.02fr_0.98fr]">
             <div className="order-2 flex flex-col justify-center px-4 py-10 sm:px-8 sm:py-12 lg:order-1 lg:px-10 lg:py-20">
               {getLocalized(hero.eyebrow, language) ? <p className="public-eyebrow text-accent">{getLocalized(hero.eyebrow, language)}</p> : null}
-              <h1 className="public-heading-hero mt-4 text-white">{getLocalized(hero.title, language)}</h1>
-              <p className="mt-5 max-w-2xl text-base font-medium leading-7 text-white/75 sm:mt-6 sm:text-lg sm:leading-8">{getLocalized(hero.intro, language)}</p>
+              <h1 className="type-detail-title mt-4 max-w-2xl text-white">{getLocalized(hero.title, language)}</h1>
+              <p className="type-body mt-5 max-w-2xl text-white/75 sm:mt-6">{getLocalized(hero.intro, language)}</p>
               {hero.facts?.length ? (
                 <div className="mt-7 divide-y divide-white/10 border-y border-white/10 lg:mt-9 lg:grid lg:grid-cols-3 lg:gap-3 lg:divide-y-0 lg:border-y-0">
                   {hero.facts.map((fact, index) => {
@@ -176,8 +176,8 @@ export function AboutUsPage() {
                       <div key={`${getLocalized(fact.label, language)}-${index}`} className="flex min-h-12 items-center gap-3 py-3 lg:block lg:rounded-xl lg:border lg:border-white/10 lg:bg-white/5 lg:p-4">
                         <Icon className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                         <div className="flex min-w-0 flex-1 items-center justify-between gap-3 lg:mt-3 lg:block">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/50 lg:text-[11px]">{getLocalized(fact.label, language)}</p>
-                          <p className="max-w-[58%] break-words text-right text-sm font-bold text-white lg:mt-1 lg:max-w-none lg:text-left">{getLocalized(fact.value, language)}</p>
+                          <p className="public-eyebrow text-white/50">{getLocalized(fact.label, language)}</p>
+                          <p className="type-body-compact-strong max-w-[58%] break-words text-right text-white lg:mt-1 lg:max-w-none lg:text-left">{getLocalized(fact.value, language)}</p>
                         </div>
                       </div>
                     );
@@ -211,7 +211,7 @@ export function AboutUsPage() {
                   if (!members.length) return null;
                   return (
                     <section key={category} aria-labelledby={`team-${category}`}>
-                      <h3 id={`team-${category}`} className="mb-4 text-sm font-bold uppercase tracking-[0.08em] text-secondary">{getLocalized(teamSection.category_labels?.[category], language)}</h3>
+                      <h3 id={`team-${category}`} className="public-eyebrow mb-4 text-secondary">{getLocalized(teamSection.category_labels?.[category], language)}</h3>
                       <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:-mx-8 sm:px-8 md:mx-0 md:grid md:grid-cols-2 md:gap-5 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3" role="region" aria-label={getLocalized(teamSection.category_labels?.[category], language)} tabIndex={members.length > 1 ? 0 : undefined}>{members.map((member) => <TeamCard key={member.id} member={member} language={language} t={t} />)}</div>
                     </section>
                   );
@@ -223,14 +223,14 @@ export function AboutUsPage() {
                     <div>
                       <p className="public-eyebrow text-accent">{getLocalized(teamSection.category_labels?.field, language)}</p>
                       <h3 id="partner-network-title" className="type-detail-section mt-3">{t.aboutPartnerNetwork}</h3>
-                      <p className="mt-3 text-sm font-medium leading-7 text-white/65">{t.aboutPartnerNetworkText}</p>
+                      <p className="type-body-compact mt-3 text-white/65">{t.aboutPartnerNetworkText}</p>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {fieldPartners.map((member) => (
                         <article key={member.id} className="rounded-xl border border-white/10 bg-white/5 p-4 lg:p-5">
                           <h4 className="type-editorial-card text-white">{member.name}</h4>
-                          <p className="mt-1 text-sm font-bold text-accent">{getLocalized(member.role, language)}</p>
-                          <p className="mt-3 text-sm font-medium leading-6 text-white/65">{getLocalized(member.biography, language)}</p>
+                          <p className="type-body-compact-strong mt-1 text-accent">{getLocalized(member.role, language)}</p>
+                          <p className="type-body-compact mt-3 text-white/65">{getLocalized(member.biography, language)}</p>
                         </article>
                       ))}
                     </div>
@@ -247,12 +247,12 @@ export function AboutUsPage() {
               {story.image ? <ResponsiveImage src={story.image} alt={getLocalized(story.image_alt, language)} className="aspect-[16/10] w-full rounded-2xl object-cover shadow-soft lg:aspect-[3/2]" sizes="(min-width: 1024px) 45vw, 100vw" width={1200} height={800} /> : null}
               <div className={story.image ? '' : 'max-w-4xl'}>
                 <p className="public-eyebrow text-secondary">{getLocalized(story.eyebrow, language)}</p>
-                <h2 className="public-heading-section mt-3 text-primary">{getLocalized(story.title, language)}</h2>
-                <div className="mt-4 whitespace-pre-line text-sm font-medium leading-7 text-muted sm:text-base sm:leading-8 lg:mt-5">{getLocalized(story.body, language)}</div>
+                <h2 className="type-section-title mt-3 text-primary">{getLocalized(story.title, language)}</h2>
+                <div className="type-body mt-4 whitespace-pre-line text-muted lg:mt-5">{getLocalized(story.body, language)}</div>
                 {getLocalized(story.quote, language) ? (
                   <figure className="mt-6 rounded-r-xl border-l-2 border-accent bg-subtle px-4 py-4 lg:mt-7 lg:px-5 lg:py-5">
-                    <blockquote className="font-display text-xl leading-snug text-primary lg:text-2xl">“{getLocalized(story.quote, language)}”</blockquote>
-                    {story.quote_author ? <figcaption className="mt-3 text-xs font-bold uppercase tracking-[0.08em] text-muted">— {story.quote_author}</figcaption> : null}
+                    <blockquote className="type-quotation text-primary">“{getLocalized(story.quote, language)}”</blockquote>
+                    {story.quote_author ? <figcaption className="public-eyebrow mt-3 text-muted">— {story.quote_author}</figcaption> : null}
                   </figure>
                 ) : null}
               </div>
@@ -265,8 +265,8 @@ export function AboutUsPage() {
             <div className="public-container">
               <div className="mb-7 max-w-3xl lg:mb-9">
                 <p className="public-eyebrow text-accent">{getLocalized(workflow.eyebrow, language)}</p>
-                <h2 className="public-heading-section mt-3 text-white">{getLocalized(workflow.title, language)}</h2>
-                <p className="mt-3 text-sm font-medium leading-7 text-white/65">{getLocalized(workflow.intro, language)}</p>
+                <h2 className="type-section-title mt-3 text-white">{getLocalized(workflow.title, language)}</h2>
+                <p className="type-body-compact mt-3 text-white/65">{getLocalized(workflow.intro, language)}</p>
               </div>
               <ol className="relative grid gap-0 lg:grid-cols-5 lg:gap-3 lg:pt-12">
                 <span aria-hidden="true" className="absolute left-[10%] right-[10%] top-6 hidden h-px bg-white/20 lg:block" />
@@ -284,9 +284,9 @@ export function AboutUsPage() {
                         <Icon className="h-5 w-5" />
                       </span>
                       <div className="min-w-0 pb-2 lg:pb-0">
-                        <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/35 lg:text-xs">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="public-eyebrow text-white/35">{String(index + 1).padStart(2, '0')}</span>
                         <h3 className="type-editorial-card mt-1 text-white lg:mt-4">{getLocalized(step.title, language)}</h3>
-                        <p className="mt-2 text-sm font-medium leading-6 text-white/60 lg:mt-3">{getLocalized(step.text, language)}</p>
+                        <p className="type-body-compact mt-2 text-white/60 lg:mt-3">{getLocalized(step.text, language)}</p>
                       </div>
                     </li>
                   );
@@ -309,11 +309,11 @@ export function AboutUsPage() {
                       <article className="rounded-xl border border-line bg-surface p-4 lg:p-5">
                         {milestone.image ? <ResponsiveImage src={milestone.image} alt={getLocalized(milestone.imageAlt, language)} className="mb-4 aspect-video w-full rounded-lg object-cover lg:mb-5 lg:aspect-[3/2]" sizes="(min-width: 1024px) 25vw, 100vw" width={900} height={600} /> : null}
                         <div className="flex items-center justify-between gap-4">
-                          <span className="font-display text-2xl text-secondary">{getLocalized(milestone.period, language)}</span>
-                          <span className="text-xs font-bold text-accent">{String(index + 1).padStart(2, '0')}</span>
+                          <span className="type-decorative-value text-secondary">{getLocalized(milestone.period, language)}</span>
+                          <span className="type-meta text-accent">{String(index + 1).padStart(2, '0')}</span>
                         </div>
-                        <h3 className="public-heading-card mt-3 text-primary lg:mt-4">{getLocalized(milestone.title, language)}</h3>
-                        <p className="public-copy mt-2 lg:mt-3">{getLocalized(milestone.description, language)}</p>
+                        <h3 className="type-editorial-card mt-3 text-primary lg:mt-4">{getLocalized(milestone.title, language)}</h3>
+                        <p className="type-body mt-2 lg:mt-3">{getLocalized(milestone.description, language)}</p>
                       </article>
                     </li>
                   ))}
@@ -334,8 +334,8 @@ export function AboutUsPage() {
                     <article key={`${getLocalized(item.title, language)}-${index}`} className="grid grid-cols-[2.5rem_1fr] gap-4 rounded-xl border border-line bg-white p-4 md:block md:p-5">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/10 text-secondary"><Icon className="h-5 w-5" aria-hidden="true" /></div>
                       <div>
-                        <h3 className="public-heading-card text-primary md:mt-4">{getLocalized(item.title, language)}</h3>
-                        <p className="public-copy mt-2 md:mt-3">{getLocalized(item.text, language)}</p>
+                        <h3 className="type-editorial-card text-primary md:mt-4">{getLocalized(item.title, language)}</h3>
+                        <p className="type-body mt-2 md:mt-3">{getLocalized(item.text, language)}</p>
                       </div>
                     </article>
                   );
@@ -352,7 +352,7 @@ export function AboutUsPage() {
                 <div className="lg:sticky lg:top-28">
                   <SectionHeading content={profile} language={language} />
                   {getLocalized(profile.operating_description, language) ? (
-                    <p className="public-copy max-w-xl border-l-2 border-accent pl-4">{getLocalized(profile.operating_description, language)}</p>
+                    <p className="type-body max-w-xl border-l-2 border-accent pl-4">{getLocalized(profile.operating_description, language)}</p>
                   ) : null}
                 </div>
                 <div className="overflow-hidden rounded-2xl border border-line bg-surface">
@@ -360,8 +360,8 @@ export function AboutUsPage() {
                     <dl className="divide-y divide-line">
                       {profileFacts.map((fact) => (
                         <div key={fact.label} className="grid gap-1 px-5 py-4 sm:grid-cols-[10rem_1fr] sm:gap-5 sm:px-6">
-                          <dt className="text-xs font-bold uppercase tracking-[0.07em] text-muted">{fact.label}</dt>
-                          <dd className="break-words text-sm font-bold leading-6 text-primary">{fact.value}</dd>
+                          <dt className="type-meta uppercase tracking-[0.07em] text-muted">{fact.label}</dt>
+                          <dd className="type-body-compact-strong break-words text-primary">{fact.value}</dd>
                         </div>
                       ))}
                     </dl>
@@ -377,10 +377,10 @@ export function AboutUsPage() {
                   ) : null}
                   {platformLinks.length ? (
                     <div className="border-t border-line px-5 py-5 sm:px-6">
-                      <p className="text-xs font-bold uppercase tracking-[0.07em] text-muted">{t.aboutAvailableOn}</p>
+                      <p className="type-meta uppercase tracking-[0.07em] text-muted">{t.aboutAvailableOn}</p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {platformLinks.map((link) => (
-                          <a key={link.name} href={link.url} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-sm font-bold text-primary transition hover:border-secondary hover:text-secondary">
+                          <a key={link.name} href={link.url} target="_blank" rel="noreferrer" className="type-button-compact inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-white px-4 py-2 text-primary transition hover:border-secondary hover:text-secondary">
                             {link.logo ? <img src={link.logo} alt="" className="h-5 w-5 object-contain" loading="lazy" width="20" height="20" /> : null}
                             {link.name}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                           </a>
@@ -398,7 +398,7 @@ export function AboutUsPage() {
           <section className="public-section bg-subtle">
             <div className="public-container rounded-2xl bg-primary px-5 py-9 text-center text-white shadow-soft sm:px-10 sm:py-14">
               <h2 className="type-statement mx-auto max-w-3xl">{getLocalized(cta.title, language)}</h2>
-              <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/65">{getLocalized(cta.text, language)}</p>
+              <p className="type-body-compact mx-auto mt-4 max-w-2xl text-white/65">{getLocalized(cta.text, language)}</p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:mt-7 sm:flex-row">
                 <SmartLink href={cta.primary_url} className={`${secondaryButtonClass} w-full sm:w-auto`}><Compass className="h-4 w-4" aria-hidden="true" />{getLocalized(cta.primary_label, language)}</SmartLink>
                 <SmartLink href={secondaryUrl} className={`${whatsappButtonClass} w-full sm:w-auto`}><MessageCircle className="h-4 w-4" aria-hidden="true" />{getLocalized(cta.secondary_label, language)}</SmartLink>

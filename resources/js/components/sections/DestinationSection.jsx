@@ -52,10 +52,10 @@ export function DestinationSection({ items }) {
                 />
               </div>
               <div className="flex min-w-0 flex-1 flex-col p-5">
-                <p className="truncate text-xs font-bold uppercase tracking-[0.04em] text-secondary">{item.region}</p>
-                <h3 className="public-heading-card mt-2 line-clamp-2 transition duration-300 group-hover:text-secondary sm:min-h-16">{item.name}</h3>
-                <p className="public-copy mt-3 line-clamp-5 sm:min-h-[7.5rem]">{getLocalized(item.copy, language)}</p>
-                <div className="mt-auto flex items-center justify-end gap-2 pt-5 text-sm font-bold text-secondary">
+                <p className="type-meta truncate uppercase tracking-[0.04em] text-secondary">{item.region}</p>
+                <h3 className="type-editorial-card mt-2 line-clamp-2 transition duration-300 group-hover:text-secondary sm:min-h-16">{item.name}</h3>
+                <p className="type-body mt-3 line-clamp-5 sm:min-h-[7.5rem]">{getLocalized(item.copy, language)}</p>
+                <div className="type-button-compact mt-auto flex items-center justify-end gap-2 pt-5 text-secondary">
                   <span>{t.viewRoutes}</span>
                   <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </div>

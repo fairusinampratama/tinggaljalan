@@ -100,8 +100,8 @@ export function RoutesPage() {
       <PageShell eyebrow={t.packagesAndRoutes} title={title}>
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_320px] lg:items-end">
         <div>
-          <p className="max-w-3xl text-base font-semibold leading-7 text-muted">{intro}</p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-sm font-bold text-ink">
+          <p className="type-body max-w-3xl">{intro}</p>
+          <div className="type-body-compact-strong mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-ink">
             <Sparkles className="h-4 w-4 text-secondary" />
             {summaryText}
           </div>
@@ -113,7 +113,7 @@ export function RoutesPage() {
             value={searchTerm}
             onChange={(event) => updateQuery({ search: event.target.value })}
             placeholder={t.searchPackagesPlaceholder}
-            className="min-h-12 w-full rounded-xl border border-line bg-surface py-3 pl-11 pr-4 text-sm font-bold outline-none transition hover:border-secondary/40 focus:border-secondary"
+            className="type-control min-h-12 w-full rounded-xl border border-line bg-surface py-3 pl-11 pr-4 outline-none transition hover:border-secondary/40 focus:border-secondary"
           />
         </label>
       </div>
@@ -127,7 +127,7 @@ export function RoutesPage() {
               <button
                 key={destination.value}
                 type="button"
-                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                className={`type-button-compact inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
                   isActive
                     ? 'border-secondary bg-secondary text-white shadow-soft'
                     : 'border-line bg-surface text-ink hover:border-secondary hover:bg-subtle hover:text-secondary'
@@ -150,7 +150,7 @@ export function RoutesPage() {
             <button
               key={style.value}
               type="button"
-              className={`min-h-10 rounded-full border px-4 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+              className={`type-button-compact min-h-10 rounded-full border px-4 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
                 isActive
                   ? 'border-secondary bg-secondary text-white shadow-soft'
                   : 'border-line bg-canvas text-ink hover:border-secondary hover:bg-surface hover:text-secondary'
@@ -164,7 +164,7 @@ export function RoutesPage() {
         {hasActiveFilters ? (
           <button
             type="button"
-            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-bold text-ink transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary hover:border-secondary hover:bg-subtle hover:text-secondary"
+            className="type-button-compact inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-ink transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary hover:border-secondary hover:bg-subtle hover:text-secondary"
             onClick={clearFilters}
           >
             <X className="h-4 w-4" />
@@ -187,14 +187,14 @@ export function RoutesPage() {
         </>
       ) : (
         <div className="rounded-xl border border-line bg-canvas p-8 text-center">
-          <p className="text-2xl font-bold text-ink">{t.emptyPackagesTitle}</p>
-          <p className="mx-auto mt-2 max-w-xl text-sm font-semibold leading-6 text-muted">
+          <p className="type-ui-title text-ink">{t.emptyPackagesTitle}</p>
+          <p className="type-body-compact mx-auto mt-2 max-w-xl text-muted">
             {t.emptyPackagesText}
           </p>
         </div>
       )}
 
-      <p className="mt-8 text-center text-xs font-bold text-muted">
+      <p className="type-meta mt-8 text-center text-muted">
         {totalRoutes} {t.packageCount}. {t.routePriceNote}
       </p>
       </PageShell>

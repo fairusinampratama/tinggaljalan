@@ -59,15 +59,15 @@ export function ConsentBanner({ t }) {
         </span>
         <div className="min-w-0 flex-1 lg:flex lg:items-center lg:gap-6">
           <div className="min-w-0 flex-1">
-            <h2 id="cookie-consent-title" className="font-display text-lg font-medium leading-7">{t.cookieConsentTitle ?? 'Your privacy choices'}</h2>
-            <p id="cookie-consent-description" className="mt-1 text-sm font-medium leading-6 text-muted">
+            <h2 id="cookie-consent-title" className="type-editorial-card">{t.cookieConsentTitle ?? 'Your privacy choices'}</h2>
+            <p id="cookie-consent-description" className="type-body-compact mt-1 text-muted">
               {t.cookieConsentText ?? 'We use optional advertising cookies to understand which campaigns help travelers find us.'}{' '}
-              <a href="/privacy-policy" className="inline-flex items-center gap-1 font-bold text-secondary underline decoration-secondary/40 underline-offset-2 hover:text-primary">
+              <a href="/privacy-policy" className="type-body-compact-strong inline-flex items-center gap-1 text-secondary underline decoration-secondary/40 underline-offset-2 hover:text-primary">
                 {t.cookieConsentLearnMore ?? 'Learn more'} <ExternalLink className="h-3 w-3" aria-hidden="true" />
               </a>
             </p>
             {status !== 'unknown' ? (
-              <p className="mt-1 text-xs font-bold text-muted" role="status" data-testid="consent-status">
+              <p className="type-meta mt-1 text-muted" role="status" data-testid="consent-status">
                 {(t.cookieConsentCurrentStatus ?? 'Current choice: {status}').replace('{status}', statusLabel)}
               </p>
             ) : null}

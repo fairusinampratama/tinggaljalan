@@ -24,16 +24,16 @@ export function PrivacyPolicyPage() {
         <header className="border-b border-line bg-primary text-white">
           <div className="public-container px-4 py-12 sm:px-8 sm:py-16 lg:px-10 lg:py-20">
             <p className="public-eyebrow text-accent">{t.privacyEyebrow}</p>
-            <h1 className="public-heading-hero mt-3 max-w-4xl text-white">{t.privacyTitle}</h1>
-            <p className="mt-5 max-w-3xl text-base font-medium leading-7 text-white/75 sm:text-lg sm:leading-8">{t.privacyIntro}</p>
-            <p className="mt-5 text-xs font-bold uppercase tracking-[0.08em] text-white/50">{t.privacyLastUpdated}</p>
+            <h1 className="type-detail-title mt-3 max-w-4xl text-white">{t.privacyTitle}</h1>
+            <p className="type-body mt-5 max-w-3xl text-white/75">{t.privacyIntro}</p>
+            <p className="type-meta mt-5 uppercase tracking-[0.08em] text-white/50">{t.privacyLastUpdated}</p>
           </div>
         </header>
 
         <div className="public-container px-4 py-10 sm:px-8 sm:py-14 lg:px-10 lg:py-16">
           <section className="rounded-2xl border border-secondary/25 bg-subtle p-5 sm:p-7" aria-labelledby="privacy-summary-title">
-            <h2 id="privacy-summary-title" className="public-heading-card text-primary">{t.privacySummaryTitle}</h2>
-            <p className="public-copy mt-3 max-w-4xl">{t.privacySummaryText}</p>
+            <h2 id="privacy-summary-title" className="type-editorial-card text-primary">{t.privacySummaryTitle}</h2>
+            <p className="type-body mt-3 max-w-4xl">{t.privacySummaryText}</p>
           </section>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:mt-10 lg:gap-6">
@@ -42,8 +42,8 @@ export function PrivacyPolicyPage() {
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-subtle text-secondary" aria-hidden="true">
                   <Icon className="h-5 w-5" />
                 </span>
-                <h2 className="public-heading-card mt-5 text-primary">{title}</h2>
-                <p className="public-copy mt-3">{text}</p>
+                <h2 className="type-editorial-card mt-5 text-primary">{title}</h2>
+                <p className="type-body mt-3">{text}</p>
               </section>
             ))}
           </div>

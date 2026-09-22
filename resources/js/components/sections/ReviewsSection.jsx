@@ -22,11 +22,11 @@ export function ReviewsSection({ items }) {
           {reviews.map((review) => (
             <article key={review.name} className={`rounded-xl border border-line bg-surface p-6 shadow-soft ${cardHoverClass}`}>
               <RatingDisplay rating={review.rating} reviewCount={review.reviewCount} className="mb-4" />
-              <p className="min-h-24 text-sm font-semibold leading-7 text-muted">"{getLocalized(review.text, language)}"</p>
-              <p className="mt-5 text-lg font-bold text-ink">
+              <p className="type-body-compact min-h-24 text-muted">"{getLocalized(review.text, language)}"</p>
+              <p className="type-ui-title mt-5 text-ink">
                 {review.name}, {getLocalized(review.origin, language)}
               </p>
-              <p className="mt-1 text-xs font-bold text-muted">{getLocalized(review.source, language)}</p>
+              <p className="type-meta mt-1 text-muted">{getLocalized(review.source, language)}</p>
             </article>
           ))}
         </div>

@@ -1,6 +1,9 @@
 export const buttonClass =
   'type-button inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:min-h-11 sm:px-5 sm:py-2.5';
 
+export const compactButtonClass =
+  'type-button-compact inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+
 export const primaryButtonClass = `${buttonClass} bg-primary text-white shadow-soft hover:bg-secondary hover:shadow-lg`;
 
 export const darkButtonClass = `${buttonClass} bg-primary text-white shadow-soft hover:bg-secondary hover:shadow-lg`;

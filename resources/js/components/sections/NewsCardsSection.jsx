@@ -38,7 +38,7 @@ function MetaRow({ article, language, reserveSpace = false }) {
   const category = publicData.categories?.find((item) => item.value === article.category);
 
   return (
-    <div className={`flex min-w-0 flex-wrap content-start items-center gap-2 overflow-hidden text-xs font-bold text-muted ${reserveSpace ? 'sm:h-[3.25rem]' : ''}`}>
+    <div className={`type-meta flex min-w-0 flex-wrap content-start items-center gap-2 overflow-hidden text-muted ${reserveSpace ? 'sm:h-[3.25rem]' : ''}`}>
       <span className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-full bg-secondary/10 px-3 py-1 text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white">
         <Newspaper className="h-3.5 w-3.5 shrink-0" />
         <span className="truncate">{getLocalized(category?.label, language)}</span>
@@ -71,7 +71,7 @@ function RelatedRouteChip({ article, language, compact = false }) {
   return (
     <Link
       to={`/routes/${route.id}`}
-      className={`inline-flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:border-secondary hover:bg-subtle hover:text-secondary ${compact ? 'max-w-full' : ''
+      className={`type-meta inline-flex min-w-0 items-center gap-2 rounded-full border border-line bg-surface px-3 py-1.5 text-ink transition hover:border-secondary hover:bg-subtle hover:text-secondary ${compact ? 'max-w-full' : ''
         }`}
       onClick={(event) => event.stopPropagation()}
     >
@@ -100,10 +100,10 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
       ? 'line-clamp-2 sm:min-h-[3.3rem]'
       : 'line-clamp-2 md:min-h-[3.3rem]';
   const excerptClass = isFeatured
-    ? 'mt-4 line-clamp-3 text-sm leading-6'
+    ? 'mt-4 line-clamp-3'
     : usesCompactSlots
-      ? 'mt-2 line-clamp-3 text-xs leading-5 sm:min-h-[3.75rem]'
-      : 'mt-4 line-clamp-3 text-sm leading-6 md:min-h-[4.5rem]';
+      ? 'mt-2 line-clamp-3 sm:min-h-[3.9375rem]'
+      : 'mt-4 line-clamp-3 md:min-h-[3.9375rem]';
   const tagRowClass = isFeatured
     ? 'mt-4 flex max-h-16 min-h-8 flex-wrap items-start gap-2 overflow-hidden'
     : usesCompactSlots
@@ -145,7 +145,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
         <h3 className={`type-editorial-card mt-4 text-primary transition duration-300 group-hover:text-secondary group-focus-within:text-secondary ${titleClass}`}>
           {getLocalized(article.title, language)}
         </h3>
-        <p className={`${excerptClass} font-medium text-muted`}>
+        <p className={`${excerptClass} type-body-compact text-muted`}>
           {getLocalized(article.excerpt, language)}
         </p>
         <div className={tagRowClass}>
@@ -157,7 +157,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
             }
 
             return (
-              <span key={getTagKey(tag, language, index)} className="max-w-full truncate rounded-full border border-line bg-subtle px-3 py-1 text-xs font-bold text-muted">
+              <span key={getTagKey(tag, language, index)} className="type-meta max-w-full truncate rounded-full border border-line bg-subtle px-3 py-1 text-muted">
                 {label}
               </span>
             );
@@ -165,7 +165,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
           <RelatedRouteChip article={article} language={language} compact={isCompact || isHorizontal} />
         </div>
         <div className="mt-auto flex pt-5">
-          <div className="ml-auto inline-flex shrink-0 items-center gap-2 text-sm font-bold text-secondary transition">
+          <div className="type-button-compact ml-auto inline-flex shrink-0 items-center gap-2 text-secondary transition">
             {t.newsReadArticle} <ChevronRight className={iconSize} />
           </div>
         </div>
@@ -230,7 +230,7 @@ export function NewsFilterBar({
           <h2 className="type-editorial-card mt-1 text-primary">
             {t.newsFilterTitle}
           </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-muted">
+          <p className="type-body-compact-strong mt-2 text-muted">
             {resultCount} / {totalCount} {t.newsArticlesShown}
           </p>
         </div>
@@ -241,7 +241,7 @@ export function NewsFilterBar({
             value={searchTerm}
             onChange={(event) => onUpdate({ search: event.target.value })}
             placeholder={t.newsSearchPlaceholder}
-            className="min-h-12 w-full rounded-xl border border-line bg-canvas py-3 pl-11 pr-4 text-sm font-bold text-ink outline-none transition hover:border-secondary/40 focus:border-secondary focus:bg-surface"
+            className="type-control min-h-12 w-full rounded-xl border border-line bg-canvas py-3 pl-11 pr-4 text-ink outline-none transition hover:border-secondary/40 focus:border-secondary focus:bg-surface"
           />
         </label>
       </div>
@@ -255,7 +255,7 @@ export function NewsFilterBar({
               <button
                 key={category.value}
                 type="button"
-                className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-bold transition ${isActive
+                className={`type-button-compact inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 transition ${isActive
                     ? 'border-secondary bg-secondary text-white'
                     : 'border-line bg-surface text-ink hover:border-secondary hover:bg-subtle hover:text-secondary'
                   }`}
@@ -275,7 +275,7 @@ export function NewsFilterBar({
               <button
                 key={destination.value}
                 type="button"
-                className={`min-h-10 rounded-full border px-4 text-sm font-bold transition ${isActive
+                className={`type-button-compact min-h-10 rounded-full border px-4 transition ${isActive
                     ? 'border-secondary bg-secondary text-white'
                     : 'border-line bg-surface text-ink hover:border-secondary hover:bg-subtle hover:text-secondary'
                   }`}
@@ -288,7 +288,7 @@ export function NewsFilterBar({
           {hasActiveFilters ? (
             <button
               type="button"
-              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-sm font-bold text-ink transition hover:border-secondary hover:bg-subtle hover:text-secondary"
+              className="type-button-compact inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-surface px-4 text-ink transition hover:border-secondary hover:bg-subtle hover:text-secondary"
               onClick={onReset}
             >
               <X className="h-4 w-4" />
@@ -312,7 +312,7 @@ export function NewsCtaBand({ language = 'id', whatsappUrl }) {
         <h2 className="type-section-title mt-2">
           {t.newsCtaHeading}
         </h2>
-        <p className="mt-3 text-sm font-medium leading-6 text-white/70">
+        <p className="type-body-compact mt-3 text-white/70">
           {t.newsNeedAdviceText}
         </p>
       </div>

@@ -33,10 +33,10 @@ export function TrustStripSection({ items }) {
                   <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="font-display text-[1.35rem] font-medium leading-none tracking-normal text-ink sm:text-2xl">
+                  <p className="type-decorative-value text-ink">
                     {getLocalized(value, language)}
                   </p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-muted sm:text-[13px]">{getLocalized(title, language)}</p>
+                  <p className="type-meta mt-1 text-muted">{getLocalized(title, language)}</p>
                 </div>
               </article>
             );

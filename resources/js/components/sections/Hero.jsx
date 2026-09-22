@@ -73,7 +73,7 @@ function HeroSlideContent({ slide, language }) {
         </h2>
       ) : null}
       {descriptionText ? (
-        <p className="mt-3 line-clamp-2 text-pretty text-sm font-semibold leading-relaxed text-white/90 sm:mt-4 sm:line-clamp-3 sm:text-[17px]">
+        <p className="type-body mt-3 line-clamp-2 text-pretty text-white/90 sm:mt-4 sm:line-clamp-3">
           {descriptionText}
         </p>
       ) : null}
@@ -210,7 +210,7 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
       <div className="relative z-30 mx-auto -mt-7 max-w-6xl px-4 pb-12 sm:-mt-12 sm:px-8 sm:pb-16 lg:px-10">
         <div className="rounded-xl border border-line/80 bg-surface/95 p-5 shadow-xl shadow-black/5 backdrop-blur sm:p-6">
           <p className="type-editorial-card text-primary">{t.searchTitle}</p>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">{t.findTripText}</p>
+          <p className="type-body-compact mt-1 max-w-2xl text-muted">{t.findTripText}</p>
           <div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
             <Dropdown
               label={t.destinationFilterLabel}

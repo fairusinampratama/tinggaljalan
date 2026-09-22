@@ -18,7 +18,7 @@ export function Pagination({ links }) {
           return (
             <span
               key={index}
-              className="px-4 py-2 text-sm font-medium text-muted/50 rounded-xl bg-surface border border-transparent"
+              className="type-button-compact rounded-xl border border-transparent bg-surface px-4 py-2 text-muted/50"
               dangerouslySetInnerHTML={{ __html: label }}
             />
           );
@@ -28,7 +28,7 @@ export function Pagination({ links }) {
           <Link
             key={index}
             href={link.url}
-            className={`px-4 py-2 text-sm font-medium rounded-xl transition duration-300 ${
+            className={`type-button-compact rounded-xl px-4 py-2 transition duration-300 ${
               isActive
                 ? 'bg-secondary text-white shadow-sm'
                 : 'bg-surface border border-line text-ink hover:border-secondary hover:text-secondary'

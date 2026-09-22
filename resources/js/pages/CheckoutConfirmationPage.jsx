@@ -27,14 +27,14 @@ export function CheckoutConfirmationPage() {
       <CheckoutSteps current={2} />
       <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
         <section className="min-w-0">
-          <h2 className="text-3xl font-bold text-ink">{t.waitingConfirmation}</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted">
+          <h2 className="type-detail-section text-ink">{t.waitingConfirmation}</h2>
+          <p className="type-body-compact mt-3 text-muted">
             {t.requestSentText}
           </p>
           <div className="mt-6 rounded-2xl border border-line bg-surface p-5 sm:p-6">
-            <p className="text-sm font-bold text-ink">{t.bookingCode}</p>
-            <p className="mt-1 text-2xl font-bold text-secondary sm:text-3xl">{savedBookingCode}</p>
-            <div className="mt-6 text-sm leading-relaxed text-muted">
+            <p className="type-label text-ink">{t.bookingCode}</p>
+            <p className="type-price mt-1 text-secondary">{savedBookingCode}</p>
+            <div className="type-body-compact mt-6 text-muted">
               <p>
                 {t.paymentAfterConfirmation}: {bookingSummary.paymentGateway}. {bookingSummary.paymentNote || t.paymentDeferredNote}
               </p>

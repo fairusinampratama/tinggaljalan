@@ -40,7 +40,7 @@ export function Navbar({ language, setLanguage, t }) {
               <button
                 key={item.id}
                 type="button"
-                className={`rounded-full px-3 py-1.5 text-[13px] font-medium transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                className={`type-language rounded-full px-3 py-1.5 transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
                   language === item.id ? 'bg-secondary text-white shadow-sm shadow-secondary/20' : 'text-muted hover:bg-subtle hover:text-ink'
                 }`}
                 onClick={() => setLanguage(item.id)}
@@ -74,7 +74,7 @@ export function Navbar({ language, setLanguage, t }) {
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex-1 rounded-full px-3 py-2 text-[13px] font-medium transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${language === item.id ? 'bg-secondary text-white shadow-sm shadow-secondary/20' : 'text-muted hover:bg-subtle hover:text-ink'}`}
+                  className={`type-language flex-1 rounded-full px-3 py-2 transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${language === item.id ? 'bg-secondary text-white shadow-sm shadow-secondary/20' : 'text-muted hover:bg-subtle hover:text-ink'}`}
                   onClick={() => setLanguage(item.id)}
                 >
                   {item.label}

@@ -36,8 +36,8 @@ export function SocialProofSection({ benefits, reviews: reviewItems }) {
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary/10 text-secondary">
                       <Icon className="h-4 w-4" aria-hidden="true" />
                     </div>
-                    <h3 className="public-heading-card mt-4">{getLocalized(title, language)}</h3>
-                    <p className="public-copy mt-2">{getLocalized(text, language)}</p>
+                    <h3 className="type-editorial-card mt-4">{getLocalized(title, language)}</h3>
+                    <p className="type-body mt-2">{getLocalized(text, language)}</p>
                   </article>
                 );
               })}
@@ -50,17 +50,17 @@ export function SocialProofSection({ benefits, reviews: reviewItems }) {
             <div className="mx-auto mb-7 max-w-2xl text-center sm:mb-9">
               <p className="public-eyebrow">{t.reviewsEyebrow}</p>
               <h2 className="type-review-title mt-3">{t.reviewsTitle}</h2>
-              <p className="public-copy mx-auto mt-3 max-w-xl">{t.reviewsText}</p>
+              <p className="type-body mx-auto mt-3 max-w-xl">{t.reviewsText}</p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
               {reviews.map((review) => (
                 <article key={review.name} className="min-w-0 rounded-xl border border-line bg-white p-5 sm:p-6">
                   <RatingDisplay rating={review.rating} reviewCount={review.reviewCount} className="mb-4" />
-                  <blockquote className="public-copy">“{getLocalized(review.text, language)}”</blockquote>
-                  <p className="mt-5 break-words font-semibold text-ink">
+                  <blockquote className="type-body">“{getLocalized(review.text, language)}”</blockquote>
+                  <p className="type-body-compact-strong mt-5 break-words text-ink">
                     {review.name}, {getLocalized(review.origin, language)}
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-muted">{getLocalized(review.source, language)}</p>
+                  <p className="type-meta mt-1 text-muted">{getLocalized(review.source, language)}</p>
                 </article>
               ))}
             </div>

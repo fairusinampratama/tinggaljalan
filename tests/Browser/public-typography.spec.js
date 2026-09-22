@@ -21,6 +21,7 @@ async function computedTypography(locator) {
       weight: styles.fontWeight,
       lineHeight: styles.lineHeight,
       letterSpacing: styles.letterSpacing,
+      textWrap: styles.textWrap,
     };
   });
 }
@@ -32,6 +33,17 @@ async function expectNoHorizontalOverflow(page) {
   }));
 
   expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth + 1);
+}
+
+async function expectInteractiveTypographyContained(page) {
+  const overflowing = await page.locator('.type-button, .type-button-compact, .type-control').evaluateAll((elements) =>
+    elements
+      .filter((element) => element.getBoundingClientRect().width > 0)
+      .filter((element) => element.scrollWidth > element.clientWidth + 1)
+      .map((element) => element.textContent?.trim()).filter(Boolean)
+  );
+
+  expect(overflowing).toEqual([]);
 }
 
 test('public pages use locally hosted Inter and Fraunces', async ({ page }) => {
@@ -76,8 +88,13 @@ test('semantic typography matches the Trivpass role metrics', async ({ page }) =
   await page.evaluate(() => document.fonts.ready);
 
   const nav = await computedTypography(page.locator('.type-nav').first());
-  const sectionTitle = await computedTypography(page.locator('.type-section-title, .public-heading-section').first());
+  const sectionTitle = await computedTypography(page.locator('.type-section-title').first());
+  const editorialCard = await computedTypography(page.locator('.type-editorial-card').first());
   const productTitle = await computedTypography(page.locator('.type-product-title').first());
+  const body = await computedTypography(page.locator('.type-body').first());
+  const bodyCompact = await computedTypography(page.locator('.type-body-compact').first());
+  const control = await computedTypography(page.locator('.type-control').first());
+  const button = await computedTypography(page.locator('.type-button').first());
 
   expect(nav.family).toContain('Inter');
   expect(nav.size).toBe('14px');
@@ -85,9 +102,31 @@ test('semantic typography matches the Trivpass role metrics', async ({ page }) =
   expect(productTitle.family).toContain('Inter');
   expect(productTitle.size).toBe(desktop ? '15px' : '14px');
   expect(productTitle.weight).toBe('600');
+  expect(Number.parseFloat(productTitle.lineHeight)).toBeCloseTo(desktop ? 20.25 : 18.9, 2);
   expect(sectionTitle.family).toContain('Fraunces');
   expect(sectionTitle.size).toBe(desktop ? '34px' : '28px');
   expect(sectionTitle.weight).toBe('500');
+  expect(Number.parseFloat(sectionTitle.lineHeight)).toBeCloseTo(desktop ? 36.72 : 30.24, 2);
+  expect(sectionTitle.textWrap).toBe('balance');
+  expect(editorialCard.family).toContain('Fraunces');
+  expect(editorialCard.size).toBe('22px');
+  expect(editorialCard.weight).toBe('500');
+  expect(Number.parseFloat(editorialCard.lineHeight)).toBeCloseTo(26.4, 2);
+  expect(body.family).toContain('Inter');
+  expect(body.size).toBe('16px');
+  expect(body.weight).toBe('400');
+  expect(Number.parseFloat(body.lineHeight)).toBeCloseTo(24.8, 2);
+  expect(bodyCompact.family).toContain('Inter');
+  expect(bodyCompact.size).toBe('14px');
+  expect(bodyCompact.weight).toBe('400');
+  expect(Number.parseFloat(bodyCompact.lineHeight)).toBeCloseTo(21, 2);
+  expect(control.size).toBe('14px');
+  expect(control.weight).toBe('600');
+  expect(Number.parseFloat(control.lineHeight)).toBeCloseTo(20, 2);
+  expect(button.size).toBe('16px');
+  expect(button.weight).toBe('600');
+  expect(Number.parseFloat(button.lineHeight)).toBeCloseTo(24, 2);
+  await expectInteractiveTypographyContained(page);
 
   await page.goto('/routes/bromo-sunrise');
   await page.evaluate(() => document.fonts.ready);
@@ -98,30 +137,65 @@ test('semantic typography matches the Trivpass role metrics', async ({ page }) =
   expect(detailTitle.family).toContain('Fraunces');
   expect(detailTitle.size).toBe(desktop ? '48px' : '32px');
   expect(detailTitle.weight).toBe('500');
+  expect(Number.parseFloat(detailTitle.lineHeight)).toBeCloseTo(desktop ? 50.4 : 33.6, 2);
   expect(detailSection.family).toContain('Fraunces');
   expect(detailSection.size).toBe('26px');
   expect(detailSection.weight).toBe('500');
+  expect(Number.parseFloat(detailSection.lineHeight)).toBeCloseTo(31.2, 2);
+
+  const price = await computedTypography(page.locator('.type-price').first());
+  expect(price.family).toContain('Inter');
+  expect(price.size).toBe('24px');
+  expect(price.weight).toBe('700');
+  expect(Number.parseFloat(price.lineHeight)).toBeCloseTo(24, 2);
+  await expectInteractiveTypographyContained(page);
+  await expectNoHorizontalOverflow(page);
+});
+
+test('Chinese pages use the explicit system CJK stack', async ({ page }) => {
+  await page.goto('/?lang=cn');
+  await page.evaluate(() => document.fonts.ready);
+
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
+  const body = await computedTypography(page.locator('body'));
+  const heroHeading = await computedTypography(page.locator('.type-home-hero').first());
+
+  expect(body.family).toContain('PingFang SC');
+  expect(body.family).toContain('Microsoft YaHei');
+  expect(heroHeading.family).toContain('PingFang SC');
+  expect(heroHeading.family).not.toContain('Fraunces');
+  await expectInteractiveTypographyContained(page);
   await expectNoHorizontalOverflow(page);
 });
 
 test('public typography remains contained across representative routes', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop-chromium', 'Broad route audit runs once in desktop Chromium.');
+  test.setTimeout(60_000);
 
   for (const path of publicRoutes) {
     await page.goto(path);
     await page.evaluate(() => document.fonts.ready);
 
     expect((await computedTypography(page.locator('body'))).family).toContain('Inter');
+    expect(await page.locator('[class*="public-heading-"]').count()).toBe(0);
+    await expectInteractiveTypographyContained(page);
     await expectNoHorizontalOverflow(page);
   }
 
-  await page.goto('/booking?route=jogja-heritage');
+  await page.goto('/booking?route=jogja-heritage&lang=us');
   const decline = page.getByTestId('consent-decline');
   if (await decline.isVisible()) await decline.click();
   await page.getByRole('button', { name: /continue to contact/i }).click();
   await expect(page).toHaveURL(/\/checkout\/review/);
   expect((await computedTypography(page.locator('body'))).family).toContain('Inter');
   await expectNoHorizontalOverflow(page);
+
+  for (const language of ['us', 'id', 'cn']) {
+    await page.goto(`/routes?lang=${language}`);
+    await page.evaluate(() => document.fonts.ready);
+    await expectInteractiveTypographyContained(page);
+    await expectNoHorizontalOverflow(page);
+  }
 });
 
 test('Filament admin keeps Manrope', async ({ page }, testInfo) => {
