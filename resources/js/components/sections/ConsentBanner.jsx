@@ -59,7 +59,7 @@ export function ConsentBanner({ t }) {
         </span>
         <div className="min-w-0 flex-1 lg:flex lg:items-center lg:gap-6">
           <div className="min-w-0 flex-1">
-            <h2 id="cookie-consent-title" className="text-base font-bold">{t.cookieConsentTitle ?? 'Your privacy choices'}</h2>
+            <h2 id="cookie-consent-title" className="font-display text-lg font-medium leading-7">{t.cookieConsentTitle ?? 'Your privacy choices'}</h2>
             <p id="cookie-consent-description" className="mt-1 text-sm font-medium leading-6 text-muted">
               {t.cookieConsentText ?? 'We use optional advertising cookies to understand which campaigns help travelers find us.'}{' '}
               <a href="/privacy-policy" className="inline-flex items-center gap-1 font-bold text-secondary underline decoration-secondary/40 underline-offset-2 hover:text-primary">

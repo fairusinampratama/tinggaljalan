@@ -63,12 +63,12 @@ function HeroSlideContent({ slide, language }) {
   return (
     <div className={`relative flex h-full max-w-[min(34rem,calc(100%-2rem))] flex-col justify-end px-5 pb-28 pt-24 sm:max-w-[600px] sm:justify-center sm:px-12 sm:pb-0 sm:pt-0 ${alignmentClass}`}>
       {eyebrowText ? (
-        <p className="mb-3 inline-flex border-l-2 border-accent px-3 text-[11px] font-semibold uppercase leading-5 tracking-[0.14em] text-accent sm:mb-4 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
+        <p className="public-eyebrow mb-3 inline-flex border-l-2 border-accent px-3 text-accent sm:mb-4 sm:px-4">
           {eyebrowText}
         </p>
       ) : null}
       {headingText ? (
-        <h2 className="text-balance font-display text-[2.35rem] font-normal leading-[1.04] tracking-normal text-white sm:text-[54px] sm:leading-[1.08]">
+        <h2 className="type-home-hero text-balance text-white">
           {headingText}
         </h2>
       ) : null}
@@ -209,7 +209,7 @@ export function Hero({ t, language, booking, setBooking, whatsappUrl }) {
 
       <div className="relative z-30 mx-auto -mt-7 max-w-6xl px-4 pb-12 sm:-mt-12 sm:px-8 sm:pb-16 lg:px-10">
         <div className="rounded-xl border border-line/80 bg-surface/95 p-5 shadow-xl shadow-black/5 backdrop-blur sm:p-6">
-          <p className="font-display text-xl font-normal text-primary sm:text-2xl">{t.searchTitle}</p>
+          <p className="type-editorial-card text-primary">{t.searchTitle}</p>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted">{t.findTripText}</p>
           <div className="mt-5 grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
             <Dropdown

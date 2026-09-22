@@ -73,8 +73,8 @@ export function NewsPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] lg:items-end">
             <div>
-              <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.newsEyebrow}</p>
-              <h1 className="font-display text-3xl font-normal leading-tight text-primary sm:text-5xl">
+              <p className="public-eyebrow mb-3 text-secondary">{t.newsEyebrow}</p>
+              <h1 className="type-detail-title text-primary">
                 {t.newsTitle}
               </h1>
               <p className="mt-5 max-w-3xl text-base font-medium leading-7 text-muted">

@@ -24,7 +24,7 @@ export function SocialProofSection({ benefits, reviews: reviewItems }) {
       <div className="public-container">
         {benefitItems.length ? (
           <>
-            <SectionHeader eyebrow={t.whyEyebrow} title={t.whyTitle}>
+            <SectionHeader eyebrow={t.whyEyebrow} title={t.whyTitle} titleClassName="type-statement">
               {t.whyText}
             </SectionHeader>
             <div className="grid gap-4 md:grid-cols-3">
@@ -49,7 +49,7 @@ export function SocialProofSection({ benefits, reviews: reviewItems }) {
           <div className={benefitItems.length ? 'mt-10 border-t border-line pt-10 sm:mt-12 sm:pt-12' : ''}>
             <div className="mx-auto mb-7 max-w-2xl text-center sm:mb-9">
               <p className="public-eyebrow">{t.reviewsEyebrow}</p>
-              <h2 className="public-heading-section mt-3">{t.reviewsTitle}</h2>
+              <h2 className="type-review-title mt-3">{t.reviewsTitle}</h2>
               <p className="public-copy mx-auto mt-3 max-w-xl">{t.reviewsText}</p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">

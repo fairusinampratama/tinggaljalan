@@ -95,10 +95,10 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
       ? 'aspect-[16/10] h-48 sm:aspect-[4/3] sm:h-full sm:min-h-40'
       : 'aspect-[16/10] h-52';
   const titleClass = isFeatured
-    ? 'line-clamp-3 text-3xl sm:text-4xl'
+    ? 'line-clamp-3'
     : usesCompactSlots
-      ? 'line-clamp-2 text-lg sm:min-h-[2.85rem]'
-      : 'line-clamp-2 text-xl md:min-h-[3.15rem]';
+      ? 'line-clamp-2 sm:min-h-[3.3rem]'
+      : 'line-clamp-2 md:min-h-[3.3rem]';
   const excerptClass = isFeatured
     ? 'mt-4 line-clamp-3 text-sm leading-6'
     : usesCompactSlots
@@ -142,7 +142,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
       </div>
       <div className={`flex min-w-0 flex-1 flex-col ${isFeatured ? 'p-6 sm:p-7' : isCompact ? 'p-4' : 'p-5'}`}>
         <MetaRow article={article} language={language} reserveSpace={!isFeatured} />
-        <h3 className={`mt-4 font-display font-normal leading-tight text-primary transition duration-300 group-hover:text-secondary group-focus-within:text-secondary ${titleClass}`}>
+        <h3 className={`type-editorial-card mt-4 text-primary transition duration-300 group-hover:text-secondary group-focus-within:text-secondary ${titleClass}`}>
           {getLocalized(article.title, language)}
         </h3>
         <p className={`${excerptClass} font-medium text-muted`}>
@@ -224,10 +224,10 @@ export function NewsFilterBar({
     <section className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="grid gap-4 lg:grid-cols-[1fr_320px] lg:items-center">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">
+          <p className="public-eyebrow text-secondary">
             {t.newsFilterDashboard}
           </p>
-          <h2 className="mt-1 font-display text-2xl font-normal leading-tight text-primary">
+          <h2 className="type-editorial-card mt-1 text-primary">
             {t.newsFilterTitle}
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-muted">
@@ -306,10 +306,10 @@ export function NewsCtaBand({ language = 'id', whatsappUrl }) {
   return (
     <section className="overflow-hidden rounded-2xl bg-primary p-6 text-white shadow-soft sm:p-7 lg:flex lg:items-center lg:justify-between lg:gap-8">
       <div className="max-w-2xl">
-        <p className="text-xs font-bold uppercase tracking-[0.04em] text-accent">
+        <p className="public-eyebrow text-accent">
           {t.newsNeedAdviceTitle}
         </p>
-        <h2 className="mt-2 font-display text-3xl font-normal leading-tight">
+        <h2 className="type-section-title mt-2">
           {t.newsCtaHeading}
         </h2>
         <p className="mt-3 text-sm font-medium leading-6 text-white/70">

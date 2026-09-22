@@ -200,7 +200,7 @@ export function AboutUsPage() {
                 <article className="mb-8 overflow-hidden rounded-2xl border border-line bg-white shadow-soft lg:mb-10 lg:grid lg:grid-cols-[0.72fr_1.28fr]">
                   <Portrait member={featuredMember} language={language} t={t} className="aspect-[16/10] w-full object-cover lg:aspect-[4/5] lg:h-full lg:min-h-[360px]" />
                   <div className="flex flex-col justify-center p-5 sm:p-7 lg:p-9">
-                    <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-secondary lg:mb-4">{t.aboutFeaturedTeam}</p>
+                    <p className="public-eyebrow mb-3 text-secondary lg:mb-4">{t.aboutFeaturedTeam}</p>
                     <MemberDetails member={featuredMember} language={language} t={t} />
                   </div>
                 </article>
@@ -222,13 +222,13 @@ export function AboutUsPage() {
                   <div className="grid gap-6 lg:grid-cols-[0.65fr_1.35fr] lg:gap-7">
                     <div>
                       <p className="public-eyebrow text-accent">{getLocalized(teamSection.category_labels?.field, language)}</p>
-                      <h3 id="partner-network-title" className="mt-3 font-display text-2xl lg:text-3xl">{t.aboutPartnerNetwork}</h3>
+                      <h3 id="partner-network-title" className="type-detail-section mt-3">{t.aboutPartnerNetwork}</h3>
                       <p className="mt-3 text-sm font-medium leading-7 text-white/65">{t.aboutPartnerNetworkText}</p>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {fieldPartners.map((member) => (
                         <article key={member.id} className="rounded-xl border border-white/10 bg-white/5 p-4 lg:p-5">
-                          <h4 className="font-display text-xl text-white">{member.name}</h4>
+                          <h4 className="type-editorial-card text-white">{member.name}</h4>
                           <p className="mt-1 text-sm font-bold text-accent">{getLocalized(member.role, language)}</p>
                           <p className="mt-3 text-sm font-medium leading-6 text-white/65">{getLocalized(member.biography, language)}</p>
                         </article>
@@ -285,7 +285,7 @@ export function AboutUsPage() {
                       </span>
                       <div className="min-w-0 pb-2 lg:pb-0">
                         <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/35 lg:text-xs">{String(index + 1).padStart(2, '0')}</span>
-                        <h3 className="mt-1 font-display text-xl leading-tight text-white lg:mt-4">{getLocalized(step.title, language)}</h3>
+                        <h3 className="type-editorial-card mt-1 text-white lg:mt-4">{getLocalized(step.title, language)}</h3>
                         <p className="mt-2 text-sm font-medium leading-6 text-white/60 lg:mt-3">{getLocalized(step.text, language)}</p>
                       </div>
                     </li>
@@ -397,7 +397,7 @@ export function AboutUsPage() {
         {visibility.cta !== false && getLocalized(cta.title, language) ? (
           <section className="public-section bg-subtle">
             <div className="public-container rounded-2xl bg-primary px-5 py-9 text-center text-white shadow-soft sm:px-10 sm:py-14">
-              <h2 className="mx-auto max-w-3xl font-display text-3xl font-normal leading-tight sm:text-4xl">{getLocalized(cta.title, language)}</h2>
+              <h2 className="type-statement mx-auto max-w-3xl">{getLocalized(cta.title, language)}</h2>
               <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/65">{getLocalized(cta.text, language)}</p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:mt-7 sm:flex-row">
                 <SmartLink href={cta.primary_url} className={`${secondaryButtonClass} w-full sm:w-auto`}><Compass className="h-4 w-4" aria-hidden="true" />{getLocalized(cta.primary_label, language)}</SmartLink>

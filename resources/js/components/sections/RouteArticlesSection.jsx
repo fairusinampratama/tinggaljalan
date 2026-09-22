@@ -68,7 +68,7 @@ export function RouteArticlesSection({
                   <span className={`${isCatalog ? 'block h-6 truncate' : 'self-start line-clamp-1'} rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.04em] text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white`}>
                     {getLocalized(isCatalog ? item.badge : item.tag, language)}
                   </span>
-                  <h3 className={`${isCatalog ? 'mt-3 line-clamp-2 text-lg sm:min-h-[2.8rem]' : 'mt-4 line-clamp-2 text-[clamp(1.35rem,2.8vw,1.75rem)] lg:min-h-[4.4rem]'} font-display font-normal leading-tight transition duration-300 group-hover:text-secondary group-focus-within:text-secondary`}>
+                  <h3 className={`${isCatalog ? 'mt-3 min-h-[2.4rem] line-clamp-2 sm:min-h-[2.55rem]' : 'mt-4 min-h-[2.4rem] line-clamp-2 sm:min-h-[2.55rem]'} type-product-title transition duration-300 group-hover:text-secondary group-focus-within:text-secondary`}>
                     {getLocalized(item.title, language)}
                   </h3>
                   <RatingDisplay rating={item.rating} reviewCount={item.reviewCount} className={isCatalog ? 'mt-3 min-h-5' : 'mt-3'} />

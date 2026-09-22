@@ -14,7 +14,7 @@ export function AvailableOnSection({ items }) {
     <section className="public-section bg-white">
       <div className="relative mx-auto max-w-7xl">
         <div className="max-w-2xl">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.availableOnEyebrow}</p>
+          <p className="public-eyebrow mb-3 text-secondary">{t.availableOnEyebrow}</p>
           <h2 className="public-heading-section text-ink">{t.availableOnTitle}</h2>
           <p className="mt-3 text-sm font-semibold leading-6 text-muted">{t.availableOnText}</p>
         </div>

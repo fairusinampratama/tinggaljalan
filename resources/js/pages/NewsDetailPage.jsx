@@ -54,7 +54,7 @@ export function NewsDetailPage() {
                   </span>
                 </div>
 
-                <h1 className="mt-5 max-w-4xl text-balance font-display text-4xl font-normal leading-[1.06] tracking-[-0.015em] text-primary sm:text-5xl lg:text-6xl">
+                <h1 className="type-detail-title mt-5 max-w-4xl text-balance text-primary">
                   {getLocalized(article.title, language)}
                 </h1>
                 <p className="mt-5 max-w-3xl text-pretty text-base font-medium leading-8 text-muted sm:text-lg">
@@ -81,17 +81,17 @@ export function NewsDetailPage() {
 
                   return (
                     <section key={id} id={id} className="scroll-mt-28 mb-10">
-                      <h2 className="text-balance font-display text-2xl font-normal leading-[1.12] text-primary sm:text-3xl">{getLocalized(section.heading, language)}</h2>
+                      <h2 className="type-detail-section text-balance text-primary">{getLocalized(section.heading, language)}</h2>
                       <p className="mt-4 whitespace-pre-line text-pretty text-base font-medium leading-8 text-muted sm:text-lg">{getLocalized(section.body, language)}</p>
                     </section>
                   );
                 })}
 
                 <section className="mt-12 overflow-hidden rounded-2xl bg-primary p-6 text-white shadow-soft sm:p-8">
-                  <p className="text-xs font-bold uppercase tracking-[0.08em]  text-accent">
+                  <p className="public-eyebrow text-accent">
                     {t.newsNeedAdviceTitle}
                   </p>
-                  <h2 className="mt-2 font-display text-3xl font-normal leading-tight text-white">
+                  <h2 className="type-section-title mt-2 text-white">
                     {t.newsNeedAdviceHeading}
                   </h2>
                   <p className="mt-3 max-w-xl text-sm font-medium leading-7 text-white/70">
