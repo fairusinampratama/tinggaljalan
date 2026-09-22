@@ -108,6 +108,12 @@ export function Footer({ t, whatsappUrl }) {
         <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs font-semibold text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Tinggal Jalan. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+            <a
+              href="/privacy-policy"
+              className="inline-flex items-center gap-1 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+            >
+              {t.privacyPolicy ?? 'Privacy & cookies'}
+            </a>
             {consentEnabled ? (
               <button
                 type="button"

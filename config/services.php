@@ -49,6 +49,10 @@ return [
 
     'google_ads' => [
         'id' => env('GOOGLE_ADS_ID', 'AW-18427027980'),
+        'consent_enabled' => env(
+            'GOOGLE_ADS_CONSENT_ENABLED',
+            env('APP_ENV', 'production') === 'production',
+        ),
     ],
 
     'exchange_rates' => [

@@ -116,6 +116,34 @@ class Seo
         ]);
     }
 
+    public static function privacyPolicy(string $language, Request $request): array
+    {
+        $title = match ($language) {
+            'id' => 'Kebijakan Privasi dan Cookie | Tinggal Jalan',
+            'cn' => '隐私与 Cookie 政策 | Tinggal Jalan',
+            default => 'Privacy and Cookie Policy | Tinggal Jalan',
+        };
+        $description = match ($language) {
+            'id' => 'Pelajari cara Tinggal Jalan menggunakan data situs penting, informasi booking, dan pengukuran Google Ads opsional.',
+            'cn' => '了解 Tinggal Jalan 如何使用必要的网站数据、预订信息和可选的 Google Ads 衡量功能。',
+            default => 'Learn how Tinggal Jalan uses essential site data, booking information, and optional Google Ads measurement.',
+        };
+
+        return self::page([
+            'title' => $title,
+            'description' => $description,
+            'canonical' => self::canonical('/privacy-policy'),
+            'robots' => self::robotsForRequest($request),
+            'json_ld' => [[
+                '@context' => 'https://schema.org',
+                '@type' => 'WebPage',
+                'name' => $title,
+                'description' => $description,
+                'url' => self::canonical('/privacy-policy'),
+            ]],
+        ]);
+    }
+
     public static function routesIndex(Collection $packages, bool $hasSearch, Request $request): array
     {
         return self::page([

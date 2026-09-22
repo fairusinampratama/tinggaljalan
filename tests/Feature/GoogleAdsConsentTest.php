@@ -9,6 +9,13 @@ class GoogleAdsConsentTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config()->set('services.google_ads.consent_enabled', true);
+    }
+
     public function test_public_pages_include_one_consent_gated_google_ads_bootstrap(): void
     {
         $this->seed();
@@ -33,6 +40,16 @@ class GoogleAdsConsentTest extends TestCase
         $this->assertStringNotContainsString('data-google-ads-consent=', $html);
         $this->assertStringNotContainsString('window.TinggalJalanConsent', $html);
         $this->assertStringNotContainsString('googletagmanager.com/gtag/js', $html);
+    }
+
+    public function test_google_ads_consent_is_not_injected_when_consent_feature_is_disabled(): void
+    {
+        config()->set('services.google_ads.consent_enabled', false);
+
+        $html = $this->get('/')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('data-google-ads-consent=', $html);
+        $this->assertStringNotContainsString('window.TinggalJalanConsent', $html);
     }
 
     public function test_google_ads_bootstrap_is_not_injected_into_filament(): void

@@ -1,5 +1,5 @@
 @php($googleAdsId = trim((string) config('services.google_ads.id')))
-@if ($googleAdsId !== '')
+@if (config('services.google_ads.consent_enabled') && $googleAdsId !== '')
     <script data-google-ads-consent="{{ $googleAdsId }}">
         (function (window, document, adsId) {
             if (window.TinggalJalanConsent) return;

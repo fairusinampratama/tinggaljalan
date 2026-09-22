@@ -44,6 +44,7 @@ test.describe('Google Ads consent', () => {
     await page.waitForTimeout(250);
     expect(requests).toHaveLength(0);
     await expect.poll(() => adsConfigCount(page)).toBe(0);
+    await expect(page.getByRole('link', { name: /learn more/i })).toHaveAttribute('href', '/privacy-policy');
   });
 
   test('declining persists and prevents loading after reload', async ({ page }) => {
@@ -91,6 +92,8 @@ test.describe('Google Ads consent', () => {
     await page.keyboard.press('Enter');
 
     await expect(page.getByTestId('consent-banner')).toBeVisible();
+    await expect(page.getByTestId('consent-banner')).toBeFocused();
+    await expect(page.getByTestId('consent-status')).toContainText('Allowed');
     await page.getByTestId('consent-decline').focus();
     await page.keyboard.press('Enter');
     await expect.poll(() => page.evaluate(() => window.TinggalJalanConsent.status())).toBe('denied');
@@ -112,5 +115,18 @@ test.describe('Google Ads consent', () => {
     await page.reload();
     await expect(page.getByTestId('consent-banner')).toHaveCount(0);
     expect(requests).toHaveLength(1);
+  });
+
+  test('privacy policy is reachable and can reopen saved settings', async ({ page }) => {
+    await mockGoogleTag(page);
+
+    await page.goto('/');
+    await page.getByTestId('consent-decline').click();
+    await page.goto('/privacy-policy');
+
+    await expect(page.getByRole('heading', { name: 'Privacy and cookie policy' })).toBeVisible();
+    await page.getByTestId('privacy-cookie-settings').click();
+    await expect(page.getByTestId('consent-banner')).toBeFocused();
+    await expect(page.getByTestId('consent-status')).toContainText('Declined');
   });
 });

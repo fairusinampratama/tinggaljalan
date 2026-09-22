@@ -9,6 +9,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\MidtransWebhookController;
 use App\Http\Controllers\NewsController;
+use App\Http\Controllers\PrivacyPolicyController;
 use App\Http\Controllers\RouteController;
 use App\Http\Controllers\RuntimeHealthController;
 use App\Support\InertiaPublicData;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', HomeController::class)->name('home');
 Route::get('/up', RuntimeHealthController::class)->name('health');
 Route::get('/about-us', AboutController::class)->name('about.show');
+Route::get('/privacy-policy', PrivacyPolicyController::class)->name('privacy-policy.show');
 Route::get('/language/{language}', LanguageController::class)->name('language');
 
 Route::get('/routes', [RouteController::class, 'index'])->name('routes.index');

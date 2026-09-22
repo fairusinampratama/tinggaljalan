@@ -19,6 +19,7 @@ const result = spawnSync(
             CACHE_STORE: 'array',
             DB_CONNECTION: 'sqlite',
             DB_DATABASE: databasePath,
+            GOOGLE_ADS_CONSENT_ENABLED: 'true',
             MAIL_MAILER: 'array',
             QUEUE_CONNECTION: 'sync',
             SESSION_DRIVER: 'database',
