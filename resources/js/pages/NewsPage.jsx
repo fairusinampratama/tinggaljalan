@@ -68,14 +68,7 @@ export function NewsPage() {
 
   return (
     <>
-      <Seo
-        title={seo.title ?? 'Travel Guides & News | Tinggal Jalan'}
-        description={seo.description ?? 'Travel guides, itinerary ideas, and route updates from Tinggal Jalan for Indonesia private trips.'}
-        path="/news"
-        image={seo.image ?? '/images/hero-bromo.jpg'}
-        jsonLd={seo.json_ld}
-        language={language}
-      />
+      <Seo {...seo} language={language} />
       <section className="px-4 pb-16 pt-28 sm:px-8 sm:pt-32 lg:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] lg:items-end">

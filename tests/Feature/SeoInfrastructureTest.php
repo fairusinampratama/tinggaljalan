@@ -270,7 +270,7 @@ class SeoInfrastructureTest extends TestCase
         $this->assertStringContainsString('<a href="/routes"', $main);
     }
 
-    public function test_search_pages_are_noindex_follow_and_booking_is_noindex_nofollow(): void
+    public function test_filtered_listing_pages_are_noindex_follow_and_booking_is_noindex_nofollow(): void
     {
         $this->seed();
 
@@ -285,6 +285,24 @@ class SeoInfrastructureTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('NewsPage')
                 ->where('seo.robots', 'noindex,follow'));
+
+        foreach (['/routes?destination=malang', '/routes?style=family', '/routes?page=1', '/routes?page=2'] as $path) {
+            $this->get($path)
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('RoutesPage')
+                    ->where('seo.robots', 'noindex,follow')
+                    ->where('seo.canonical', 'http://localhost:8000/routes'));
+        }
+
+        foreach (['/news?category=travel-guides', '/news?destination=malang', '/news?page=1', '/news?page=2'] as $path) {
+            $this->get($path)
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('NewsPage')
+                    ->where('seo.robots', 'noindex,follow')
+                    ->where('seo.canonical', 'http://localhost:8000/news'));
+        }
 
         $this->get('/booking')
             ->assertOk()

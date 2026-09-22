@@ -39,7 +39,8 @@ class RouteController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        $seo = Seo::routesIndex($packages->getCollection(), $search !== '', $request);
+        $hasFilters = $request->hasAny(['search', 'destination', 'style', 'page']);
+        $seo = Seo::routesIndex($packages->getCollection(), $hasFilters, $request);
 
         $packages->getCollection()->transform(fn ($package) => InertiaPublicData::routeCard($package));
 

@@ -64,14 +64,6 @@ export function RoutesPage() {
     destinationFilter === allValue
       ? `${totalRoutes} ${t.packagesReady}`
       : `${totalRoutes} ${t.packagesMatchFor} ${destinationLabel}`;
-  const seoTitle = destinationFilter === allValue
-    ? 'Indonesia Tour Packages | Tinggal Jalan'
-    : `${destinationLabel} Tour Packages | Tinggal Jalan`;
-  const seoDescription = destinationFilter === allValue
-    ? 'Compare private Indonesia tour packages for Bromo, Tumpak Sewu, Jogja, and Medan with clear itineraries, pickup options, prices, and traveler reviews.'
-    : `${intro} Compare routes, prices, pickup options, reviews, and availability before sending a booking request to Tinggal Jalan.`;
-  const seoPath = destinationFilter === allValue ? '/routes' : `/routes?destination=${encodeURIComponent(destinationFilter)}`;
-
   function updateQuery(nextValues) {
     const nextParams = new URLSearchParams(searchParams);
 
@@ -104,7 +96,7 @@ export function RoutesPage() {
 
   return (
     <>
-      <Seo title={seoTitle} description={seoDescription} path={seoPath} language={language} />
+      <Seo {...(props.seo ?? {})} language={language} />
       <PageShell eyebrow={t.packagesAndRoutes} title={title}>
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_320px] lg:items-end">
         <div>

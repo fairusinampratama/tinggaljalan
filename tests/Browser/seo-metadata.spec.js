@@ -40,4 +40,19 @@ test.describe('rendered SEO metadata', () => {
     await expect(addressLink).toHaveAttribute('target', '_blank');
     await expect(addressLink).toHaveAttribute('rel', 'noreferrer');
   });
+
+  for (const [path, canonicalPath] of [
+    ['/routes?destination=malang', '/routes'],
+    ['/news?category=travel-guides', '/news'],
+  ]) {
+    test(`${path} remains noindex after hydration`, async ({ page }) => {
+      await page.goto(path);
+
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        'href',
+        new RegExp(`${canonicalPath.replace('/', '\\/')}$`),
+      );
+    });
+  }
 });

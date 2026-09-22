@@ -144,13 +144,13 @@ class Seo
         ]);
     }
 
-    public static function routesIndex(Collection $packages, bool $hasSearch, Request $request): array
+    public static function routesIndex(Collection $packages, bool $hasFilters, Request $request): array
     {
         return self::page([
             'title' => 'Indonesia Tour Packages | Tinggal Jalan',
             'description' => 'Compare private Indonesia tour packages for Bromo, Tumpak Sewu, Jogja, and Medan with clear itineraries, pickup options, prices, and traveler reviews.',
             'canonical' => self::canonical('/routes'),
-            'robots' => self::robotsForRequest($request, $hasSearch ? 'noindex,follow' : 'index,follow'),
+            'robots' => self::robotsForRequest($request, $hasFilters ? 'noindex,follow' : 'index,follow'),
             'json_ld' => [
                 self::collectionJsonLd('Indonesia Tour Packages', '/routes', $packages->map(fn (TourPackage $package) => [
                     '@type' => 'ListItem',
@@ -182,7 +182,7 @@ class Seo
         ]);
     }
 
-    public static function newsIndex(Collection $articles, bool $hasSearch, string $language, Request $request): array
+    public static function newsIndex(Collection $articles, bool $hasFilters, string $language, Request $request): array
     {
         $title = match ($language) {
             'id' => 'Berita & Panduan Wisata | Tinggal Jalan',
@@ -199,7 +199,7 @@ class Seo
             'title' => $title,
             'description' => $description,
             'canonical' => self::canonical('/news'),
-            'robots' => self::robotsForRequest($request, $hasSearch ? 'noindex,follow' : 'index,follow'),
+            'robots' => self::robotsForRequest($request, $hasFilters ? 'noindex,follow' : 'index,follow'),
             'json_ld' => [
                 self::collectionJsonLd($title, '/news', $articles->map(fn (NewsArticle $article) => [
                     '@type' => 'ListItem',
