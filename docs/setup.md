@@ -1,28 +1,61 @@
-# Laravel + Filament Setup Commands
+# Local Development Setup
 
-Laravel is now scaffolded in `/laravel` with Laravel 13 and Filament 5.
+Laravel lives at the repository root. Run every command below from that directory.
 
-Run these commands from `/laravel` when setting up another machine:
+## Canonical WSL workflow
 
-```bash
-composer install
-cp .env.example .env
-php artisan key:generate
-npm install
-npm run build
-docker compose up -d mysql
-php artisan migrate:fresh --seed
-php artisan storage:link
+Use Docker Compose as the only PHP web runtime. The canonical development URL is:
+
+```txt
+http://localhost:8000
 ```
 
-If the host PHP does not have the extensions required by Filament (`intl`, `zip`, and `pdo_mysql`), or if the test suite needs a higher PHP memory limit, use the Docker PHP app container instead:
+Do not also run `php artisan serve`, `composer run dev`, or the production-preview stack. Multiple PHP runtimes share Laravel's `storage` directory with different Linux users and can create session or view files that the other runtime cannot update.
+
+The normal daily startup is:
 
 ```bash
+npm run build
+docker compose up -d
+docker compose exec app php artisan migrate --force
+```
+
+Verify the stack before opening the site:
+
+```bash
+docker compose ps
+curl -I http://127.0.0.1:8000/up
+```
+
+Both `app` and `mysql` should be running, MySQL should be healthy, and the health request should return HTTP 200.
+
+The development app uses compiled Vite assets from the same `localhost:8000` origin. This is intentional: WSL/Codex forwarding can expose one application port reliably, while a separate Vite port can leave the page without CSS or JavaScript.
+
+### Codex browser panes
+
+Open `http://localhost:8000` in the pane. Codex Desktop may rewrite it to a temporary port such as `localhost:59781`; that rewritten port is a disposable desktop proxy, not the Laravel port. Do not bookmark or manually reuse it. If a pane becomes stale, open `http://localhost:8000` again.
+
+### WSL file ownership
+
+The Compose app runs with `LOCAL_UID` and `LOCAL_GID`, defaulting to `1000:1000`, so Docker and WSL commands create compatible Laravel runtime files. Check the WSL account IDs with `id -u` and `id -g`. If they are not `1000`, add the literal values to `.env`, for example:
+
+```env
+LOCAL_UID=1001
+LOCAL_GID=1001
+```
+
+On a new machine, initialize the project with:
+
+```bash
+cp .env.example .env
 docker compose build app
-docker compose up -d mysql
-docker compose run --rm app php artisan migrate:fresh --seed
-docker compose run --rm app php artisan storage:link
-docker compose up -d app
+docker compose run --rm --no-deps app composer install
+npm install
+npm run build
+docker compose up -d
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate:fresh --seed
+docker compose exec app php artisan storage:link
 ```
 
 ## Admin Panel
@@ -76,22 +109,22 @@ SQLite can still be useful for quick framework bootstrapping, but do not use it 
 
 ## Local Development
 
-After the database is migrated and seeded, start the Laravel server, queue listener, logs, and Vite dev server with:
+Start or resume the complete stack with:
 
 ```bash
-composer run dev
+docker compose up -d
 ```
 
 The admin media fields store uploads on Laravel's public disk, so make sure the storage symlink exists before testing image uploads:
 
 ```bash
-php artisan storage:link
+docker compose exec app php artisan storage:link
 ```
 
-When using the Docker PHP app container, start the web server with:
+Stop it without deleting the MySQL volume:
 
 ```bash
-docker compose up -d app
+docker compose down
 ```
 
 If the app was already running before changing environment values, recreate it and clear cached config:
@@ -106,6 +139,35 @@ Open the admin panel at:
 ```txt
 http://127.0.0.1:8000/admin
 ```
+
+### Recovery checklist
+
+If `localhost:8000` cannot be reached:
+
+```bash
+docker compose ps
+docker compose up -d
+docker compose logs --tail=100 app
+curl -I http://127.0.0.1:8000/up
+```
+
+If the page loads without frontend styling or JavaScript, remove a stale Vite hot-file marker and rebuild same-origin assets:
+
+```bash
+rm -f public/hot
+npm run build
+docker compose up -d --force-recreate app
+```
+
+If Laravel reports `file_put_contents(...storage/framework/sessions...): Permission denied`, first stop every host `php artisan serve` process. Then normalize only Laravel's writable runtime directories and recreate the app container:
+
+```bash
+docker compose exec -T -u root app chown -R "$(id -u):$(id -g)" /var/www/html/storage /var/www/html/bootstrap/cache
+docker compose up -d --force-recreate app
+docker compose exec app php artisan optimize:clear
+```
+
+Do not solve the issue by making the entire repository world-writable. The cause is mixed runtime ownership, not insufficient global permissions.
 
 ## Production Preview
 
