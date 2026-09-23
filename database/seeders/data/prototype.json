@@ -7370,6 +7370,114 @@
           "bromo-madakaripura"
         ]
       },
+      "WATERFALL15": {
+        "label": "Demo waterfall promotion 15%",
+        "percent": 15,
+        "currencies": [
+          "IDR",
+          "USD"
+        ],
+        "publicTitle": {
+          "id": "Promo Petualangan Air Terjun",
+          "us": "Waterfall Adventure Deal",
+          "cn": "瀑布探险优惠"
+        },
+        "publicDescription": {
+          "id": "Hemat 15% untuk trip Tumpak Sewu dan air terjun pilihan.",
+          "us": "Save 15% on selected Tumpak Sewu and waterfall trips.",
+          "cn": "预订指定的 Tumpak Sewu 瀑布行程可享 85 折优惠。"
+        },
+        "maximumDiscountIdr": 200000,
+        "maximumDiscountUsd": 15,
+        "endsAt": "2026-12-31 23:59:59",
+        "isPublic": true,
+        "sortOrder": 20,
+        "tourPackages": [
+          "tumpak-sewu-daytrip",
+          "tumpak-sewu-lower-trek",
+          "tumpak-kapas-biru"
+        ]
+      },
+      "JOGJA12": {
+        "label": "Demo Jogja promotion 12%",
+        "percent": 12,
+        "currencies": [
+          "IDR",
+          "USD"
+        ],
+        "publicTitle": {
+          "id": "Promo Jelajah Jogja",
+          "us": "Explore Jogja Special",
+          "cn": "日惹探索优惠"
+        },
+        "publicDescription": {
+          "id": "Nikmati diskon 12% untuk paket budaya dan petualangan Jogja pilihan.",
+          "us": "Enjoy 12% off selected Jogja culture and adventure trips.",
+          "cn": "预订指定的日惹文化与探险行程可享 88 折优惠。"
+        },
+        "maximumDiscountIdr": 175000,
+        "maximumDiscountUsd": 12,
+        "endsAt": "2026-12-31 23:59:59",
+        "isPublic": true,
+        "sortOrder": 30,
+        "tourPackages": [
+          "jogja-heritage",
+          "jogja-prambanan-city",
+          "jogja-merapi-jeep"
+        ]
+      },
+      "TOBA15": {
+        "label": "Demo Lake Toba promotion 15%",
+        "percent": 15,
+        "currencies": [
+          "IDR",
+          "USD"
+        ],
+        "publicTitle": {
+          "id": "Promo Liburan Danau Toba",
+          "us": "Lake Toba Escape Deal",
+          "cn": "多巴湖度假优惠"
+        },
+        "publicDescription": {
+          "id": "Hemat 15% untuk perjalanan Danau Toba dan Medan pilihan.",
+          "us": "Save 15% on selected Lake Toba and Medan journeys.",
+          "cn": "预订指定的多巴湖与棉兰行程可享 85 折优惠。"
+        },
+        "maximumDiscountIdr": 250000,
+        "maximumDiscountUsd": 18,
+        "endsAt": "2026-12-31 23:59:59",
+        "isPublic": true,
+        "sortOrder": 40,
+        "tourPackages": [
+          "medan-lake-toba",
+          "medan-berastagi",
+          "medan-toba-family"
+        ]
+      },
+      "FAMILY100": {
+        "label": "Demo local family promotion",
+        "amount": 100000,
+        "currency": "IDR",
+        "publicTitle": {
+          "id": "Hemat Liburan Keluarga",
+          "us": "Family Trip Savings",
+          "cn": "家庭行程优惠"
+        },
+        "publicDescription": {
+          "id": "Potongan Rp100.000 untuk paket keluarga pilihan dengan mata uang IDR.",
+          "us": "Save Rp100,000 on selected family trips booked in IDR.",
+          "cn": "使用印尼盾预订指定家庭行程可减免 Rp100,000。"
+        },
+        "maximumDiscountIdr": 100000,
+        "endsAt": "2026-12-31 23:59:59",
+        "isPublic": true,
+        "sortOrder": 50,
+        "tourPackages": [
+          "bromo-family-jeep",
+          "jogja-family-slow",
+          "medan-toba-family"
+        ]
+      },
       "TJHEMAT": {
         "label": "Local traveler savings",
         "amount": 50000,
@@ -7387,7 +7495,7 @@
         "maximumDiscountIdr": 50000,
         "endsAt": "2026-12-31 23:59:59",
         "isPublic": true,
-        "sortOrder": 20
+        "sortOrder": 60
       }
     },
     "initialBooking": {

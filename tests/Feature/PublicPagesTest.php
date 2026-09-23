@@ -117,6 +117,7 @@ class PublicPagesTest extends TestCase
         $this->seed();
         $package = TourPackage::query()->where('slug', 'bromo-sunrise')->firstOrFail();
         $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        Voucher::query()->whereNotIn('code', ['BROMO10', 'TJHEMAT'])->update(['is_public' => false]);
         $voucher->update([
             'is_public' => true,
             'starts_at' => now()->subHour(),

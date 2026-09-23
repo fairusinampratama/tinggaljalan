@@ -18,7 +18,7 @@ test('homepage promotion is responsive, copyable, and replaces the trust strip',
     await expect(page.getByText('Google Reviews')).toHaveCount(0);
 
     const cards = page.getByTestId('promotion-card');
-    expect(await cards.count()).toBeGreaterThan(0);
+    await expect(cards).toHaveCount(4);
     await expect(cards.first()).toContainText('BROMO10');
 
     await page.getByTestId('copy-promotion-BROMO10').click();
@@ -35,6 +35,14 @@ test('homepage promotion is responsive, copyable, and replaces the trust strip',
         viewportWidth: window.innerWidth,
     }));
     expect(overflow.documentWidth).toBeLessThanOrEqual(overflow.viewportWidth + 1);
+
+    const nextButton = section.getByRole('button', { name: 'Next promotions' });
+    if (viewport.width >= 640) {
+        await expect(nextButton).toBeVisible();
+        await expect(nextButton).toBeEnabled();
+    } else {
+        await expect(nextButton).toBeHidden();
+    }
 });
 
 test('Indonesian homepage shows the localized IDR promotion', async ({ page }) => {
@@ -43,7 +51,7 @@ test('Indonesian homepage shows the localized IDR promotion', async ({ page }) =
     await declineOptionalConsent(page);
 
     await expect(page.getByRole('heading', { name: 'Promo saat ini' })).toBeVisible();
-    await expect(page.getByTestId('promotion-card')).toHaveCount(2);
+    await expect(page.getByTestId('promotion-card')).toHaveCount(6);
     await expect(page.getByText('TJHEMAT')).toBeVisible();
     await expect(page.getByText('Rp50K')).toBeVisible();
 });

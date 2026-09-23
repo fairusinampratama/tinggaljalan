@@ -83,6 +83,7 @@ class VoucherEligibilityTest extends TestCase
         $service = app(VoucherEligibilityService::class);
         $bromo = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
         $local = Voucher::query()->where('code', 'TJHEMAT')->firstOrFail();
+        Voucher::query()->whereNotIn('code', ['BROMO10', 'TJHEMAT'])->update(['is_public' => false]);
 
         $bromo->update([
             'is_public' => true,

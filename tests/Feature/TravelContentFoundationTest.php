@@ -31,7 +31,7 @@ class TravelContentFoundationTest extends TestCase
         $this->assertDatabaseCount('news_articles', 6);
         $this->assertDatabaseCount('faqs', 12);
         $this->assertDatabaseCount('platform_links', 4);
-        $this->assertDatabaseCount('vouchers', 2);
+        $this->assertDatabaseCount('vouchers', 6);
         $this->assertDatabaseHas('users', ['email' => 'admin@tinggaljalan.test']);
 
         $bromo = Destination::where('slug', 'bromo')->firstOrFail();
