@@ -8,7 +8,6 @@ import {
   Info,
   MapPin,
   MessageCircle,
-  ShieldCheck,
   Sparkles,
   TicketCheck,
   Users,
@@ -69,6 +68,9 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
   const gallery = selectedArticle.gallery?.length ? selectedArticle.gallery : [selectedArticle.image];
   const heroAlt = getLocalized(selectedArticle.imageAlt, language) || getLocalized(selectedArticle.title, language);
   const localizedTitle = getLocalized(selectedArticle.title, language);
+  const cancellationPoints = localizeList(selectedArticle.policies?.cancellation, language).filter(Boolean);
+  const confirmationPoints = localizeList(selectedArticle.policies?.confirmation, language).filter(Boolean);
+  const hasPolicies = cancellationPoints.length > 0 || confirmationPoints.length > 0;
   const currentAvailability = availabilityForDate(selectedArticle.availabilityRules, todayIsoDate());
   const activeClosure = currentAvailability.status === 'blocked' ? currentAvailability : null;
 
@@ -201,24 +203,41 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               <DetailList title={t.details} items={selectedArticle.details} language={language} icon={TicketCheck} />
             </div>
 
-            <section className="mt-8 grid gap-5 lg:grid-cols-2">
-              <div className="rounded-xl border border-line bg-surface p-5 shadow-soft">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
-                  <ShieldCheck className="h-4 w-4 text-secondary" /> {t.cancellationPolicy}
-                </h3>
-                <p className="mt-3 text-sm font-semibold leading-6 text-muted">
-                  {getLocalized(selectedArticle.policies?.cancellation, language)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-line bg-surface p-5 shadow-soft">
-                <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
-                  <MessageCircle className="h-4 w-4 text-secondary" /> {t.confirmationPolicy}
-                </h3>
-                <p className="mt-3 text-sm font-semibold leading-6 text-muted">
-                  {getLocalized(selectedArticle.policies?.confirmation, language)}
-                </p>
-              </div>
-            </section>
+            {hasPolicies ? (
+              <section
+                className="mt-8 space-y-7"
+                aria-label={`${t.cancellationPolicy} / ${t.confirmationPolicy}`}
+                data-testid="route-policies"
+              >
+                {cancellationPoints.length ? (
+                  <div data-testid="cancellation-policy">
+                    <h3 className="text-lg font-bold text-ink">{t.cancellationPolicy}</h3>
+                    <ul className="mt-3 space-y-2.5 text-sm font-semibold leading-6 text-muted">
+                      {cancellationPoints.map((point, index) => (
+                        <li key={`${point}-${index}`} className="flex gap-3">
+                          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" aria-hidden="true" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {confirmationPoints.length ? (
+                  <div data-testid="confirmation-policy">
+                    <h3 className="text-lg font-bold text-ink">{t.confirmationPolicy}</h3>
+                    <ul className="mt-3 space-y-2.5 text-sm font-semibold leading-6 text-muted">
+                      {confirmationPoints.map((point, index) => (
+                        <li key={`${point}-${index}`} className="flex gap-3">
+                          <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-secondary" aria-hidden="true" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
 
             {selectedArticle.testimonials?.length ? (
               <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-8">

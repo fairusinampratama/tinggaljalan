@@ -52,7 +52,7 @@ class TourPackageSeeder extends Seeder
                     'notes' => $route['notes'] ?? [],
                     'details' => $route['details'] ?? [],
                     'good_to_know' => $route['goodToKnow'] ?? [],
-                    'policies' => $route['policies'] ?? null,
+                    'policies' => $this->policyPoints($route['policies'] ?? []),
                     'testimonials' => $route['testimonials'] ?? [],
                     'rating' => $route['rating'] ?? null,
                     'review_count' => $route['reviewCount'] ?? 0,
@@ -89,7 +89,7 @@ class TourPackageSeeder extends Seeder
                     ]
                 );
             }
-            if (!empty($tierKeys)) {
+            if (! empty($tierKeys)) {
                 $package->priceTiers()->whereNotIn('min_pax', $tierKeys)->delete();
             } else {
                 $package->priceTiers()->delete();
@@ -126,5 +126,49 @@ class TourPackageSeeder extends Seeder
                     ->delete();
             }
         }
+    }
+
+    private function policyPoints(mixed $policies): array
+    {
+        $policies = is_array($policies) ? $policies : [];
+
+        return [
+            'cancellation' => $this->localizedPolicyPoints($policies['cancellation'] ?? []),
+            'confirmation' => $this->localizedPolicyPoints($policies['confirmation'] ?? []),
+        ];
+    }
+
+    private function localizedPolicyPoints(mixed $value): array
+    {
+        if (is_array($value) && array_is_list($value)) {
+            return collect($value)
+                ->map(fn (mixed $point): ?array => $this->localized($point))
+                ->filter(fn (?array $point): bool => filled($point['us'] ?? null) || filled($point['id'] ?? null) || filled($point['cn'] ?? null))
+                ->values()
+                ->all();
+        }
+
+        $localized = $this->localized($value) ?? [];
+        $sentences = collect(['id', 'us', 'cn'])->mapWithKeys(function (string $locale) use ($localized): array {
+            $text = trim((string) ($localized[$locale] ?? ''));
+            $pattern = $locale === 'cn' ? '/(?<=[。！？])/u' : '/(?<=[.!?])\s+/u';
+
+            return [$locale => collect(preg_split($pattern, $text) ?: [])
+                ->map(fn (string $sentence): string => trim($sentence))
+                ->filter()
+                ->values()
+                ->all()];
+        });
+        $count = $sentences->map(fn (array $items): int => count($items))->max() ?? 0;
+
+        return collect(range(0, max(0, $count - 1)))
+            ->map(fn (int $index): array => [
+                'id' => $sentences['id'][$index] ?? $sentences['us'][$index] ?? $sentences['cn'][$index] ?? '',
+                'us' => $sentences['us'][$index] ?? $sentences['id'][$index] ?? $sentences['cn'][$index] ?? '',
+                'cn' => $sentences['cn'][$index] ?? $sentences['us'][$index] ?? $sentences['id'][$index] ?? '',
+            ])
+            ->filter(fn (array $point): bool => filled($point['us']) || filled($point['id']) || filled($point['cn']))
+            ->values()
+            ->all();
     }
 }

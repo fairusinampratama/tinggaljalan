@@ -274,6 +274,15 @@ class AdminForm
             return [];
         }
 
+        if ((isset($state['id']) || isset($state['us']) || isset($state['cn']))
+            && ! is_array($state['id'] ?? null)
+            && ! is_array($state['us'] ?? null)
+            && ! is_array($state['cn'] ?? null)) {
+            $item = self::normalizeLocalizedValue($state);
+
+            return filled($item['id']) || filled($item['us']) || filled($item['cn']) ? [$item] : [];
+        }
+
         if ((isset($state['id']) || isset($state['us']) || isset($state['cn'])) && (is_array($state['id'] ?? null) || is_array($state['us'] ?? null) || is_array($state['cn'] ?? null))) {
             $count = max(count($state['id'] ?? []), count($state['us'] ?? []), count($state['cn'] ?? []));
 

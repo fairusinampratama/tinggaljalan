@@ -58,6 +58,23 @@ class TourPackageTranslationHelperTest extends TestCase
         $this->assertSame('Flexible pickup', $state['highlights'][1]['cn']);
     }
 
+    public function test_it_fills_missing_policy_point_translations(): void
+    {
+        $state = TourPackageTranslationHelper::fillMissingFromEnglish([
+            'policies.cancellation' => [
+                ['us' => 'Cancel up to 24 hours before pickup.', 'id' => '', 'cn' => ''],
+            ],
+            'policies.confirmation' => [
+                ['us' => 'Confirmation is sent by WhatsApp.', 'id' => 'Konfirmasi dikirim lewat WhatsApp.', 'cn' => ''],
+            ],
+        ]);
+
+        $this->assertSame('Cancel up to 24 hours before pickup.', $state['policies.cancellation'][0]['id']);
+        $this->assertSame('Cancel up to 24 hours before pickup.', $state['policies.cancellation'][0]['cn']);
+        $this->assertSame('Konfirmasi dikirim lewat WhatsApp.', $state['policies.confirmation'][0]['id']);
+        $this->assertSame('Confirmation is sent by WhatsApp.', $state['policies.confirmation'][0]['cn']);
+    }
+
     public function test_it_fills_missing_itinerary_translations(): void
     {
         $state = TourPackageTranslationHelper::fillMissingFromEnglish([

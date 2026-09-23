@@ -243,7 +243,7 @@ class InertiaPublicData
             'goodToKnow' => self::localizedList($package->good_to_know),
             'pickupDetails' => self::localizedList($package->pickup_areas),
             'itinerary' => $itinerary,
-            'policies' => self::localizedObject($package->policies),
+            'policies' => self::localizedPolicies($package->policies),
             'testimonials' => collect($package->testimonials ?? [])->map(fn ($item) => [
                 'name' => $item['name'] ?? 'Traveler',
                 'meta' => self::localizedArray($item['meta'] ?? $package->review_source),
@@ -577,6 +577,34 @@ class InertiaPublicData
     private static function localizedObject(mixed $value): array
     {
         return collect($value ?? [])->mapWithKeys(fn ($item, $key) => [$key => is_array($item) ? self::localizedArray($item) : $item])->all();
+    }
+
+    private static function localizedPolicies(mixed $value): array
+    {
+        $policies = is_array($value) ? $value : [];
+
+        return [
+            'cancellation' => self::localizedPolicyList($policies['cancellation'] ?? []),
+            'confirmation' => self::localizedPolicyList($policies['confirmation'] ?? []),
+        ];
+    }
+
+    private static function localizedPolicyList(mixed $items): array
+    {
+        if (! is_array($items)) {
+            return filled($items) ? [self::localizedArray(['us' => (string) $items])] : [];
+        }
+
+        $isLegacyLocalizedValue = (isset($items['id']) || isset($items['us']) || isset($items['cn']))
+            && ! is_array($items['id'] ?? null)
+            && ! is_array($items['us'] ?? null)
+            && ! is_array($items['cn'] ?? null);
+
+        if ($isLegacyLocalizedValue) {
+            return [self::localizedArray($items)];
+        }
+
+        return self::localizedList($items);
     }
 
     private static function firstFilled(mixed ...$values): string

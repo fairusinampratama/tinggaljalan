@@ -461,26 +461,16 @@ class TourPackageForm
                 ->columns(2)
                 ->columnSpanFull(),
             Section::make('Traveler policies')
-                ->description('Clear expectations shown near the route detail policy section.')
+                ->description('Add one clear customer-facing policy point per row. Points appear in this order on the route detail page.')
                 ->schema([
-                    AdminForm::primaryLocalizedField('policies.cancellation', 'Cancellation policy', textarea: true)
-                        ->helperText('Explain cancellation timing, weather changes, and how updates are handled.')
-                        ->columnSpanFull(),
-                    AdminForm::primaryLocalizedField('policies.confirmation', 'Confirmation policy', textarea: true)
-                        ->helperText('Explain confirmation, payment timing, or WhatsApp follow-up.')
-                        ->columnSpanFull(),
-                    Section::make('Policy translations')
-                        ->description('Leave empty to use English automatically.')
-                        ->schema([
-                            ...AdminForm::translationFields('policies.cancellation', 'Cancellation policy', textarea: true),
-                            ...AdminForm::translationFields('policies.confirmation', 'Confirmation policy', textarea: true),
-                        ])
-                        ->columns(2)
-                        ->collapsed()
-                        ->collapsible()
-                        ->columnSpanFull(),
+                    AdminForm::primaryLocalizedRepeater('policies.cancellation', 'Cancellation points', required: true, textarea: true)
+                        ->helperText('Cover cancellation timing, weather changes, refunds, and how customers receive updates.')
+                        ->reorderableWithButtons(),
+                    AdminForm::primaryLocalizedRepeater('policies.confirmation', 'Confirmation points', required: true, textarea: true)
+                        ->helperText('Cover what is confirmed, payment timing, and WhatsApp follow-up.')
+                        ->reorderableWithButtons(),
                 ])
-                ->columns(2)
+                ->columns(1)
                 ->columnSpanFull(),
         ];
     }

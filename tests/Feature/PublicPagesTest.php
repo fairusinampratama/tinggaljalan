@@ -380,8 +380,13 @@ class PublicPagesTest extends TestCase
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $package->update([
             'policies' => [
-                'cancellation' => ['us' => 'Cancel up to 24 hours before pickup.', 'id' => '', 'cn' => ''],
-                'confirmation' => ['us' => 'Final confirmation is sent by WhatsApp.', 'id' => 'Konfirmasi final via WhatsApp.', 'cn' => ''],
+                'cancellation' => [
+                    ['us' => 'Cancel up to 24 hours before pickup.', 'id' => '', 'cn' => ''],
+                    ['us' => 'Weather changes are discussed by WhatsApp.', 'id' => 'Perubahan cuaca dibicarakan lewat WhatsApp.', 'cn' => ''],
+                ],
+                'confirmation' => [
+                    ['us' => 'Final confirmation is sent by WhatsApp.', 'id' => 'Konfirmasi final via WhatsApp.', 'cn' => ''],
+                ],
             ],
             'testimonials' => [
                 [
@@ -396,13 +401,37 @@ class PublicPagesTest extends TestCase
         $this->get("/routes/{$package->slug}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->where('route.policies.cancellation.us', 'Cancel up to 24 hours before pickup.')
-                ->where('route.policies.cancellation.id', 'Cancel up to 24 hours before pickup.')
-                ->where('route.policies.confirmation.id', 'Konfirmasi final via WhatsApp.')
+                ->has('route.policies.cancellation', 2)
+                ->where('route.policies.cancellation.0.us', 'Cancel up to 24 hours before pickup.')
+                ->where('route.policies.cancellation.0.id', 'Cancel up to 24 hours before pickup.')
+                ->where('route.policies.cancellation.1.id', 'Perubahan cuaca dibicarakan lewat WhatsApp.')
+                ->has('route.policies.confirmation', 1)
+                ->where('route.policies.confirmation.0.id', 'Konfirmasi final via WhatsApp.')
                 ->where('route.testimonials.0.name', 'Ari')
                 ->where('route.testimonials.0.meta.id', 'Google review')
                 ->where('route.testimonials.0.quote.cn', 'The trip was organized and easy to follow.')
                 ->where('route.reviewSource.id', 'Google reviews'));
+    }
+
+    public function test_route_detail_normalizes_legacy_policy_paragraphs_to_point_arrays(): void
+    {
+        $this->seed();
+
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'policies' => [
+                'cancellation' => ['us' => 'Legacy cancellation paragraph.', 'id' => '', 'cn' => ''],
+                'confirmation' => ['us' => 'Legacy confirmation paragraph.', 'id' => 'Paragraf konfirmasi lama.', 'cn' => ''],
+            ],
+        ]);
+
+        $this->get("/routes/{$package->slug}")
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('route.policies.cancellation', 1)
+                ->where('route.policies.cancellation.0.id', 'Legacy cancellation paragraph.')
+                ->has('route.policies.confirmation', 1)
+                ->where('route.policies.confirmation.0.id', 'Paragraf konfirmasi lama.'));
     }
 
     public function test_route_detail_renders_after_english_primary_package_edit(): void

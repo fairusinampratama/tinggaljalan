@@ -99,6 +99,40 @@ class FilamentAdminResourcesTest extends TestCase
         $this->assertTrue($package->fresh()->is_active);
     }
 
+    public function test_tour_package_policy_points_are_normalized_reordered_and_saved(): void
+    {
+        $this->seed();
+
+        $admin = User::where('email', 'admin@tinggaljalan.test')->firstOrFail();
+        $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
+        $package->update([
+            'policies' => [
+                'cancellation' => ['us' => 'Legacy cancellation paragraph.', 'id' => '', 'cn' => ''],
+                'confirmation' => ['us' => 'Legacy confirmation paragraph.', 'id' => '', 'cn' => ''],
+            ],
+        ]);
+
+        $this->actingAs($admin);
+        Livewire::test(EditTourPackage::class, ['record' => $package->getRouteKey()])
+            ->assertSet('data.policies.cancellation.0.us', 'Legacy cancellation paragraph.')
+            ->assertSet('data.policies.confirmation.0.us', 'Legacy confirmation paragraph.')
+            ->set('data.policies.cancellation', [
+                ['us' => 'Weather changes are discussed first.', 'id' => 'Perubahan cuaca dibahas lebih dulu.', 'cn' => ''],
+                ['us' => 'Cancel up to 24 hours before pickup.', 'id' => '', 'cn' => ''],
+            ])
+            ->set('data.policies.confirmation', [
+                ['us' => 'The final itinerary is confirmed by WhatsApp.', 'id' => '', 'cn' => ''],
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $policies = $package->fresh()->policies;
+
+        $this->assertSame('Weather changes are discussed first.', $policies['cancellation'][0]['us']);
+        $this->assertSame('Cancel up to 24 hours before pickup.', $policies['cancellation'][1]['us']);
+        $this->assertSame('The final itinerary is confirmed by WhatsApp.', $policies['confirmation'][0]['us']);
+    }
+
     public function test_tour_package_gallery_enforces_two_to_ten_images_when_used(): void
     {
         $this->seed();

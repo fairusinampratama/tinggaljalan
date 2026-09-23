@@ -26,6 +26,8 @@ class TourPackageTranslationHelper
         'details',
         'good_to_know',
         'pickup_areas',
+        'policies.cancellation',
+        'policies.confirmation',
     ];
 
     /**
