@@ -39,7 +39,7 @@ export function NewsDetailPage() {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div>
               <header className="mb-8">
-                <div className="type-meta flex flex-wrap items-center gap-2 text-ink">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1.5 text-secondary">
                     <Compass className="h-3.5 w-3.5" />
                     {getLocalized(category?.label, language)}
@@ -54,10 +54,10 @@ export function NewsDetailPage() {
                   </span>
                 </div>
 
-                <h1 className="type-detail-title mt-5 max-w-4xl text-balance text-primary">
+                <h1 className="mt-5 max-w-4xl text-balance font-display text-4xl font-normal leading-[1.06] tracking-[-0.015em] text-primary sm:text-5xl lg:text-6xl">
                   {getLocalized(article.title, language)}
                 </h1>
-                <p className="type-body mt-5 max-w-3xl text-pretty text-muted">
+                <p className="mt-5 max-w-3xl text-pretty text-base font-medium leading-8 text-muted sm:text-lg">
                   {getLocalized(article.excerpt, language)}
                 </p>
               </header>
@@ -81,20 +81,20 @@ export function NewsDetailPage() {
 
                   return (
                     <section key={id} id={id} className="scroll-mt-28 mb-10">
-                      <h2 className="type-detail-section text-balance text-primary">{getLocalized(section.heading, language)}</h2>
-                      <p className="type-body mt-4 whitespace-pre-line text-pretty text-muted">{getLocalized(section.body, language)}</p>
+                      <h2 className="text-balance font-display text-2xl font-normal leading-[1.12] text-primary sm:text-3xl">{getLocalized(section.heading, language)}</h2>
+                      <p className="mt-4 whitespace-pre-line text-pretty text-base font-medium leading-8 text-muted sm:text-lg">{getLocalized(section.body, language)}</p>
                     </section>
                   );
                 })}
 
                 <section className="mt-12 overflow-hidden rounded-2xl bg-primary p-6 text-white shadow-soft sm:p-8">
-                  <p className="public-eyebrow text-accent">
+                  <p className="text-xs font-bold uppercase tracking-[0.08em]  text-accent">
                     {t.newsNeedAdviceTitle}
                   </p>
-                  <h2 className="type-section-title mt-2 text-white">
+                  <h2 className="mt-2 font-display text-3xl font-normal leading-tight text-white">
                     {t.newsNeedAdviceHeading}
                   </h2>
-                  <p className="type-body-compact mt-3 max-w-xl text-white/70">
+                  <p className="mt-3 max-w-xl text-sm font-medium leading-7 text-white/70">
                     {t.newsNeedAdviceText}
                   </p>
                   <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -102,14 +102,14 @@ export function NewsDetailPage() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="type-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-[#1fb457] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-[#1fb457] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                     >
                       <MessageCircle className="h-4 w-4" />
                       WhatsApp
                     </a>
                     <Link
                       to="/routes"
-                      className="type-button inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/25 bg-surface px-5 py-2.5 text-ink transition hover:-translate-y-0.5 hover:border-secondary hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/25 bg-surface px-5 py-2.5 text-sm font-bold text-ink transition hover:-translate-y-0.5 hover:border-secondary hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                     >
                       <RouteIcon className="h-4 w-4" />
                       {t.viewRoutes}
@@ -121,10 +121,10 @@ export function NewsDetailPage() {
 
             <aside className="lg:sticky lg:top-28 lg:self-start flex flex-col gap-6">
               <div className="hidden lg:block rounded-2xl border border-line bg-surface p-5 shadow-soft">
-                <p className="public-eyebrow text-secondary">
+                <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">
                   {t.newsInThisArticle}
                 </p>
-                <ul className="type-body-compact-strong mt-4 grid gap-3 text-muted">
+                <ul className="mt-4 grid gap-3 text-sm font-bold text-muted">
                   {article.sections.map((section) => (
                     <li key={getLocalized(section.heading, language)}>
                       <a href={`#${getLocalized(section.heading, 'us').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="block rounded-lg -mx-2 px-2 py-2 transition hover:bg-surface hover:text-secondary">
@@ -136,7 +136,7 @@ export function NewsDetailPage() {
               </div>
 
               <div className="rounded-2xl border border-line bg-surface p-5 shadow-soft">
-                <p className="public-eyebrow text-secondary">
+                <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">
                   {t.newsRelatedRoutes}
                 </p>
                 <div className="mt-4 grid gap-3">
@@ -146,17 +146,17 @@ export function NewsDetailPage() {
                       to={`/routes/${route.id}`}
                       className="group rounded-xl border border-line bg-canvas p-4 transition hover:-translate-y-0.5 hover:border-secondary hover:bg-surface"
                     >
-                      <p className="type-body-compact-strong flex items-center gap-2 text-ink transition group-hover:text-secondary">
+                      <p className="flex items-center gap-2 text-sm font-bold text-ink transition group-hover:text-secondary">
                         <RouteIcon className="h-4 w-4 text-secondary" />
                         {getLocalized(route.title, language)}
                       </p>
-                      <p className="type-meta mt-2 text-muted">{getLocalized(route.bestFor, language)}</p>
+                      <p className="mt-2 text-xs font-semibold leading-5 text-muted">{getLocalized(route.bestFor, language)}</p>
                     </Link>
                   ))}
                 </div>
                 <Link
                   to="/routes"
-                  className="type-button mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-5 py-2.5 text-ink transition hover:-translate-y-0.5 hover:border-secondary hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                  className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-5 py-2.5 text-sm font-bold text-ink transition hover:-translate-y-0.5 hover:border-secondary hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                 >
                   {t.viewAllRoutes}
                 </Link>

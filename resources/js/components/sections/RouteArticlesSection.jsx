@@ -65,15 +65,15 @@ export function RouteArticlesSection({
                   />
                 </div>
                 <div className={`${isCatalog ? 'flex min-w-0 flex-col p-4' : 'flex min-w-0 flex-1 flex-col p-5'}`}>
-                  <span className={`${isCatalog ? 'block h-6 truncate' : 'self-start line-clamp-1'} type-meta rounded-full bg-secondary/10 px-3 py-1 uppercase tracking-[0.04em] text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white`}>
+                  <span className={`${isCatalog ? 'block h-6 truncate' : 'self-start line-clamp-1'} rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.04em] text-secondary transition duration-300 group-hover:bg-secondary group-hover:text-white group-focus-within:bg-secondary group-focus-within:text-white`}>
                     {getLocalized(isCatalog ? item.badge : item.tag, language)}
                   </span>
-                  <h3 className={`${isCatalog ? 'mt-3 min-h-[2.4rem] line-clamp-2 sm:min-h-[2.55rem]' : 'mt-4 min-h-[2.4rem] line-clamp-2 sm:min-h-[2.55rem]'} type-product-title transition duration-300 group-hover:text-secondary group-focus-within:text-secondary`}>
+                  <h3 className={`${isCatalog ? 'mt-3 line-clamp-2 text-lg sm:min-h-[2.8rem]' : 'mt-4 line-clamp-2 text-[clamp(1.35rem,2.8vw,1.75rem)] lg:min-h-[4.4rem]'} font-display font-normal leading-tight transition duration-300 group-hover:text-secondary group-focus-within:text-secondary`}>
                     {getLocalized(item.title, language)}
                   </h3>
                   <RatingDisplay rating={item.rating} reviewCount={item.reviewCount} className={isCatalog ? 'mt-3 min-h-5' : 'mt-3'} />
                   {isCatalog ? (
-                    <div className="type-meta mt-3 grid grid-rows-4 gap-2 text-muted">
+                    <div className="mt-3 grid grid-rows-4 gap-2 text-xs font-semibold text-muted">
                       <div className="contents">
                         <span className="inline-flex min-w-0 items-center gap-1.5">
                           <Clock className="h-3.5 w-3.5 shrink-0 text-ink" />
@@ -94,26 +94,26 @@ export function RouteArticlesSection({
                       </div>
                     </div>
                   ) : (
-                    <p className="type-meta mt-3 truncate uppercase tracking-[0.04em] text-secondary">
+                    <p className="mt-3 truncate text-xs font-bold uppercase tracking-[0.04em] text-secondary">
                       {getLocalized(item.destinationName, language)} / {getLocalized(item.category, language)}
                     </p>
                   )}
-                  <p className={`${isCatalog ? 'mt-3 hidden' : 'mt-4 line-clamp-4 lg:min-h-24'} type-body-compact text-muted`}>
+                  <p className={`${isCatalog ? 'mt-3 hidden' : 'mt-4 line-clamp-4 lg:min-h-24'} text-sm font-semibold leading-6 text-muted`}>
                     {getLocalized(isCatalog ? item.bestFor : item.intro, language)}
                   </p>
                   {isCatalog ? (
                     <div className="mt-auto border-t border-line pt-3 text-right">
-                      <p className="type-meta text-muted">{t.priceFrom}</p>
-                      <p className="type-price whitespace-nowrap text-ink">
+                      <p className="text-xs font-semibold text-muted">{t.priceFrom}</p>
+                      <p className="whitespace-nowrap text-2xl font-bold leading-none text-ink">
                         {formatCurrency(priceCurrency === 'USD' ? item.basePriceUsd : item.basePriceIdr ?? item.basePrice, priceCurrency)}
                       </p>
-                      <p className="type-meta mt-1 whitespace-nowrap text-muted">{t.perPerson}</p>
-                      <p className="type-meta mt-1 truncate text-muted">{t.priceVariesByGroupSize}</p>
+                      <p className="mt-1 whitespace-nowrap text-xs font-semibold text-muted">{t.perPerson}</p>
+                      <p className="mt-1 truncate text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
                     </div>
                   ) : (
-                    <div className="type-body-compact-strong mt-auto pt-4 text-muted">
+                    <div className="mt-auto pt-4 text-sm font-semibold text-muted">
                       <p>{t.priceFrom} {formatCurrency(priceCurrency === 'USD' ? item.basePriceUsd : item.basePriceIdr ?? item.basePrice, priceCurrency)}{t.perPax}</p>
-                      <p className="type-meta mt-1">{t.priceVariesByGroupSize}</p>
+                      <p className="mt-1 text-xs">{t.priceVariesByGroupSize}</p>
                     </div>
                   )}
                   <div className={`${isCatalog ? 'mt-4 hidden' : 'mt-4 grid grid-cols-2 gap-2'}`} onClick={(event) => event.stopPropagation()}>
@@ -130,7 +130,7 @@ export function RouteArticlesSection({
           </div>
         ) : (
           <div className="rounded-xl border border-line bg-canvas p-8 text-center">
-            <p className="type-ui-title text-ink">{emptyText}</p>
+            <p className="text-xl font-bold text-ink">{emptyText}</p>
           </div>
         )}
 

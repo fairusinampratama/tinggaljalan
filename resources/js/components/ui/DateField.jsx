@@ -127,10 +127,10 @@ export function DateField({ label, value, onChange, language = 'en', className =
 
   return (
     <div ref={pickerRef} className={`relative w-full min-w-0 max-w-full ${className}`}>
-      {label ? <span className="type-label mb-2 block text-ink">{label}</span> : null}
+      {label ? <span className="mb-2 block text-sm font-semibold text-ink">{label}</span> : null}
       <button
         type="button"
-        className={`type-control flex min-h-10 w-full min-w-0 max-w-full items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3 text-left text-ink outline-none transition duration-200 hover:border-secondary/40 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-11 ${
+        className={`flex min-h-10 w-full min-w-0 max-w-full items-center justify-between gap-3 rounded-xl border border-line bg-canvas px-4 py-3 text-left text-sm font-semibold text-ink outline-none transition duration-200 hover:border-secondary/40 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus:border-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary sm:min-h-11 ${
           isOpen ? 'border-secondary bg-surface shadow-lg shadow-secondary/10' : ''
         }`}
         aria-expanded={isOpen}
@@ -151,7 +151,7 @@ export function DateField({ label, value, onChange, language = 'en', className =
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <p className="type-label text-center text-ink">{monthLabel}</p>
+            <p className="text-center text-sm font-bold text-ink">{monthLabel}</p>
             <button
               type="button"
               className="grid h-9 w-9 place-items-center rounded-xl border border-line text-ink transition duration-200 hover:border-secondary hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
@@ -164,7 +164,7 @@ export function DateField({ label, value, onChange, language = 'en', className =
 
           <div className="grid grid-cols-7 gap-1 text-center">
             {weekdayLabels.map((day) => (
-              <span key={day} className="public-eyebrow py-1 text-muted">
+              <span key={day} className="py-1 text-[11px] font-semibold uppercase text-muted">
                 {day}
               </span>
             ))}
@@ -183,7 +183,7 @@ export function DateField({ label, value, onChange, language = 'en', className =
                   type="button"
                   disabled={isDisabled}
                   title={availability.reason || statusLabels[availability.status] || statusLabels.available}
-                  className={`type-meta grid aspect-square min-h-9 place-items-center rounded-xl transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                  className={`grid aspect-square min-h-9 place-items-center rounded-xl text-xs font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
                     isSelected
                       ? 'bg-secondary text-white shadow-lg shadow-secondary/20'
                       : dayStatusClass
@@ -196,7 +196,7 @@ export function DateField({ label, value, onChange, language = 'en', className =
             })}
           </div>
           {showLegend ? (
-            <div className="public-eyebrow mt-4 grid grid-cols-2 gap-2 text-muted">
+            <div className="mt-4 grid grid-cols-2 gap-2 text-[11px] font-bold text-muted">
               {Object.entries(statusLabels).map(([status, text]) => (
                 <span key={status} className="inline-flex items-center gap-2">
                   <span className={`h-2.5 w-2.5 rounded-full ${

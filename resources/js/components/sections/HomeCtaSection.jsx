@@ -14,10 +14,10 @@ export function HomeCtaSection({ whatsappUrl, items }) {
           <div className="grid min-w-0 gap-6 border-t border-line pt-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)] lg:items-center">
             <div className="min-w-0 max-w-xl">
               <p className="public-eyebrow text-secondary">{t.availableOnEyebrow}</p>
-              <h2 className="type-editorial-card mt-2 text-balance text-primary">
+              <h2 className="mt-2 text-balance font-display text-[clamp(1.75rem,3.5vw,2.35rem)] leading-[1.1] text-primary">
                 {t.availableOnTitle}
               </h2>
-              <p className="type-body mt-2 max-w-lg">{t.availableOnText}</p>
+              <p className="public-copy mt-2 max-w-lg">{t.availableOnText}</p>
             </div>
 
             <div className="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4">
@@ -46,10 +46,10 @@ export function HomeCtaSection({ whatsappUrl, items }) {
           <div className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 max-w-2xl">
               <p className="public-eyebrow text-accent">{t.ctaEyebrow}</p>
-              <h2 className="type-statement mt-3 text-balance">
+              <h2 className="mt-3 text-balance font-display text-[clamp(2.25rem,5vw,3rem)] leading-[1.08]">
                 {t.ctaTitle}
               </h2>
-              <p className="type-body mt-3 max-w-xl text-pretty text-white/72">{t.ctaText}</p>
+              <p className="mt-3 max-w-xl text-pretty text-sm leading-7 text-white/72">{t.ctaText}</p>
             </div>
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
               <Link to="/routes" className={[buttonClass, 'bg-white text-primary shadow-sm hover:bg-subtle'].join(' ')}>

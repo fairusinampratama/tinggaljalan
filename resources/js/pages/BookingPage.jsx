@@ -132,7 +132,7 @@ export function BookingPage() {
       </div>
       <div className="relative grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
         <form className={`min-w-0 max-w-full rounded-xl border border-line bg-surface p-5 shadow-soft sm:p-6 ${cardHoverClass}`} onSubmit={submitDraft}>
-          <p className="type-body-compact mb-5 text-muted">{t.tripSetupText}</p>
+          <p className="mb-5 text-sm font-semibold leading-6 text-muted">{t.tripSetupText}</p>
           <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <Field label={t.destinationFilterLabel}>
               <Dropdown
@@ -194,7 +194,7 @@ export function BookingPage() {
                     max={paxMax}
                     step="1"
                     value={booking.pax}
-                    className="type-control min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-ink outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="min-w-0 flex-1 bg-transparent px-4 py-3 text-center text-sm font-bold text-ink outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                     onChange={(event) => {
                       const value = event.target.value;
                       updateBooking({ pax: value === '' ? '' : normalizePax(value) });
@@ -218,14 +218,14 @@ export function BookingPage() {
                 type="text"
                 value={booking.pickup}
                 placeholder={t.pickupPlaceholder}
-                className="type-control w-full min-w-0 max-w-full rounded-xl border border-line bg-canvas px-4 py-3 outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
+                className="w-full min-w-0 max-w-full rounded-xl border border-line bg-canvas px-4 py-3 text-sm font-bold outline-none transition hover:border-secondary/40 hover:bg-surface focus:border-secondary"
                 onChange={(event) => setBooking((current) => ({ ...current, pickup: event.target.value }))}
               />
             </Field>
           </div>
           {selectedRoute?.addOns?.length ? (
             <div className="mt-5 min-w-0 max-w-full">
-              <p className="type-label mb-3 text-ink">{t.addOns}</p>
+              <p className="mb-3 text-sm font-semibold text-ink">{t.addOns}</p>
               <div className="grid min-w-0 max-w-full grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                 {selectedRoute.addOns.map((addOn) => {
                   const checked = booking.addOns.includes(addOn.id);
@@ -247,9 +247,9 @@ export function BookingPage() {
                           onChange={() => toggleAddOn(addOn.id)}
                         />
                         <span className="min-w-0 flex-1">
-                          <span className="type-body-compact-strong block break-words text-ink">{getLocalized(addOn.title, language)}</span>
-                          <span className="type-meta mt-1 block break-words text-muted">{getLocalized(addOn.description, language)}</span>
-                          <span className="type-meta mt-2 block text-secondary">
+                          <span className="block break-words text-sm font-bold text-ink">{getLocalized(addOn.title, language)}</span>
+                          <span className="mt-1 block break-words text-xs font-semibold leading-5 text-muted">{getLocalized(addOn.description, language)}</span>
+                          <span className="mt-2 block text-xs font-bold text-secondary">
                             {formatCurrency(addOnPrice, booking.currency)} {pricingLabel}
                           </span>
                         </span>
@@ -260,7 +260,7 @@ export function BookingPage() {
               </div>
             </div>
           ) : null}
-          <div className={`type-meta mt-4 rounded-xl border px-4 py-3 ${
+          <div className={`mt-4 rounded-xl border px-4 py-3 text-xs font-bold leading-5 ${
             dateAvailability.status === 'limited'
               ? 'border-amber-200 bg-amber-50 text-amber-700'
               : dateAvailability.status === 'booked' || dateAvailability.status === 'blocked'
@@ -279,7 +279,7 @@ export function BookingPage() {
               <>
                 <button
                   type="button"
-                  className="type-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-sm font-bold text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
                   disabled
                 >
                   {t.customGroupContactFirst}
@@ -288,7 +288,7 @@ export function BookingPage() {
                   href={whatsappUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="type-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-white transition hover:bg-[#1ebe5d] hover:text-white sm:min-h-11 sm:px-5 sm:py-2.5"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1ebe5d] hover:text-white sm:min-h-11 sm:px-5 sm:py-2.5"
                 >
                   <MessageCircle className="h-4 w-4" />
                   {t.chatOnWhatsapp}
@@ -297,7 +297,7 @@ export function BookingPage() {
             ) : bookingBlock.blocked || dateAvailability.status === 'booked' ? (
               <button
                 type="button"
-                className="type-button inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-muted/30 px-4 py-2 text-sm font-bold text-muted sm:min-h-11 sm:px-5 sm:py-2.5"
                 disabled
               >
                 {dateAvailability.status === 'booked' ? t.booked : t.blockedTitle}

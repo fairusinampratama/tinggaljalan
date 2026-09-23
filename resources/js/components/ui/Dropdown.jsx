@@ -80,10 +80,10 @@ export function Dropdown({
 
   return (
     <div ref={dropdownRef} className={`relative w-full min-w-0 max-w-full ${className}`}>
-      {label ? <span className="type-label mb-2 block text-ink">{label}</span> : null}
+      {label ? <span className="mb-2 block text-sm font-semibold text-ink">{label}</span> : null}
       <button
         type="button"
-        className={`type-control flex w-full min-w-0 max-w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-4 py-3 text-left outline-none transition duration-200 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+        className={`flex w-full min-w-0 max-w-full items-center justify-between gap-3 rounded-xl border bg-canvas px-4 py-3 text-left text-sm font-semibold outline-none transition duration-200 hover:bg-surface hover:shadow-lg hover:shadow-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
           invalid ? 'border-red-400 focus:border-red-500 focus-visible:outline-red-500' : 'border-line hover:border-secondary/40 focus:border-secondary'
         } ${isOpen ? 'bg-surface shadow-lg shadow-secondary/10' : ''} ${triggerClassName}`}
         aria-label={ariaLabel}
@@ -102,7 +102,7 @@ export function Dropdown({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-ink">{selectedOption?.selectedLabel ?? selectedOption?.label ?? placeholder}</span>
           {selectedOption?.meta && !selectedOption?.selectedLabel ? (
-            <span className="type-meta mt-0.5 block truncate text-muted">{selectedOption.meta}</span>
+            <span className="mt-0.5 block truncate text-xs font-semibold text-muted">{selectedOption.meta}</span>
           ) : null}
         </span>
         <ChevronDown className={`h-4 w-4 shrink-0 text-muted transition ${isOpen ? 'rotate-180 text-secondary' : ''}`} />
@@ -120,7 +120,7 @@ export function Dropdown({
                   ref={searchRef}
                   type="search"
                   value={query}
-                  className="type-control min-w-0 flex-1 border-0 bg-transparent py-2.5 outline-none"
+                  className="min-w-0 flex-1 border-0 bg-transparent py-2.5 text-sm font-semibold outline-none"
                   placeholder={searchPlaceholder}
                   aria-label={searchPlaceholder}
                   onChange={(event) => setQuery(event.target.value)}
@@ -138,7 +138,7 @@ export function Dropdown({
                   type="button"
                   role="option"
                   aria-selected={selected}
-                  className={`type-control flex w-full min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
+                  className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary ${
                     selected ? 'bg-subtle text-secondary' : 'text-ink hover:bg-canvas hover:text-secondary'
                   }`}
                   onClick={() => {
@@ -148,13 +148,13 @@ export function Dropdown({
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{option.label}</span>
-                    {option.meta ? <span className="type-meta mt-0.5 block truncate text-muted">{option.meta}</span> : null}
+                    {option.meta ? <span className="mt-0.5 block truncate text-xs font-semibold text-muted">{option.meta}</span> : null}
                   </span>
                   {selected ? <CheckCircle className="h-4 w-4 shrink-0" /> : null}
                 </button>
               );
             }) : (
-              <p className="type-body-compact-strong px-3 py-6 text-center text-muted">{emptyMessage}</p>
+              <p className="px-3 py-6 text-center text-sm font-semibold text-muted">{emptyMessage}</p>
             )}
           </div>
         </div>

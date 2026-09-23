@@ -15,7 +15,7 @@ export function CheckoutSteps({ current }) {
       {steps.map((step, index) => (
         <div
           key={step.path}
-          className={`type-button-compact rounded-xl border px-4 py-3 ${stepHoverClass} ${
+          className={`rounded-xl border px-4 py-3 text-sm font-bold ${stepHoverClass} ${
             index <= current ? 'border-secondary bg-secondary text-white' : 'border-line bg-surface text-muted'
           }`}
         >

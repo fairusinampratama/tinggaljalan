@@ -39,7 +39,7 @@ export function Footer({ t, whatsappUrl }) {
         <div className="grid gap-8 lg:grid-cols-[1.25fr_0.9fr_1fr] lg:items-start">
           <div>
             <img src={logoUrl} alt="Tinggal Jalan" className="h-11 w-auto rounded bg-surface px-3 py-2" />
-            <p className="type-body-compact mt-4 max-w-lg text-white/65">{t.footerText}</p>
+            <p className="mt-4 max-w-lg text-sm font-semibold leading-6 text-white/65">{t.footerText}</p>
             {address ? (
               <a
                 href={mapUrl}
@@ -49,10 +49,10 @@ export function Footer({ t, whatsappUrl }) {
               >
                 <MapPin className="mt-1 h-4 w-4 shrink-0 text-secondary" />
                 <span className="min-w-0 flex-1">
-                  <span className="type-meta block uppercase text-white/55">
+                  <span className="block text-xs font-bold uppercase text-white/55">
                     {t.footerOfficeAddress ?? 'Office address'}
                   </span>
-                  <address className="type-body-compact-strong mt-1 whitespace-pre-line not-italic">
+                  <address className="mt-1 whitespace-pre-line text-sm font-semibold leading-6 not-italic">
                     {address}
                   </address>
                 </span>
@@ -61,7 +61,7 @@ export function Footer({ t, whatsappUrl }) {
             ) : null}
             <div className="mt-5 flex flex-wrap gap-2">
               {trustBadges.map((item) => (
-                <span key={item} className="public-eyebrow rounded-full border border-white/15 px-3 py-1.5 text-white/75">
+                <span key={item} className="rounded-full border border-white/15 px-3 py-1.5 text-[11px] font-bold text-white/75">
                   {item}
                 </span>
               ))}
@@ -71,8 +71,8 @@ export function Footer({ t, whatsappUrl }) {
           <nav className="grid grid-cols-2 gap-6" aria-label="Footer navigation">
             {footerColumns.map((column) => (
               <div key={column.title}>
-                <h3 className="type-label text-white">{column.title}</h3>
-                <ul className="type-body-compact mt-3 grid gap-2 text-white/65">
+                <h3 className="text-sm font-bold text-white">{column.title}</h3>
+                <ul className="mt-3 grid gap-2 text-sm font-semibold text-white/65">
                   {column.links.map((link) => (
                     <li key={`${column.title}-${link.label}`}>
                       <a
@@ -91,9 +91,9 @@ export function Footer({ t, whatsappUrl }) {
           </nav>
 
           <div className="rounded-xl border border-white/10 bg-surface/5 p-5">
-            <p className="public-eyebrow text-white/58">{t.contactEyebrow}</p>
-            <h2 className="type-editorial-card mt-2">{t.contactTitleFooter}</h2>
-            <p className="type-body-compact mt-2 text-white/65">{t.contactTextFooter}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.04em] text-white/58">{t.contactEyebrow}</p>
+            <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
             <div className="mt-5 flex flex-col gap-3">
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
                 <MessageCircle className={iconSize} /> {t.sendToWhatsapp ?? 'WhatsApp'}
@@ -105,7 +105,7 @@ export function Footer({ t, whatsappUrl }) {
           </div>
         </div>
 
-        <div className="type-meta mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-white/50 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs font-semibold text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 Tinggal Jalan. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
             <a

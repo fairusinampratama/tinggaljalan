@@ -73,16 +73,16 @@ export function NewsPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] lg:items-end">
             <div>
-              <p className="public-eyebrow mb-3 text-secondary">{t.newsEyebrow}</p>
-              <h1 className="type-detail-title text-primary">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.newsEyebrow}</p>
+              <h1 className="font-display text-3xl font-normal leading-tight text-primary sm:text-5xl">
                 {t.newsTitle}
               </h1>
-              <p className="type-body mt-5 max-w-3xl text-muted">
+              <p className="mt-5 max-w-3xl text-base font-medium leading-7 text-muted">
                 {t.newsDescription}
               </p>
             </div>
             <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-              <p className="public-eyebrow text-secondary">
+              <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">
                 {t.newsStartHere}
               </p>
               <div className="mt-4 grid grid-cols-3 gap-3 text-center">
@@ -92,8 +92,8 @@ export function NewsPage() {
                   { value: 3, label: t.newsQuickPaths },
                 ].map((item) => (
                   <div key={item.label} className="rounded-xl bg-canvas p-3">
-                    <p className="type-price text-ink">{item.value}</p>
-                    <p className="type-meta mt-1 text-muted">{item.label}</p>
+                    <p className="text-2xl font-bold text-ink">{item.value}</p>
+                    <p className="mt-1 text-xs font-semibold text-muted">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -134,10 +134,10 @@ export function NewsPage() {
                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/10">
                     <SearchX className="h-6 w-6 text-secondary" />
                   </div>
-                  <p className="type-ui-title text-ink">
+                  <p className="text-xl font-bold text-ink">
                     {t.newsNoMatchTitle}
                   </p>
-                  <p className="type-body-compact mx-auto mt-2 max-w-sm text-muted">
+                  <p className="mx-auto mt-2 max-w-sm text-sm font-semibold leading-6 text-muted">
                     {t.newsNoMatchText}
                   </p>
                 </div>

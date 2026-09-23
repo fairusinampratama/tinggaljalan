@@ -67,7 +67,7 @@ export function PhoneInput({
           autoComplete="tel-national"
           value={value || undefined}
           required={required}
-          className="type-control min-w-0 flex-1 border-0 bg-transparent px-4 py-3 outline-none"
+          className="min-w-0 flex-1 border-0 bg-transparent px-4 py-3 text-sm font-bold outline-none"
           placeholder={selectedCountry === 'ID' ? '812 3456 7890' : 'Phone number'}
           aria-label="WhatsApp number"
           aria-invalid={invalid || undefined}

@@ -182,7 +182,7 @@ export function RouteGallery({ images, alt, labels }) {
     >
       <div className="relative mx-auto flex min-h-0 w-full max-w-7xl flex-col" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className="flex items-center justify-between pb-3 text-white">
-          <span className="type-body-compact-strong rounded-full bg-black/30 px-3 py-1.5" aria-live="polite">{counter}</span>
+          <span className="rounded-full bg-black/30 px-3 py-1.5 text-sm font-semibold" aria-live="polite">{counter}</span>
           <button
             ref={closeButtonRef}
             type="button"
@@ -258,7 +258,7 @@ export function RouteGallery({ images, alt, labels }) {
               <Expand className="h-4 w-4" aria-hidden="true" />
             </span>
           </button>
-          <span className="type-meta absolute bottom-3 right-3 rounded-full bg-primary/80 px-3 py-1.5 text-white" aria-live="polite">{counter}</span>
+          <span className="absolute bottom-3 right-3 rounded-full bg-primary/80 px-3 py-1.5 text-xs font-semibold text-white" aria-live="polite">{counter}</span>
           {hasMultiple ? (
             <>
               <GalleryButton direction="previous" label={labels.previous} onClick={showPrevious} />

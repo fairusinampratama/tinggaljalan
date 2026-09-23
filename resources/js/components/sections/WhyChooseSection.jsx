@@ -30,10 +30,10 @@ export function WhyChooseSection({ items }) {
 
             return (
               <article key={getLocalized(title, language)} className={`rounded-xl border border-line bg-surface p-6 ${cardHoverClass}`}>
-                <h3 className="type-ui-title flex items-center gap-2 text-ink">
+                <h3 className="flex items-center gap-2 text-xl font-bold text-ink">
                   <Icon className="h-4 w-4 text-secondary" /> {getLocalized(title, language)}
                 </h3>
-                <p className="type-body-compact mt-3 text-muted">{getLocalized(text, language)}</p>
+                <p className="mt-3 text-sm font-semibold leading-6 text-muted">{getLocalized(text, language)}</p>
               </article>
             );
           })}

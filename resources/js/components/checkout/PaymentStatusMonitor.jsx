@@ -97,7 +97,7 @@ export function PaymentStatusMonitor({ payment }) {
     : null;
 
   return (
-    <div className={`type-body-compact-strong mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 ${
+    <div className={`mt-5 flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-semibold ${
       check.succeeded
         ? 'border-secondary/20 bg-subtle text-muted'
         : 'border-amber-200 bg-amber-50 text-amber-900'
@@ -111,7 +111,7 @@ export function PaymentStatusMonitor({ payment }) {
               : (payment.copy?.checked ?? 'Payment status is checked automatically.'))
             : (payment.copy?.refresh_failed ?? "Unable to refresh right now; we'll retry automatically.")}
         </p>
-        {checkedAt && check.succeeded ? <p className="type-meta mt-1">{(payment.copy?.last_checked ?? 'Last checked at :time').replace(':time', checkedAt)}</p> : null}
+        {checkedAt && check.succeeded ? <p className="mt-1 text-xs">{(payment.copy?.last_checked ?? 'Last checked at :time').replace(':time', checkedAt)}</p> : null}
       </div>
     </div>
   );
