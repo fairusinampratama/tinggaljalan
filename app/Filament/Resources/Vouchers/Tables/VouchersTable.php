@@ -48,6 +48,8 @@ class VouchersTable
                     ->state(fn (Voucher $record): string => (string) ($record->usage_limit ?? 'Unlimited'))
                     ->sortable(),
                 IconColumn::make('is_active')->boolean(),
+                IconColumn::make('is_public')->label('Homepage')->boolean(),
+                TextColumn::make('sort_order')->label('Promo order')->sortable(),
             ])
             ->filters([
                 SelectFilter::make('discount_type')->options([
@@ -55,6 +57,7 @@ class VouchersTable
                     'fixed' => 'Fixed amount',
                 ]),
                 TernaryFilter::make('is_active'),
+                TernaryFilter::make('is_public')->label('Homepage promotion'),
             ])
             ->recordActions([
                 EditAction::make(),

@@ -75,6 +75,11 @@ class TourPackage extends Model
         return $this->belongsToMany(NewsArticle::class);
     }
 
+    public function vouchers(): BelongsToMany
+    {
+        return $this->belongsToMany(Voucher::class);
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);

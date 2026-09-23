@@ -77,6 +77,41 @@ class VoucherEligibilityTest extends TestCase
         $this->assertSame(VoucherEligibilityService::APPLIED, $service->evaluate($voucher->code, 'IDR')['state']);
     }
 
+    public function test_public_promotions_respect_visibility_currency_schedule_usage_and_order(): void
+    {
+        $this->seed();
+        $service = app(VoucherEligibilityService::class);
+        $bromo = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        $local = Voucher::query()->where('code', 'TJHEMAT')->firstOrFail();
+
+        $bromo->update([
+            'is_public' => true,
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addHour(),
+            'usage_limit' => 1,
+            'sort_order' => 20,
+        ]);
+        $local->update([
+            'is_public' => true,
+            'starts_at' => null,
+            'ends_at' => now()->addHour(),
+            'sort_order' => 10,
+        ]);
+
+        $this->assertSame(['TJHEMAT', 'BROMO10'], $service->publicPromotions('IDR')->pluck('code')->all());
+        $this->assertSame(['BROMO10'], $service->publicPromotions('USD')->pluck('code')->all());
+
+        $booking = $this->bookingUsing($bromo, 'new');
+        $this->assertSame(['TJHEMAT'], $service->publicPromotions('IDR')->pluck('code')->all());
+
+        $booking->update(['status' => 'cancelled']);
+        $bromo->update(['starts_at' => now()->addMinute()]);
+        $this->assertSame(['TJHEMAT'], $service->publicPromotions('IDR')->pluck('code')->all());
+
+        $bromo->update(['starts_at' => null, 'is_public' => false]);
+        $this->assertSame(['TJHEMAT'], $service->publicPromotions('IDR')->pluck('code')->all());
+    }
+
     public function test_final_submission_rechecks_exhausted_voucher_without_creating_booking(): void
     {
         $this->seed();

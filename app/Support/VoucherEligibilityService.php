@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Voucher;
+use Illuminate\Support\Collection;
 
 class VoucherEligibilityService
 {
@@ -53,6 +54,29 @@ class VoucherEligibilityService
         return $voucher->bookings()->where('status', '!=', 'cancelled')->count();
     }
 
+    /**
+     * @return Collection<int, Voucher>
+     */
+    public function publicPromotions(string $currency, int $limit = 8): Collection
+    {
+        return Voucher::query()
+            ->where('is_active', true)
+            ->where('is_public', true)
+            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+            ->with(['tourPackages' => fn ($query) => $query->active()->ordered()])
+            ->withCount([
+                'bookings as active_redemptions_count' => fn ($query) => $query->where('status', '!=', 'cancelled'),
+            ])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (Voucher $voucher): bool => $this->supportsCurrency($voucher, $currency)
+                && $this->hasUsageRemaining($voucher, (int) $voucher->active_redemptions_count))
+            ->take($limit)
+            ->values();
+    }
+
     private function isEligible(Voucher $voucher, string $currency, bool $checkUsage): bool
     {
         if (! $voucher->is_active
@@ -60,6 +84,17 @@ class VoucherEligibilityService
             || ($voucher->ends_at && $voucher->ends_at->isPast())) {
             return false;
         }
+
+        if (! $this->supportsCurrency($voucher, $currency)) {
+            return false;
+        }
+
+        return ! $checkUsage || $this->hasUsageRemaining($voucher, $this->redemptionCount($voucher));
+    }
+
+    private function supportsCurrency(Voucher $voucher, string $currency): bool
+    {
+        $currency = strtoupper($currency);
 
         $allowedCurrencies = $voucher->allowed_currencies ?? [];
         $discountValue = (float) $voucher->discount_value;
@@ -76,8 +111,11 @@ class VoucherEligibilityService
             return false;
         }
 
-        return ! $checkUsage
-            || $voucher->usage_limit === null
-            || $this->redemptionCount($voucher) < $voucher->usage_limit;
+        return true;
+    }
+
+    private function hasUsageRemaining(Voucher $voucher, int $redemptionCount): bool
+    {
+        return $voucher->usage_limit === null || $redemptionCount < $voucher->usage_limit;
     }
 }

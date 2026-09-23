@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Vouchers\Schemas;
 
+use App\Filament\Support\AdminForm;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -66,6 +67,50 @@ class VoucherForm
                     ])
                     ->columns(3)
                     ->columnSpanFull(),
+                Section::make('Homepage promotion')
+                    ->description('Control whether this voucher appears in the public Current promotions carousel.')
+                    ->schema([
+                        Toggle::make('is_public')
+                            ->label('Show on homepage')
+                            ->default(false)
+                            ->helperText('The voucher must also be active, current, available, and valid for the visitor currency.'),
+                        TextInput::make('sort_order')
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->helperText('Lower numbers appear first.'),
+                        TextInput::make('maximum_discount_idr')
+                            ->label('Maximum discount (IDR)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->prefix('Rp')
+                            ->helperText('Optional display cap for IDR percentage promotions.'),
+                        TextInput::make('maximum_discount_usd')
+                            ->label('Maximum discount (USD)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->prefix('$')
+                            ->helperText('Optional display cap for USD percentage promotions.'),
+                        Select::make('tourPackages')
+                            ->label('Eligible tour packages')
+                            ->relationship(
+                                name: 'tourPackages',
+                                titleAttribute: 'slug',
+                                modifyQueryUsing: fn ($query) => $query->active()->ordered(),
+                            )
+                            ->getOptionLabelFromRecordUsing(fn ($record): string => $record->title['us'] ?? $record->slug)
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Leave empty when the promotion applies to every eligible trip.')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->columnSpanFull(),
+                AdminForm::localized('public_title', 'Public promotion title')
+                    ->description('Customer-facing card title. English is used as fallback when a translation is empty.'),
+                AdminForm::localized('public_description', 'Public promotion description', textarea: true)
+                    ->description('A short explanation of the offer. Voucher codes are shown separately.'),
                 Section::make('Percentage voucher settings')
                     ->description('Use this menu for codes like BROMO10 that discount a percentage of the booking total.')
                     ->visible(fn (Get $get): bool => $get('discount_type') === 'percent')

@@ -3,7 +3,7 @@ import { usePage } from '@inertiajs/react';
 import { DestinationSection } from '../components/sections/DestinationSection';
 import { Hero } from '../components/sections/Hero';
 import { RouteArticlesSection } from '../components/sections/RouteArticlesSection';
-import { TrustStripSection } from '../components/sections/TrustStripSection';
+import { PromotionsSection } from '../components/sections/PromotionsSection';
 import { Seo } from '../components/seo/Seo';
 import { useBooking } from '../context/BookingContext';
 
@@ -31,7 +31,7 @@ export function HomePage() {
           setBooking={setBooking}
           whatsappUrl={whatsappUrl}
         />
-        <TrustStripSection items={publicData.trustStats} />
+        <PromotionsSection items={props.promotions} />
         <DestinationSection items={props.destinations} />
         <RouteArticlesSection
           t={t}

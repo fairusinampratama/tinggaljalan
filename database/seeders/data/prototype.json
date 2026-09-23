@@ -7344,17 +7344,50 @@
     ],
     "vouchers": {
       "BROMO10": {
-        "label": "BROMO10",
+        "label": "Bromo promotion 10%",
         "percent": 10,
         "currencies": [
           "IDR",
           "USD"
+        ],
+        "publicTitle": {
+          "id": "Promo Spesial Bromo",
+          "us": "Bromo Trip Special",
+          "cn": "布罗莫行程优惠"
+        },
+        "publicDescription": {
+          "id": "Hemat 10% untuk paket Bromo pilihan bersama Tinggal Jalan.",
+          "us": "Save 10% on selected Bromo trips with Tinggal Jalan.",
+          "cn": "预订指定布罗莫行程可享九折优惠。"
+        },
+        "maximumDiscountIdr": 150000,
+        "maximumDiscountUsd": 10,
+        "endsAt": "2026-12-31 23:59:59",
+        "isPublic": true,
+        "sortOrder": 10,
+        "tourPackages": [
+          "bromo-sunrise",
+          "bromo-madakaripura"
         ]
       },
       "TJHEMAT": {
-        "label": "TJHEMAT",
+        "label": "Local traveler savings",
         "amount": 50000,
-        "currency": "IDR"
+        "currency": "IDR",
+        "publicTitle": {
+          "id": "Hemat Trip Indonesia",
+          "us": "Indonesia Trip Savings",
+          "cn": "印尼行程优惠"
+        },
+        "publicDescription": {
+          "id": "Potongan Rp50.000 untuk booking trip dengan mata uang IDR.",
+          "us": "Save Rp50,000 when booking an eligible trip in IDR.",
+          "cn": "使用印尼盾预订指定行程可减免 Rp50,000。"
+        },
+        "maximumDiscountIdr": 50000,
+        "endsAt": "2026-12-31 23:59:59",
+        "isPublic": true,
+        "sortOrder": 20
       }
     },
     "initialBooking": {

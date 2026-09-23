@@ -437,6 +437,7 @@ class FilamentAdminResourcesTest extends TestCase
     {
         $this->seed();
         $this->actingAs(User::where('email', 'admin@tinggaljalan.test')->firstOrFail());
+        $package = TourPackage::query()->where('slug', 'bromo-sunrise')->firstOrFail();
 
         Livewire::test(CreateVoucher::class)
             ->set('data.code', ' summer10 ')
@@ -449,12 +450,22 @@ class FilamentAdminResourcesTest extends TestCase
             ->set('data.starts_at', now()->subHour())
             ->set('data.ends_at', now()->addWeek())
             ->set('data.is_active', true)
+            ->set('data.is_public', true)
+            ->set('data.sort_order', 5)
+            ->set('data.public_title.us', 'Summer trip special')
+            ->set('data.public_description.us', 'Save on selected summer trips.')
+            ->set('data.maximum_discount_idr', 150000)
+            ->set('data.maximum_discount_usd', 10)
+            ->set('data.tourPackages', [$package->id])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $percent = Voucher::query()->where('code', 'SUMMER10')->firstOrFail();
         $this->assertNull($percent->currency);
         $this->assertSame(['IDR', 'USD'], $percent->allowed_currencies);
+        $this->assertTrue($percent->is_public);
+        $this->assertSame('Summer trip special', $percent->public_title['us']);
+        $this->assertSame([$package->id], $percent->tourPackages()->pluck('tour_packages.id')->all());
 
         Livewire::test(CreateVoucher::class)
             ->set('data.code', 'idr50')

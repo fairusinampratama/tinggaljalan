@@ -5,9 +5,10 @@ namespace App\Models;
 use App\Models\Concerns\HasTravelScopes;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['code', 'label', 'discount_type', 'discount_value', 'currency', 'allowed_currencies', 'starts_at', 'ends_at', 'usage_limit', 'is_active'])]
+#[Fillable(['code', 'label', 'public_title', 'public_description', 'discount_type', 'discount_value', 'currency', 'allowed_currencies', 'maximum_discount_idr', 'maximum_discount_usd', 'starts_at', 'ends_at', 'usage_limit', 'is_active', 'is_public', 'sort_order'])]
 class Voucher extends Model
 {
     use HasTravelScopes;
@@ -35,17 +36,28 @@ class Voucher extends Model
     protected function casts(): array
     {
         return [
+            'public_title' => 'array',
+            'public_description' => 'array',
             'discount_value' => 'decimal:2',
             'allowed_currencies' => 'array',
+            'maximum_discount_idr' => 'integer',
+            'maximum_discount_usd' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'usage_limit' => 'integer',
             'is_active' => 'boolean',
+            'is_public' => 'boolean',
+            'sort_order' => 'integer',
         ];
     }
 
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class, 'voucher_code', 'code');
+    }
+
+    public function tourPackages(): BelongsToMany
+    {
+        return $this->belongsToMany(TourPackage::class);
     }
 }

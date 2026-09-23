@@ -112,6 +112,40 @@ class PublicPagesTest extends TestCase
                 ->where('publicData.home.heroSettings.autoplayInterval', 8000));
     }
 
+    public function test_homepage_serializes_current_currency_compatible_promotions_and_package_ctas(): void
+    {
+        $this->seed();
+        $package = TourPackage::query()->where('slug', 'bromo-sunrise')->firstOrFail();
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        $voucher->update([
+            'is_public' => true,
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addDay(),
+            'usage_limit' => null,
+        ]);
+        $voucher->tourPackages()->sync([$package->id]);
+
+        Voucher::query()->where('code', 'TJHEMAT')->update(['is_public' => true]);
+
+        $this->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('promotions', 1)
+                ->where('promotions.0.code', 'BROMO10')
+                ->where('promotions.0.discountType', 'percent')
+                ->where('promotions.0.displayCurrency', 'USD')
+                ->where('promotions.0.ctaUrl', '/routes/bromo-sunrise'));
+
+        $this->withSession(['language' => 'id'])
+            ->get('/')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('promotions', 2)
+                ->where('promotions.0.code', 'BROMO10')
+                ->where('promotions.1.code', 'TJHEMAT')
+                ->where('promotions.1.displayCurrency', 'IDR'));
+    }
+
     public function test_homepage_clamps_out_of_range_hero_autoplay_interval(): void
     {
         SiteSetting::create([
