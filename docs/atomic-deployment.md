@@ -35,15 +35,7 @@ Create a GitHub environment named `production`. Restrict it to the `main` branch
 
 Create a repository Actions variable named `PRODUCTION_DEPLOY_ENABLED` with value `false` during initial setup. It must be repository-scoped because GitHub evaluates the deploy job condition before environment-scoped variables become available. The CI workflow will validate `main` without attempting deployment until bootstrap is complete. Change it to `true` only after the first atomic layout health check succeeds.
 
-Production deployment uses a dedicated, always-on Linux VPS runner because GitHub-hosted runners can intermittently time out when opening SSH connections to Hostinger shared hosting. Register one repository runner with these labels:
-
-```text
-self-hosted
-linux
-hostinger-production
-```
-
-The self-hosted runner only runs the approved deploy job. It must be on a network that can reach Hostinger SSH, have `ssh`, `scp`, and `bash` available, and have outbound HTTPS access to GitHub for Actions artifacts. Keep it dedicated to this repository and do not run pull-request code on it. Pull requests, release packaging, independent smoke tests, and scheduled monitoring continue to use GitHub-hosted runners.
+Production deployment runs on GitHub's ephemeral `ubuntu-24.04` runner. The runner receives production secrets only after the protected `production` environment is approved, downloads the validated artifact, connects to Hostinger with the dedicated deployment key, and is destroyed after the job. No developer workstation or persistent self-hosted runner is required.
 
 Protect `main` with pull requests, resolved conversations, blocked force pushes, and these required checks:
 
@@ -55,53 +47,9 @@ Cross-browser responsive tests
 
 After deployment is enabled, every validated push or merge to `main` packages a release and waits for production approval. Production deployments are queued and never cancel an active deployment.
 
-## Always-on deployment runner
+## Deployment runner
 
-Use an Ubuntu VPS that remains online independently of a developer workstation. In **Settings → Actions → Runners → New self-hosted runner**, select Linux x64 and run GitHub's displayed download and configuration commands as a dedicated, non-root `actions-runner` user. Supply the runner name and labels during configuration:
-
-```bash
-./config.sh \
-  --url https://github.com/fairusinampratama/tinggaljalan \
-  --token '<short-lived-registration-token>' \
-  --name tinggaljalan-production-vps \
-  --labels hostinger-production \
-  --unattended
-```
-
-The token is short-lived and must only be copied from GitHub during registration. Never save it in shell scripts, documentation, or Actions secrets. Install the configured runner as a service:
-
-```bash
-sudo ./svc.sh install actions-runner
-sudo ./svc.sh start
-sudo ./svc.sh status
-```
-
-Find the generated service name, then add a systemd restart policy:
-
-```bash
-systemctl list-unit-files 'actions.runner.*'
-sudo systemctl edit actions.runner.fairusinampratama-tinggaljalan.tinggaljalan-production-vps.service
-```
-
-Use this override:
-
-```ini
-[Service]
-Restart=always
-RestartSec=10
-```
-
-Apply it and verify boot recovery:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable actions.runner.fairusinampratama-tinggaljalan.tinggaljalan-production-vps.service
-sudo systemctl restart actions.runner.fairusinampratama-tinggaljalan.tinggaljalan-production-vps.service
-sudo systemctl status actions.runner.fairusinampratama-tinggaljalan.tinggaljalan-production-vps.service
-sudo journalctl -u actions.runner.fairusinampratama-tinggaljalan.tinggaljalan-production-vps.service -n 100 --no-pager
-```
-
-The generated unit name can differ; use the value returned by `systemctl list-unit-files`. Reboot the VPS once and confirm the runner returns to **Idle** in GitHub without manual intervention. Keep the WSL runner registered but stopped until the VPS completes one real deployment and one scheduled monitor cycle. Then remove the WSL runner from GitHub. To replace or rotate the VPS runner, stop and uninstall its service, run `./config.sh remove` with a fresh removal token, and register the replacement before deleting the old runner.
+The deploy job uses the same GitHub-hosted Ubuntu image as the independent smoke checks. No runner installation or service supervision is required. If Hostinger later introduces source-IP allowlisting that cannot accommodate GitHub-hosted runners, a dedicated VPS runner can be introduced as a documented fallback; do not use a developer workstation for unattended production deployment.
 
 ## Dedicated SSH key
 
@@ -201,8 +149,7 @@ Rollback changes code only. It deliberately does not reverse migrations or resto
 - Database backups are stored under `deployments/shared/backups/database` and must remain outside the public document root.
 - Failed release directories are retained for diagnosis; pruning happens only after a successful health check.
 - A release is identifiable by its `REVISION` file and the GitHub Actions deployment summary.
-- Inspect the runner with `systemctl status` and `journalctl`; systemd automatically restarts a failed listener.
-- A queued deployment with no assigned runner indicates a VPS, network, or runner-service problem. Do not bypass the protected environment by deploying from WSL.
+- A queued deployment should receive a GitHub-hosted runner automatically. Check GitHub Actions availability and repository billing limits before changing runner configuration.
 - A failed Hostinger health gate restores the previous code release automatically. A failed independent or scheduled smoke test requires investigation and an explicit rollback decision.
 - Never run the root **DatabaseSeeder** or generic **--seed** in production. Approved one-time content seeders must be run explicitly by class after a backup.
 - Never edit release files directly. Make a Git commit and let the workflow create a new immutable release.
