@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\PackagePriceTier;
 use App\Models\TourPackage;
+use App\Models\Voucher;
 use App\Payments\BookingPaymentService;
 use App\Support\BookingQuoteService;
 use App\Support\TierPricingResolver;
@@ -117,6 +118,50 @@ class TieredPricingTest extends TestCase
         $this->assertSame(2510000, $quoted->subtotal);
         $this->assertSame(2510000, $quoted->total);
         $this->assertNotNull($quoted->quoted_at);
+    }
+
+    public function test_manual_quote_does_not_apply_a_voucher_scoped_to_another_package(): void
+    {
+        $package = $this->tieredPackage();
+        $otherPackage = TourPackage::create([
+            'destination_id' => $package->destination_id,
+            'slug' => 'other-tier-package',
+            'title' => ['us' => 'Other Tier Package'],
+            'base_price_idr' => 500000,
+            'base_price_usd' => 35,
+            'is_active' => true,
+        ]);
+        $voucher = Voucher::create([
+            'code' => 'OTHER10',
+            'label' => 'Other package only',
+            'discount_type' => 'percent',
+            'discount_value' => 10,
+            'allowed_currencies' => ['IDR'],
+            'is_active' => true,
+        ]);
+        $voucher->tourPackages()->sync([$otherPackage->id]);
+        $booking = Booking::create([
+            'booking_code' => 'TJ-QUOTE-SCOPE',
+            'tour_package_id' => $package->id,
+            'destination_id' => $package->destination_id,
+            'name' => 'Scoped Voucher Group',
+            'travel_date' => now()->addMonth()->toDateString(),
+            'pax' => 6,
+            'traveler_type' => 'local',
+            'currency' => 'IDR',
+            'pricing_mode' => 'tiered',
+            'pricing_status' => 'quote_required',
+            'voucher_code' => $voucher->code,
+            'subtotal' => 0,
+            'discount_total' => 0,
+            'total' => 0,
+            'status' => 'confirmed',
+        ]);
+
+        $quoted = app(BookingQuoteService::class)->apply($booking, 400000);
+
+        $this->assertSame(0, $quoted->discount_total);
+        $this->assertSame(2400000, $quoted->total);
     }
 
     private function tieredPackage(): TourPackage

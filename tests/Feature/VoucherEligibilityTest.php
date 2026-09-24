@@ -6,7 +6,9 @@ use App\Models\Booking;
 use App\Models\PackageAvailability;
 use App\Models\TourPackage;
 use App\Models\Voucher;
+use App\Support\PublicSite;
 use App\Support\VoucherEligibilityService;
+use App\Support\VoucherPromotionStatus;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -75,6 +77,150 @@ class VoucherEligibilityTest extends TestCase
 
         $voucher->update(['usage_limit' => null]);
         $this->assertSame(VoucherEligibilityService::APPLIED, $service->evaluate($voucher->code, 'IDR')['state']);
+    }
+
+    public function test_package_scoped_vouchers_only_apply_to_selected_packages(): void
+    {
+        $this->seed();
+        $service = app(VoucherEligibilityService::class);
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        $allowedPackage = TourPackage::query()->where('slug', 'bromo-sunrise')->firstOrFail();
+        $blockedPackage = TourPackage::query()->whereKeyNot($allowedPackage->id)->active()->firstOrFail();
+
+        $voucher->update([
+            'is_active' => true,
+            'starts_at' => null,
+            'ends_at' => now()->addDay(),
+            'discount_type' => 'percent',
+            'discount_value' => 10,
+            'allowed_currencies' => ['IDR', 'USD'],
+        ]);
+        $voucher->tourPackages()->sync([$allowedPackage->id]);
+
+        $this->assertSame(VoucherEligibilityService::APPLIED, $service->evaluate($voucher->code, 'IDR', $allowedPackage)['state']);
+        $this->assertSame(VoucherEligibilityService::UNAVAILABLE, $service->evaluate($voucher->code, 'IDR', $blockedPackage)['state']);
+
+        $voucher->tourPackages()->detach();
+
+        $this->assertSame(VoucherEligibilityService::APPLIED, $service->evaluate($voucher->code, 'IDR', $blockedPackage)['state']);
+    }
+
+    public function test_promotion_status_explains_visibility_outcomes_and_audiences(): void
+    {
+        $this->seed();
+        $status = app(VoucherPromotionStatus::class);
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+
+        $voucher->tourPackages()->detach();
+        $voucher->update([
+            'is_active' => true,
+            'is_public' => true,
+            'starts_at' => null,
+            'ends_at' => now()->addDay(),
+            'usage_limit' => null,
+            'discount_type' => 'percent',
+            'discount_value' => 10,
+            'allowed_currencies' => ['IDR', 'USD'],
+        ]);
+
+        $live = $status->forVoucher($voucher->fresh());
+        $this->assertSame(VoucherPromotionStatus::LIVE, $live['state']);
+        $this->assertSame(['IDR', 'USD'], $live['currencies']);
+        $this->assertCount(2, $live['audiences']);
+
+        $voucher->update(['is_active' => false, 'is_public' => false, 'ends_at' => now()->subMinute()]);
+        $inactive = $status->forVoucher($voucher->fresh());
+        $this->assertSame(VoucherPromotionStatus::INACTIVE, $inactive['state']);
+        $this->assertCount(3, $inactive['reasons']);
+
+        $voucher->update(['is_active' => true, 'is_public' => true, 'starts_at' => now()->addHour(), 'ends_at' => now()->addDay()]);
+        $this->assertSame(VoucherPromotionStatus::SCHEDULED, $status->forVoucher($voucher->fresh())['state']);
+
+        $voucher->update(['starts_at' => null, 'ends_at' => now()->subMinute()]);
+        $this->assertSame(VoucherPromotionStatus::EXPIRED, $status->forVoucher($voucher->fresh())['state']);
+
+        $voucher->update(['ends_at' => now()->addDay(), 'usage_limit' => 1]);
+        $this->bookingUsing($voucher, 'new');
+        $this->assertSame(VoucherPromotionStatus::LIMIT_REACHED, $status->forVoucher($voucher->fresh())['state']);
+    }
+
+    public function test_scoped_promotion_without_active_packages_is_not_published(): void
+    {
+        $this->seed();
+        $service = app(VoucherEligibilityService::class);
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        $package = TourPackage::query()->firstOrFail();
+
+        Voucher::query()->where('id', '!=', $voucher->id)->update(['is_public' => false]);
+        $voucher->update([
+            'is_active' => true,
+            'is_public' => true,
+            'starts_at' => null,
+            'ends_at' => now()->addDay(),
+            'usage_limit' => null,
+            'discount_type' => 'percent',
+            'discount_value' => 10,
+            'allowed_currencies' => ['IDR', 'USD'],
+        ]);
+        $voucher->tourPackages()->sync([$package->id]);
+        $package->update(['is_active' => false]);
+
+        $this->assertSame(VoucherPromotionStatus::NO_ACTIVE_PACKAGES, app(VoucherPromotionStatus::class)->forVoucher($voucher->fresh())['state']);
+        $this->assertEmpty($service->publicPromotions('IDR'));
+    }
+
+    public function test_booking_summary_and_final_submission_reject_wrong_package_scope(): void
+    {
+        $this->seed();
+        $voucher = Voucher::query()->where('code', 'BROMO10')->firstOrFail();
+        $allowedPackage = TourPackage::query()->where('slug', 'bromo-sunrise')->firstOrFail();
+        $blockedPackage = TourPackage::query()->whereKeyNot($allowedPackage->id)->active()->firstOrFail();
+        $voucher->tourPackages()->sync([$allowedPackage->id]);
+        $voucher->update([
+            'is_active' => true,
+            'starts_at' => null,
+            'ends_at' => now()->addYear(),
+            'usage_limit' => null,
+            'discount_type' => 'percent',
+            'discount_value' => 10,
+            'allowed_currencies' => ['IDR', 'USD'],
+        ]);
+        PackageAvailability::create([
+            'tour_package_id' => $blockedPackage->id,
+            'date' => '2040-01-15',
+            'end_date' => '2040-01-15',
+            'status' => 'available',
+        ]);
+
+        $draft = [
+            'route' => $blockedPackage->slug,
+            'date' => '2040-01-15',
+            'pax' => 2,
+            'pickup' => 'Malang Hotel',
+            'traveler_type' => 'local',
+            'add_ons' => [],
+            'voucher' => $voucher->code,
+            'voucher_applied' => true,
+        ];
+
+        $summary = PublicSite::bookingSummary($blockedPackage, $draft);
+        $this->assertSame(VoucherEligibilityService::UNAVAILABLE, $summary['voucher_state']);
+        $this->assertNull($summary['voucher']);
+
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        $this->withSession(['booking_draft' => $draft])
+            ->from('/checkout/review')
+            ->post('/checkout/review', [
+                'name' => 'Package Scope Test',
+                'whatsapp_country' => 'ID',
+                'whatsapp' => '08111111111',
+                'email' => 'package-scope@example.test',
+                'voucher' => $voucher->code,
+            ])
+            ->assertRedirect('/checkout/review')
+            ->assertSessionHasErrors(['voucher']);
+
+        $this->assertDatabaseMissing('bookings', ['email' => 'package-scope@example.test']);
     }
 
     public function test_public_promotions_respect_visibility_currency_schedule_usage_and_order(): void

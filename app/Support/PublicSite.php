@@ -105,9 +105,9 @@ class PublicSite
         return 'Rp'.number_format($amount, 0, ',', '.');
     }
 
-    public static function activeVoucher(?string $code, string $currency): ?Voucher
+    public static function activeVoucher(?string $code, string $currency, ?TourPackage $package = null): ?Voucher
     {
-        return app(VoucherEligibilityService::class)->evaluate($code, $currency)['voucher'];
+        return app(VoucherEligibilityService::class)->evaluate($code, $currency, $package)['voucher'];
     }
 
     public static function bookingDraft(Request $request, ?TourPackage $fallbackPackage = null): array
@@ -188,7 +188,11 @@ class PublicSite
         });
         $packageSubtotal = $pricing['package_subtotal'];
         $subtotal = $pricing['quote_required'] ? null : $packageSubtotal + $addOnTotal;
-        $voucherEligibility ??= app(VoucherEligibilityService::class)->evaluate($draft['voucher'] ?? null, $currency);
+        $voucherEligibility ??= app(VoucherEligibilityService::class)->evaluate(
+            $draft['voucher'] ?? null,
+            $currency,
+            $package,
+        );
         $voucher = $voucherEligibility['voucher'];
         $discount = 0;
 

@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Vouchers\Schemas;
 
 use App\Filament\Support\AdminForm;
+use App\Models\Voucher;
+use App\Support\VoucherPromotionStatus;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -12,6 +14,7 @@ use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 
 class VoucherForm
@@ -54,15 +57,19 @@ class VoucherForm
                             ->label('Usage limit')
                             ->numeric()
                             ->minValue(1)
+                            ->live(onBlur: true)
                             ->helperText('Maximum number of bookings allowed to use this voucher. Leave blank for unlimited.'),
                         DateTimePicker::make('starts_at')
+                            ->live()
                             ->helperText('The date and time this voucher becomes active.'),
                         DateTimePicker::make('ends_at')
                             ->after('starts_at')
+                            ->live()
                             ->helperText('The expiration date and time of this voucher.'),
                         Toggle::make('is_active')
                             ->required()
                             ->default(true)
+                            ->live()
                             ->helperText('Toggle to enable or disable the voucher globally.'),
                     ])
                     ->columns(3)
@@ -70,14 +77,24 @@ class VoucherForm
                 Section::make('Homepage promotion')
                     ->description('Control whether this voucher appears in the public Current promotions carousel.')
                     ->schema([
+                        View::make('filament.forms.components.voucher-promotion-status')
+                            ->viewData(fn (Get $get, ?Voucher $record): array => [
+                                'status' => app(VoucherPromotionStatus::class)->forFormState(
+                                    self::promotionState($get),
+                                    $record,
+                                ),
+                            ])
+                            ->columnSpanFull(),
                         Toggle::make('is_public')
                             ->label('Show on homepage')
                             ->default(false)
+                            ->live()
                             ->helperText('The voucher must also be active, current, available, and valid for the visitor currency.'),
                         TextInput::make('sort_order')
                             ->numeric()
                             ->default(0)
                             ->minValue(0)
+                            ->live(onBlur: true)
                             ->helperText('Lower numbers appear first.'),
                         TextInput::make('maximum_discount_idr')
                             ->label('Maximum discount (IDR)')
@@ -102,6 +119,7 @@ class VoucherForm
                             ->multiple()
                             ->searchable()
                             ->preload()
+                            ->live()
                             ->helperText('Leave empty when the promotion applies to every eligible trip.')
                             ->columnSpanFull(),
                     ])
@@ -121,6 +139,7 @@ class VoucherForm
                             ->required()
                             ->minValue(0.01)
                             ->maxValue(100)
+                            ->live(onBlur: true)
                             ->suffix('%')
                             ->helperText('Use 10 for a 10% discount.'),
                         CheckboxList::make('allowed_currencies')
@@ -133,6 +152,7 @@ class VoucherForm
                             ->minItems(1)
                             ->bulkToggleable()
                             ->columns(2)
+                            ->live()
                             ->helperText('Select USD for international bookings, IDR for local bookings, or both for everyone.'),
                     ])
                     ->columns(2)
@@ -146,6 +166,7 @@ class VoucherForm
                             ->numeric()
                             ->required()
                             ->minValue(0.01)
+                            ->live(onBlur: true)
                             ->helperText('Enter the cash amount in the selected discount currency.'),
                         Select::make('currency')
                             ->label('Fixed discount currency')
@@ -161,5 +182,23 @@ class VoucherForm
                     ->columns(2)
                     ->columnSpanFull(),
             ]);
+    }
+
+    /** @return array<string, mixed> */
+    private static function promotionState(Get $get): array
+    {
+        return [
+            'discount_type' => $get('discount_type'),
+            'discount_value' => $get('discount_value'),
+            'currency' => $get('currency'),
+            'allowed_currencies' => $get('allowed_currencies'),
+            'starts_at' => $get('starts_at'),
+            'ends_at' => $get('ends_at'),
+            'usage_limit' => $get('usage_limit'),
+            'is_active' => $get('is_active'),
+            'is_public' => $get('is_public'),
+            'sort_order' => $get('sort_order'),
+            'tourPackages' => $get('tourPackages'),
+        ];
     }
 }

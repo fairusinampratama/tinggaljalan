@@ -141,6 +141,7 @@ class BookingController extends Controller
             $eligibility = app(VoucherEligibilityService::class)->evaluate(
                 $draft['voucher'],
                 PublicSite::bookingCurrency($draft['traveler_type'] ?? null),
+                package: $package,
                 lockForUpdate: true,
             );
 

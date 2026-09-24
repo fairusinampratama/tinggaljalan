@@ -104,7 +104,7 @@ test('voucher feedback is localized and usable across viewports', async ({ page 
         await page.getByTestId('apply-voucher').click();
         await expect(page.getByTestId('voucher-result')).toHaveText(copy.unavailable);
 
-        await page.getByTestId('voucher-code').fill(' bromo10 ');
+        await page.getByTestId('voucher-code').fill(' jogja12 ');
         await page.getByTestId('apply-voucher').click();
         await expect(page.getByTestId('voucher-result')).toHaveText(copy.applied);
         await expectInsideViewport(page.getByTestId('voucher-result'));

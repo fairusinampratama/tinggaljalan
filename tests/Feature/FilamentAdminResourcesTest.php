@@ -569,9 +569,30 @@ class FilamentAdminResourcesTest extends TestCase
 
         Livewire::test(ListVouchers::class)
             ->assertCanSeeTableRecords([$voucher])
-            ->assertTableColumnStateSet('active_redemptions_count', 1, $voucher)
-            ->assertTableColumnStateSet('usage_limit', '2', $voucher)
-            ->assertTableColumnStateSet('eligible_currencies', 'IDR, USD', $voucher);
+            ->assertTableColumnStateSet('usage', '1 / 2', $voucher)
+            ->assertTableColumnStateSet('homepage_status', 'Live', $voucher);
+    }
+
+    public function test_admin_voucher_form_reacts_with_homepage_outcomes(): void
+    {
+        $this->seed();
+        $this->actingAs(User::where('email', 'admin@tinggaljalan.test')->firstOrFail());
+
+        Livewire::test(CreateVoucher::class)
+            ->set('data.code', 'STATUS10')
+            ->set('data.label', 'Status preview')
+            ->set('data.discount_type', 'percent')
+            ->set('data.discount_value', 10)
+            ->set('data.allowed_currencies', ['IDR', 'USD'])
+            ->set('data.is_active', true)
+            ->set('data.is_public', true)
+            ->assertSee('Current status')
+            ->assertSee('Live')
+            ->assertSee('Indonesian visitors (IDR)')
+            ->assertSee('English and Chinese visitors (USD)')
+            ->set('data.ends_at', now()->subMinute())
+            ->assertSee('Expired')
+            ->assertSee('Ended');
     }
 
     public function test_authenticated_admin_can_access_dashboard_with_operations_widgets(): void
