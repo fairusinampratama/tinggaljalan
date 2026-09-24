@@ -20,14 +20,32 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring
+          coverage: none
+          tools: composer:v2
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
 
-      - name: Install frontend dependencies
-        run: npm ci
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php84-
+
+      - name: Install build dependencies
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
 
       - name: Build frontend once
         run: npm run build:performance
