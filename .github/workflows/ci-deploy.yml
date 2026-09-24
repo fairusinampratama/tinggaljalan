@@ -355,14 +355,13 @@ jobs:
     timeout-minutes: 15
     env:
       PRODUCTION_URL: https://tinggaljalan.com
-      DIAGNOSTICS: ${{ runner.temp }}/production-smoke
 
     steps:
       - name: Check out smoke test
         uses: actions/checkout@v4
 
       - name: Run independent production smoke test
-        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "${{ needs.deploy.outputs.deployed_sha }}" "$DIAGNOSTICS"
+        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "${{ needs.deploy.outputs.deployed_sha }}" "$RUNNER_TEMP/production-smoke"
 
       - name: Upload failure diagnostics
         if: failure()

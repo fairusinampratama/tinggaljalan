@@ -19,14 +19,13 @@ jobs:
     timeout-minutes: 10
     env:
       PRODUCTION_URL: https://tinggaljalan.com
-      DIAGNOSTICS: ${{ runner.temp }}/production-monitor
 
     steps:
       - name: Check out smoke test
         uses: actions/checkout@v4
 
       - name: Check production
-        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "" "$DIAGNOSTICS"
+        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "" "$RUNNER_TEMP/production-monitor"
 
       - name: Upload failure diagnostics
         if: failure()
