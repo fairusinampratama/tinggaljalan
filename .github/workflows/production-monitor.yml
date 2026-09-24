@@ -1,0 +1,49 @@
+name: Production monitoring
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-monitor
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Monitor production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PRODUCTION_URL: https://tinggaljalan.com
+      DIAGNOSTICS: ${{ runner.temp }}/production-monitor
+
+    steps:
+      - name: Check out smoke test
+        uses: actions/checkout@v4
+
+      - name: Check production
+        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "" "$DIAGNOSTICS"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-monitor-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-monitor
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Record failure summary
+        if: failure()
+        run: |
+          {
+            echo '## Production monitor failed'
+            echo
+            echo "- URL: $PRODUCTION_URL"
+            echo "- Checked at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo '- Response bodies, headers, and status codes are attached as workflow artifacts.'
+          } >> "$GITHUB_STEP_SUMMARY"

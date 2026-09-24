@@ -11,16 +11,110 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Validate application
+  frontend-build:
+    name: Frontend production build
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend once
+        run: npm run build:performance
+
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: |
+            public/build
+            public/images/generated
+          if-no-files-found: error
+          retention-days: 1
+
+  php-tests:
+    name: PHP quality and tests
+    needs: frontend-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
 
     steps:
       - name: Check out source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php84-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php84-
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: public
+
+      - name: Verify image runtime
+        run: |
+          php -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
+
+      - name: Check changed PHP formatting
+        env:
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+        run: bash scripts/ci/pint-changed.sh
+
+      - name: Validate deployment scripts
+        run: |
+          bash -n \
+            scripts/deployment/build-release.sh \
+            scripts/deployment/deploy-hostinger.sh \
+            scripts/deployment/health-check.sh \
+            scripts/deployment/production-smoke-test.sh \
+            scripts/deployment/seo-smoke-test.sh \
+            scripts/deployment/rollback-hostinger.sh
+
+      - name: Run Laravel tests
+        run: composer test
+
+  browser-tests:
+    name: Cross-browser responsive tests
+    needs: frontend-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -44,61 +138,78 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php84-
 
-      - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Install dependencies
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
 
       - name: Prepare test environment
         run: |
           cp .env.example .env
           php artisan key:generate
 
-      - name: Verify image runtime
-        run: |
-          php -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: public
 
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Check changed PHP formatting
-        env:
-          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
-        run: bash scripts/ci/pint-changed.sh
-
-      - name: Validate deployment scripts
-        run: |
-          bash -n \
-            scripts/deployment/build-release.sh \
-            scripts/deployment/deploy-hostinger.sh \
-            scripts/deployment/health-check.sh \
-            scripts/deployment/seo-smoke-test.sh \
-            scripts/deployment/rollback-hostinger.sh
-
-      - name: Build frontend
-        run: npm run build:performance
-
-      - name: Install browser test runtimes
+      - name: Install browser runtimes
         run: npx playwright install --with-deps chromium firefox webkit
 
-      - name: Run cross-browser responsive tests
+      - name: Run responsive tests
         run: npm run test:browser
 
-      - name: Run Laravel tests
-        run: composer test
+  package-release:
+    name: Package immutable release
+    needs: [frontend-build, php-tests, browser-tests]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out validated source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php84-production-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php84-production-
+            ${{ runner.os }}-php84-
+
+      - name: Prepare packaging environment
+        run: cp .env.example .env
 
       - name: Install production PHP dependencies
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
 
+      - name: Generate temporary application key
+        run: php artisan key:generate
+
       - name: Check production platform requirements
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: composer check-platform-reqs --no-dev
 
+      - name: Download validated frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: public
+
       - name: Build immutable release
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         run: bash scripts/deployment/build-release.sh "$GITHUB_SHA" "$RUNNER_TEMP/release-$GITHUB_SHA.tar.gz"
 
       - name: Upload immutable release
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: production-${{ github.sha }}
@@ -108,14 +219,17 @@ jobs:
 
   deploy:
     name: Deploy production
-    needs: validate
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    needs: package-release
+    if: vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     runs-on: [self-hosted, linux, hostinger-production]
     timeout-minutes: 90
     environment: production
     concurrency:
       group: production
       cancel-in-progress: false
+    outputs:
+      deployed_sha: ${{ steps.release.outputs.deployed_sha }}
+      previous_sha: ${{ steps.previous.outputs.previous_sha }}
     env:
       PRODUCTION_URL: https://tinggaljalan.com
       SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
@@ -167,6 +281,19 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             "printf 'Production SSH reachable\n'"
 
+      - name: Record previous release
+        id: previous
+        run: |
+          previous_sha="$(ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "if test -f '$DOMAIN_ROOT/deployments/current/REVISION'; then tr -d '[:space:]' < '$DOMAIN_ROOT/deployments/current/REVISION'; fi")"
+          [[ -z "$previous_sha" || "$previous_sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "previous_sha=$previous_sha" >> "$GITHUB_OUTPUT"
+
       - name: Upload release
         env:
           ARCHIVE: ${{ runner.temp }}/release/release-${{ github.sha }}.tar.gz
@@ -199,13 +326,60 @@ jobs:
             "bash -s -- '$DOMAIN_ROOT' '$GITHUB_SHA' '$REMOTE_ARCHIVE' '$PRODUCTION_URL'" \
             < scripts/deployment/deploy-hostinger.sh
 
+      - name: Expose deployed revision
+        id: release
+        run: echo "deployed_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+
       - name: Record deployment summary
+        env:
+          PREVIOUS_SHA: ${{ steps.previous.outputs.previous_sha }}
         run: |
           {
             echo '## Production deployment'
             echo
-            echo "- Revision: \`$GITHUB_SHA\`"
+            echo "- Deployed revision: \`$GITHUB_SHA\`"
+            echo "- Previous revision: \`${PREVIOUS_SHA:-initial-release}\`"
             echo "- URL: $PRODUCTION_URL"
-            echo '- Strategy: atomic symlink release'
-            echo '- SEO smoke test: passed (automatic rollback gate)'
+            echo '- Strategy: prewarmed atomic symlink release'
+            echo '- Host-side health check: passed (automatic rollback gate)'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove deployment key from runner
+        if: always()
+        run: rm -f "$HOME/.ssh/production"
+
+  production-smoke:
+    name: Verify deployed production
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PRODUCTION_URL: https://tinggaljalan.com
+      DIAGNOSTICS: ${{ runner.temp }}/production-smoke
+
+    steps:
+      - name: Check out smoke test
+        uses: actions/checkout@v4
+
+      - name: Run independent production smoke test
+        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "${{ needs.deploy.outputs.deployed_sha }}" "$DIAGNOSTICS"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-${{ github.sha }}
+          path: ${{ runner.temp }}/production-smoke
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Record smoke-test summary
+        if: always()
+        run: |
+          {
+            echo '## Independent production smoke test'
+            echo
+            echo "- Expected revision: \`${{ needs.deploy.outputs.deployed_sha }}\`"
+            echo "- Previous revision: \`${{ needs.deploy.outputs.previous_sha || 'initial-release' }}\`"
+            echo "- Result: ${{ job.status }}"
           } >> "$GITHUB_STEP_SUMMARY"

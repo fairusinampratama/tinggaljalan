@@ -49,9 +49,16 @@ mkdir -p "$RELEASE/bootstrap/cache" "$SHARED/backups/database"
 
 "$PHP_BIN" "$RELEASE/artisan" about --only=environment >/dev/null
 "$PHP_BIN" "$RELEASE/artisan" migrate:status >/dev/null
-"$PHP_BIN" "$PREVIOUS/artisan" down --retry=60
+"$PHP_BIN" "$RELEASE/artisan" config:cache
+"$PHP_BIN" "$RELEASE/artisan" event:cache
+"$PHP_BIN" "$RELEASE/artisan" route:cache
+"$PHP_BIN" -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
+"$PHP_BIN" "$RELEASE/artisan" images:generate-responsive --missing
+
+"$PHP_BIN" "$RELEASE/artisan" deploy:backup-database --retain=100 --path="$SHARED/backups/database"
 
 SWITCHED=0
+MAINTENANCE=0
 rollback_on_error() {
     echo "Deployment failed; restoring $PREVIOUS." >&2
     if [[ "$SWITCHED" == "1" ]]; then
@@ -59,23 +66,21 @@ rollback_on_error() {
         ln -s "$PREVIOUS" "$CURRENT.rollback"
         mv -Tf "$CURRENT.rollback" "$CURRENT"
     fi
-    "$PHP_BIN" "$PREVIOUS/artisan" optimize:clear >/dev/null 2>&1 || true
-    "$PHP_BIN" "$PREVIOUS/artisan" config:cache >/dev/null 2>&1 || true
-    "$PHP_BIN" "$PREVIOUS/artisan" route:cache >/dev/null 2>&1 || true
-    "$PHP_BIN" "$PREVIOUS/artisan" view:cache >/dev/null 2>&1 || true
-    "$PHP_BIN" "$PREVIOUS/artisan" up >/dev/null 2>&1 || true
-    recycle_litespeed_workers
+    if [[ "$MAINTENANCE" == "1" || "$SWITCHED" == "1" ]]; then
+        "$PHP_BIN" "$PREVIOUS/artisan" optimize:clear >/dev/null 2>&1 || true
+        "$PHP_BIN" "$PREVIOUS/artisan" config:cache >/dev/null 2>&1 || true
+        "$PHP_BIN" "$PREVIOUS/artisan" event:cache >/dev/null 2>&1 || true
+        "$PHP_BIN" "$PREVIOUS/artisan" route:cache >/dev/null 2>&1 || true
+        "$PHP_BIN" "$PREVIOUS/artisan" view:cache >/dev/null 2>&1 || true
+        "$PHP_BIN" "$PREVIOUS/artisan" up >/dev/null 2>&1 || true
+        recycle_litespeed_workers
+    fi
 }
 trap rollback_on_error ERR
 
-"$PHP_BIN" "$RELEASE/artisan" deploy:backup-database --retain=10 --path="$SHARED/backups/database"
+MAINTENANCE=1
+"$PHP_BIN" "$PREVIOUS/artisan" down --retry=60
 "$PHP_BIN" "$RELEASE/artisan" migrate --force
-"$PHP_BIN" "$RELEASE/artisan" optimize:clear
-"$PHP_BIN" -r "exit(extension_loaded('gd') && function_exists('imagewebp') ? 0 : 1);"
-"$PHP_BIN" "$RELEASE/artisan" images:generate-responsive --missing
-"$PHP_BIN" "$RELEASE/artisan" config:cache
-"$PHP_BIN" "$RELEASE/artisan" event:cache
-"$PHP_BIN" "$RELEASE/artisan" route:cache
 "$PHP_BIN" "$RELEASE/artisan" view:cache
 
 rm -f "$CURRENT.next"
@@ -105,9 +110,23 @@ link_public_asset favicon-96x96.png
 link_public_asset apple-touch-icon.png
 
 "$PHP_BIN" "$RELEASE/artisan" up
+MAINTENANCE=0
 recycle_litespeed_workers
 "$RELEASE/scripts/deployment/health-check.sh" "$BASE_URL" "$SHA" "$CURRENT" "$PHP_BIN"
 trap - ERR
+
+BACKUP_LIST="$(mktemp)"
+find "$SHARED/backups/database" -mindepth 1 -maxdepth 1 -type f -name '*.sql.gz' -printf '%T@ %p\n' \
+    | sort -nr \
+    | cut -d' ' -f2- > "$BACKUP_LIST"
+backup_number=0
+while IFS= read -r old_backup; do
+    backup_number=$((backup_number + 1))
+    if (( backup_number > 10 )); then
+        rm -f -- "$old_backup"
+    fi
+done < "$BACKUP_LIST"
+rm -f "$BACKUP_LIST"
 
 RELEASE_LIST="$(mktemp)"
 find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2- > "$RELEASE_LIST"
