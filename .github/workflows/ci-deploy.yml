@@ -317,6 +317,9 @@ jobs:
           ARCHIVE: ${{ runner.temp }}/release/release-${{ github.sha }}.tar.gz
         run: |
           REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
+          REMOTE_PART="$REMOTE_ARCHIVE.part"
+          LOCAL_SIZE="$(stat -c '%s' "$ARCHIVE")"
+          LOCAL_SHA256="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
           ssh \
             -i "$HOME/.ssh/production" \
             -p "$SSH_PORT" \
@@ -324,13 +327,52 @@ jobs:
             -o ConnectTimeout=20 \
             "$SSH_USER@$SSH_HOST" \
             "mkdir -p '$DOMAIN_ROOT/deployments/incoming'"
-          scp \
-            -i "$HOME/.ssh/production" \
-            -P "$SSH_PORT" \
-            -o BatchMode=yes \
-            -o ConnectTimeout=20 \
-            "$ARCHIVE" \
-            "$SSH_USER@$SSH_HOST:$REMOTE_ARCHIVE"
+
+          uploaded=0
+          for attempt in 1 2 3; do
+            ssh \
+              -i "$HOME/.ssh/production" \
+              -p "$SSH_PORT" \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              "$SSH_USER@$SSH_HOST" \
+              "rm -f '$REMOTE_PART'"
+
+            if scp \
+              -i "$HOME/.ssh/production" \
+              -P "$SSH_PORT" \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              "$ARCHIVE" \
+              "$SSH_USER@$SSH_HOST:$REMOTE_PART"; then
+              REMOTE_METADATA="$(ssh \
+                -i "$HOME/.ssh/production" \
+                -p "$SSH_PORT" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=20 \
+                "$SSH_USER@$SSH_HOST" \
+                "printf '%s ' \"\$(stat -c '%s' '$REMOTE_PART')\"; sha256sum '$REMOTE_PART' | cut -d' ' -f1")"
+
+              if [[ "$REMOTE_METADATA" == "$LOCAL_SIZE $LOCAL_SHA256" ]]; then
+                ssh \
+                  -i "$HOME/.ssh/production" \
+                  -p "$SSH_PORT" \
+                  -o BatchMode=yes \
+                  -o ConnectTimeout=20 \
+                  "$SSH_USER@$SSH_HOST" \
+                  "mv '$REMOTE_PART' '$REMOTE_ARCHIVE'"
+                uploaded=1
+                break
+              fi
+            fi
+
+            echo "Release upload attempt $attempt failed integrity verification." >&2
+          done
+
+          [[ "$uploaded" == "1" ]] || {
+            echo 'Release upload failed after three integrity-checked attempts.' >&2
+            exit 1
+          }
 
       - name: Deploy atomic release
         run: |

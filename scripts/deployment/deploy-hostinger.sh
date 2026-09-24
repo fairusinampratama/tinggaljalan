@@ -31,13 +31,18 @@ test -L "$LIVE_PATH" && test -L "$CURRENT" || { echo "Run bootstrap-hostinger.sh
 test -d "$PUBLIC_HTML" || { echo "public_html is missing." >&2; exit 1; }
 test -f "$SHARED/.env" && test -d "$SHARED/storage" || { echo "Shared environment or storage is missing." >&2; exit 1; }
 test -r "$ARCHIVE" || { echo "Release archive is unreadable." >&2; exit 1; }
+gzip -t "$ARCHIVE" || { echo "Release archive failed gzip integrity validation." >&2; exit 1; }
 test ! -e "$RELEASE" || { echo "Release $SHA already exists." >&2; exit 1; }
 test "$(df -Pk "$DOMAIN_ROOT" | awk 'NR==2 {print $4}')" -gt 262144 || { echo "At least 256 MB of free disk space is required." >&2; exit 1; }
 
 "$PHP_BIN" "$(command -v composer)" --version >/dev/null
 PREVIOUS="$(readlink -f "$CURRENT")"
 mkdir -p "$RELEASE"
-tar -xzf "$ARCHIVE" -C "$RELEASE"
+if ! tar -xzf "$ARCHIVE" -C "$RELEASE"; then
+    rm -rf -- "$RELEASE"
+    echo "Release archive extraction failed." >&2
+    exit 1
+fi
 find "$RELEASE" -type d -exec chmod 755 {} +
 test "$(tr -d '[:space:]' < "$RELEASE/REVISION")" == "$SHA" || { echo "Release revision mismatch." >&2; exit 1; }
 
