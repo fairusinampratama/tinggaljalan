@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$project_root"
+
+run() {
+    printf '\n==> %s\n' "$1"
+    shift
+    "$@"
+}
+
+run 'Validate Composer metadata' composer validate --no-check-publish
+
+base_ref="${VERIFY_BASE_REF:-main}"
+if git rev-parse --verify "$base_ref" >/dev/null 2>&1; then
+    base_commit="$(git merge-base HEAD "$base_ref")"
+else
+    base_commit='HEAD'
+fi
+
+mapfile -t changed_php_files < <(
+    {
+        git diff --name-only --diff-filter=ACMRT "$base_commit" -- '*.php'
+        git ls-files --others --exclude-standard -- '*.php'
+    } | sort -u
+)
+
+if (( ${#changed_php_files[@]} > 0 )); then
+    run 'Check formatting of changed PHP files' vendor/bin/pint --test "${changed_php_files[@]}"
+else
+    printf '\n==> No changed PHP files require Pint.\n'
+fi
+
+run 'Build frontend assets' npm run build
+run 'Run PHP test suite' composer test
+
+if [[ "${VERIFY_BROWSER:-1}" == '1' ]]; then
+    run 'Prepare browser-test database' npm run test:browser:prepare
+
+    if command -v google-chrome >/dev/null 2>&1; then
+        PLAYWRIGHT_CHANNEL=chrome run \
+            'Run Playwright tests in system Chrome' \
+            npx playwright test --project=desktop-chromium
+    else
+        run 'Run Playwright tests in Chromium' \
+            npx playwright test --project=desktop-chromium
+    fi
+else
+    printf '\n==> Browser tests skipped because VERIFY_BROWSER=%s\n' "$VERIFY_BROWSER"
+fi
+
+printf '\nVerification passed.\n'

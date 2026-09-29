@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const baseURL = 'http://127.0.0.1:4173';
 const databasePath = path.resolve('storage/framework/testing/browser.sqlite');
+const chromiumChannel = process.env.PLAYWRIGHT_CHANNEL || undefined;
 const applicationEnvironment = {
     ...process.env,
     APP_ENV: 'testing',
@@ -37,7 +38,7 @@ export default defineConfig({
     projects: [
         {
             name: 'desktop-chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: { ...devices['Desktop Chrome'], channel: chromiumChannel },
         },
         {
             name: 'desktop-firefox',
@@ -53,7 +54,7 @@ export default defineConfig({
         },
         {
             name: 'android-chromium',
-            use: { ...devices['Pixel 7'] },
+            use: { ...devices['Pixel 7'], channel: chromiumChannel },
         },
     ],
 });
