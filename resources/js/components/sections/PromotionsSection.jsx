@@ -108,7 +108,7 @@ export function PromotionsSection({ items = [] }) {
   }
 
   return (
-    <section id="promotions" data-testid="promotions-section" className="overflow-hidden bg-subtle/65 px-4 py-10 sm:px-8 sm:py-12 lg:px-10">
+    <section id="promotions" data-testid="promotions-section" className="overflow-hidden bg-white px-4 py-12 sm:px-8 sm:py-14 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <div className="flex items-end justify-between gap-6">
           <div className="min-w-0">
@@ -162,46 +162,74 @@ export function PromotionsSection({ items = [] }) {
               <article
                 key={promotion.code}
                 data-testid="promotion-card"
-                className={`flex ${cardWidthClass} snap-start flex-col rounded-2xl border border-secondary/25 bg-white p-4 shadow-soft`}
+                className={`group relative flex ${cardWidthClass} snap-start flex-col overflow-hidden rounded-xl border border-line bg-white p-5 shadow-[0_12px_32px_rgba(16,42,54,0.06)] transition duration-300 hover:-translate-y-0.5 hover:border-secondary/30 hover:shadow-[0_18px_40px_rgba(16,42,54,0.09)] sm:p-6`}
               >
-                <div className="flex min-w-0 items-start gap-4">
-                  <div className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl bg-primary px-1 text-center text-white shadow-sm">
-                    <span className="text-lg font-extrabold leading-none">{discountLabel}</span>
-                    <span className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.14em]">{t.promotionsOff}</span>
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-accent via-accent/35 to-transparent sm:inset-x-6"
+                />
+
+                <div className="flex min-w-0 items-center justify-between gap-4">
+                  <div aria-hidden="true" className="flex shrink-0 items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                    <span className="h-px w-10 bg-accent/45" />
+                    <span className="h-1.5 w-1.5 rounded-full border border-accent bg-white" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="line-clamp-1 text-base font-extrabold leading-6 text-ink">{title}</h3>
-                    <p className="mt-1 line-clamp-1 text-xs leading-5 text-muted">{description}</p>
-                    {(maximumText || expiryText) ? (
-                      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold leading-4 text-muted">
-                        {maximumText ? <span>{maximumText}</span> : null}
-                        {expiryText ? <span>{expiryText}</span> : null}
-                      </div>
-                    ) : null}
-                  </div>
+                  {expiryText ? (
+                    <span className="truncate text-[10px] font-bold uppercase tracking-[0.12em] text-muted">
+                      {expiryText}
+                    </span>
+                  ) : null}
                 </div>
 
-                <div className="mt-3 flex items-stretch gap-2">
-                  <div className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-2.5 shadow-sm">
-                    <code className="truncate font-sans text-xs font-extrabold tracking-[0.1em] text-primary">{promotion.code}</code>
-                    <button
-                      type="button"
-                      data-testid={`copy-promotion-${promotion.code}`}
-                      onClick={() => handleCopy(promotion.code)}
-                      className="inline-flex shrink-0 items-center gap-1.5 text-xs font-extrabold text-secondary transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                      aria-label={interpolate(t.promotionsCopyLabel, { code: promotion.code })}
-                    >
-                      {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      <span>{isCopied ? t.promotionsCopied : t.promotionsCopy}</span>
-                    </button>
+                <div className="mt-5 flex items-end gap-2">
+                  <span className="font-display text-4xl font-normal leading-none tracking-tight text-primary sm:text-[2.75rem]">
+                    {discountLabel}
+                  </span>
+                  <span className="pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-accent">
+                    {t.promotionsOff}
+                  </span>
+                </div>
+
+                <h3 className="public-heading-card mt-4 line-clamp-2 text-xl text-ink">{title}</h3>
+                <p className="public-copy mt-2 line-clamp-2 text-sm">{description}</p>
+
+                {maximumText ? (
+                  <p className="mt-4 text-xs font-semibold leading-5 text-muted">{maximumText}</p>
+                ) : null}
+
+                <div className="mt-auto pt-6">
+                  <div className="border-t border-line pt-4">
+                    <div className="flex min-w-0 items-end justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-muted">{t.voucher}</p>
+                        <div className="mt-1.5 flex min-w-0 items-center gap-3">
+                          <code className="truncate font-sans text-sm font-extrabold tracking-[0.12em] text-primary">
+                            {promotion.code}
+                          </code>
+                          <button
+                            type="button"
+                            data-testid={`copy-promotion-${promotion.code}`}
+                            onClick={() => handleCopy(promotion.code)}
+                            className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-secondary transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                            aria-label={interpolate(t.promotionsCopyLabel, { code: promotion.code })}
+                          >
+                            {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                            <span>{isCopied ? t.promotionsCopied : t.promotionsCopy}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <Link
+                        to={promotion.ctaUrl}
+                        aria-label={interpolate(t.promotionsViewLabel, { title })}
+                        className="group/cta inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-secondary transition hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
+                      >
+                        <span>{t.viewRoutes}</span>
+                        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/cta:translate-x-1" />
+                      </Link>
+                    </div>
                   </div>
-                  <Link
-                    to={promotion.ctaUrl}
-                    aria-label={interpolate(t.promotionsViewLabel, { title })}
-                    className="inline-flex w-12 shrink-0 items-center justify-center rounded-xl border border-secondary/25 bg-secondary/10 text-secondary transition hover:bg-secondary hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
                 </div>
               </article>
             );
