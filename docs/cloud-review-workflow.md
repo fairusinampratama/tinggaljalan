@@ -1,5 +1,54 @@
 # Cloud development and UI review
 
+## Execution checkpoint — 2026-10-05
+
+PR #24 merged as `70a931918e52f4869e4286724cf49cac36dd9a0d`.
+Production run `37285820750` initially timed out before upload; its retried
+deployment and independent production smoke test passed.
+
+The dedicated staging key authenticated from GitHub Actions in run
+`37286227361`. Its public host pin came from the existing production record,
+matched to the hPanel endpoint, through export run `37285936663`.
+
+Hostinger provisioned an independent PHP/HTML website for
+`preview.tinggaljalan.com`. Its verified root is
+`/home/u304629909/domains/preview.tinggaljalan.com`, with its own `public_html`.
+The root contains `.tinggaljalan-staging` with the exact preview hostname.
+GitHub's staging environment now has five SSH secrets and `STAGING_ROOT`.
+Readiness run `37287291391` passed the runtime, canonical root, marker and
+free-disk checks. These checks do not establish application deployment readiness.
+
+Database creation is waiting for the owner to enter and submit a new password
+in hPanel. Proposed database and user: `u304629909_tj_preview`.
+`.env.staging.example` prepares separate settings with empty credential fields.
+The earlier "not yet run" sections below describe the original planning state;
+this checkpoint is authoritative for completed work.
+
+Remaining execution gates:
+
+1. Create the dedicated database/user and preserve the password privately.
+   Verify connection and grants before migrating; never import production data.
+2. Create preview-only APP_KEY, storage and configuration. Verify effective
+   database settings as well as environment variables: this app stores gateway
+   credentials and enabled flags in database tables. Disable email, WhatsApp,
+   payments and analytics. Do not run a queue worker or scheduler during setup.
+3. Protect the entire preview with authentication before publishing application
+   content. Verify unauthenticated home, assets and `/up` are denied; authenticated
+   responses have noindex headers. Verify TLS and deny access to secret files.
+4. Implement the manual selected-revision staging build/test/deploy workflow and
+   staging-only deployment script. Validate exact root and marker before writes,
+   check upload integrity, switch a staging release atomically, and automatically
+   restore the previous release after failed health checks. Never recycle
+   account-wide PHP workers. Keep staging credentials out of production jobs.
+5. Prepare synthetic data and a unique admin password; do not expose the default
+   development account. Validate database migration and effective integration
+   state before releasing the application behind authentication.
+6. Deploy the tested revision and verify authenticated `/up` reports that SHA.
+   Check home, route/news details, admin login, assets, desktop/mobile rendering,
+   and rejection of unauthenticated access. Recheck production health afterward.
+7. Deliver the protected review URL and screenshots, with actual checks recorded.
+   Application review, user approval and a production promotion remain separate.
+
 ## Working agreement
 
 Define the problem and observable acceptance criteria. Inspect the implementation,
