@@ -15,6 +15,7 @@ function fails(callable $action, string $message): void
         $action();
     } catch (StagingConfigurationException $error) {
         check(str_contains($error->getMessage(), $message), 'Unexpected safe diagnostic.');
+
         return;
     }
     throw new RuntimeException('Expected configuration failure.');
@@ -28,7 +29,9 @@ try {
     fails(fn () => stagingValidatePasswords([]), 'db_password');
     fails(fn () => stagingValidatePasswords(array_fill_keys(array_keys($input), 'same-password-123456')), 'different');
     fails(fn () => stagingValidatePasswords([...$input, 'review_password' => str_repeat('r', 65)]), 'review_password');
-    $failure = function (string $password): string { throw new RuntimeException('sensitive connection error'); };
+    $failure = function (string $password): string {
+        throw new RuntimeException('sensitive connection error');
+    };
     fails(fn () => stagingConfigure($directory, $template, $input, $failure), 'connection failed');
     check(! file_exists($directory.'/.env') && ! file_exists($directory.'/.htpasswd'), 'Failed connection wrote configuration.');
     fails(fn () => stagingConfigure($directory, $template, $input, fn () => 'other_schema'), 'schema');
@@ -49,7 +52,9 @@ try {
     echo "Staging configuration validation, encoding, failure, and retry checks passed.\n";
 } finally {
     foreach (glob($directory.'/{*,.*}', GLOB_BRACE) as $file) {
-        if (is_file($file)) { unlink($file); }
+        if (is_file($file)) {
+            unlink($file);
+        }
     }
     rmdir($directory);
 }

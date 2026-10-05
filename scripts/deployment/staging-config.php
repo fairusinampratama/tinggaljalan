@@ -1,9 +1,7 @@
 <?php
 
 // Shared configuration logic, also exercised without touching hosting.
-class StagingConfigurationException extends RuntimeException
-{
-}
+class StagingConfigurationException extends RuntimeException {}
 
 function stagingValidatePasswords(array $input): void
 {
@@ -40,6 +38,7 @@ function stagingSerialize(array $values): string
         }
         $lines[] = $name.'='.$quoted;
     }
+
     return implode("\n", $lines)."\n";
 }
 
