@@ -1,0 +1,173 @@
+name: Protected staging deployment
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/staging-deploy.yml
+      - scripts/deployment/deploy-staging.sh
+      - scripts/deployment/configure-staging.php
+      - .env.staging.example
+      - tests/deployment/test_staging_deploy.py
+      - scripts/testing/staging-browser-smoke.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+      - name: Validate staging scripts and refuse production root
+        run: |
+          bash -n scripts/deployment/deploy-staging.sh
+          php -l scripts/deployment/configure-staging.php
+          python3 tests/deployment/test_staging_deploy.py
+          if bash scripts/deployment/deploy-staging.sh /home/u304629909/domains/tinggaljalan.com invalid invalid invalid invalid; then
+            echo 'Production root was accepted.' >&2
+            exit 1
+          fi
+
+  build-test-package:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, dom, curl, zip, pdo_mysql, pdo_sqlite, sqlite3, gd
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install and build selected revision
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+          cp .env.example .env
+          php artisan key:generate
+          npm run build:performance
+      - name: Verify PHP and responsive browsers
+        run: |
+          composer test
+          npx playwright install --with-deps chromium firefox webkit
+          npm run test:browser
+      - name: Package tested source and built frontend
+        run: |
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+          composer check-platform-reqs --no-dev
+          bash scripts/deployment/build-release.sh "$GITHUB_SHA" "$RUNNER_TEMP/release-$GITHUB_SHA.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: staging-${{ github.sha }}
+          path: ${{ runner.temp }}/release-${{ github.sha }}.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    needs: build-test-package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: https://preview.tinggaljalan.com
+    concurrency:
+      group: staging
+      cancel-in-progress: false
+    env:
+      SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+      SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+      SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+      STAGING_ROOT: ${{ vars.STAGING_ROOT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: staging-${{ github.sha }}
+          path: ${{ runner.temp }}/release
+      - name: Configure private staging transfer
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          CONFIG_JSON: ${{ secrets.STAGING_BOOTSTRAP_JSON }}
+        run: |
+          set -euo pipefail
+          [[ "$STAGING_ROOT" == /home/u304629909/domains/preview.tinggaljalan.com ]]
+          [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
+          test -n "$PRIVATE_KEY"
+          test -n "$KNOWN_HOSTS"
+          test -n "$CONFIG_JSON"
+          umask 077
+          mkdir -p "$RUNNER_TEMP/staging-ssh"
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
+          printf '%s\n' "$CONFIG_JSON" > "$RUNNER_TEMP/staging-ssh/config.json"
+          cat > "$RUNNER_TEMP/staging-ssh/ssh_config" <<CONFIG
+          Host staging
+              HostName $SSH_HOST
+              Port $SSH_PORT
+              User $SSH_USER
+              IdentityFile $RUNNER_TEMP/staging-ssh/key
+              UserKnownHostsFile $RUNNER_TEMP/staging-ssh/known_hosts
+              StrictHostKeyChecking yes
+              IdentitiesOnly yes
+              BatchMode yes
+              ConnectTimeout 20
+              ServerAliveInterval 10
+              ServerAliveCountMax 2
+          CONFIG
+      - name: Validate destination before uploading
+        run: |
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "bash -s -- readiness '$STAGING_ROOT'" < scripts/deployment/staging-preflight.sh
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "test ! -L '$STAGING_ROOT/deployments' && mkdir -p '$STAGING_ROOT/deployments/incoming' && test \"\$(readlink -f '$STAGING_ROOT/deployments/incoming')\" = '$STAGING_ROOT/deployments/incoming' && chmod 700 '$STAGING_ROOT/deployments/incoming'"
+      - name: Transfer and deploy staging release
+        run: |
+          set -euo pipefail
+          ARCHIVE="$RUNNER_TEMP/release/release-$GITHUB_SHA.tar.gz"
+          DIGEST="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
+          REMOTE_ARCHIVE="$STAGING_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
+          REMOTE_CONFIG="$STAGING_ROOT/deployments/incoming/config-$GITHUB_SHA.json"
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "test ! -L '$REMOTE_ARCHIVE' && test ! -L '$REMOTE_CONFIG'"
+          scp -F "$RUNNER_TEMP/staging-ssh/ssh_config" "$ARCHIVE" "staging:$REMOTE_ARCHIVE"
+          scp -F "$RUNNER_TEMP/staging-ssh/ssh_config" "$RUNNER_TEMP/staging-ssh/config.json" "staging:$REMOTE_CONFIG"
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "bash -s -- '$STAGING_ROOT' '$GITHUB_SHA' '$REMOTE_ARCHIVE' '$DIGEST' '$REMOTE_CONFIG'" \
+            < scripts/deployment/deploy-staging.sh
+          printf '## Protected staging\n\nRevision: `%s`\n\nAuthenticated runtime and access protection checks passed. Database migrations are not automatically reversed.\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify actual desktop and mobile rendering
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/staging-ssh/config.json" "$GITHUB_SHA" "$RUNNER_TEMP/staging-review"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-review-${{ github.sha }}
+          path: ${{ runner.temp }}/staging-review
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Remove temporary credentials
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/staging-ssh/ssh_config"; then
+            ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+              "rm -f '$STAGING_ROOT/deployments/incoming/config-$GITHUB_SHA.json'" || true
+          fi
+          rm -rf -- "$RUNNER_TEMP/staging-ssh"
