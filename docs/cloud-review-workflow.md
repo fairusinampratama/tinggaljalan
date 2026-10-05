@@ -1,6 +1,49 @@
 # Cloud development and UI review
 
-## Execution checkpoint — 2026-10-05
+## Verified execution checkpoint — 2026-10-05 UTC
+
+The independent Hostinger preview is deployed at https://preview.tinggaljalan.com.
+Its root is /home/u304629909/domains/preview.tinggaljalan.com and its database/user
+is u304629909_tj_preview. It uses its own APP_KEY, environment and storage, synthetic
+content, disabled outbound integrations, Basic authentication and noindex headers.
+
+The three separate staging passwords passed combined validation. Database connectivity
+and the exact schema were checked before configuration writes. Live deployment run
+37343798788 verified the selected revision and desktop/mobile home, routes, route
+detail, news, news detail and admin login pages. Screenshots and diagnostics are
+retained in that run's staging-review artifact for seven days. Admin login submission,
+booking submission and payment transactions were not tested by this rendering check.
+
+Resolved hosting differences:
+
+- The website PHP setting was 8.3 even though the CLI PHP binary was 8.4. The preview
+  website was switched to PHP 8.4 in hPanel and its HTTP response advertised 8.4.19.
+- Hostinger's curl 7.61.1 cannot parse quoted netrc passwords. Private mode-600 curl
+  config files now preserve credentials without exposing them in process arguments.
+- Shared directory traversal blocked the web server from reading the auth file.
+  Mode 711 allows traversal without listing; the environment file remains mode 600.
+- The release now explicitly rewrites the homepage to its immutable entry and waits
+  for the selected runtime revision before checking the homepage, allowing brief
+  startup/cache delays without treating them as permanent application failures.
+- The publisher now links Filament's js, css and fonts directories as well as public
+  frontend assets. Live browser checks cover all same-origin JavaScript/CSS assets
+  and report redacted error messages instead of a generic failure.
+
+For future changes, run normal PR CI, then manually deploy the selected branch to
+staging and inspect its desktop/mobile artifact before production promotion. To inspect
+an existing preview without rebuilding or touching hosting, enable review_only in the
+Protected staging deployment workflow and enter its exact deployed revision. Runtime
+revision mismatch is a failure. Password rotations are separate explicit operations;
+retrying a deploy does not overwrite existing database or review credentials.
+
+The temporary branch-push recovery trigger was removed after deployment. Staging
+returns to manual dispatch; PRs run validation only. Production's existing deployment
+workflow is unchanged. Merging the approved workflow repair triggers the normal main
+production pipeline, which must pass its independent smoke test.
+
+## Earlier setup checkpoints (historical)
+
+### Initial setup checkpoint — 2026-10-05
 
 PR #24 merged as `70a931918e52f4869e4286724cf49cac36dd9a0d`.
 Production run `37285820750` initially timed out before upload; its retried
@@ -28,7 +71,7 @@ PR #26 repairs the setup with independent secrets, early validation, safe
 configuration diagnostics, connection-before-write ordering, and real helper
 regression tests. Its changes must pass CI before the credential handoff.
 
-Remaining execution gates:
+Original execution gates (completed by the verified checkpoint above):
 
 1. Enter the three independent secrets described below; run the combined
    read-only credential validation before any build or upload.
@@ -163,9 +206,9 @@ establish network access to the coding workspace. Use captured screenshots for
 development feedback and a staging URL for interactive review until a supported
 connection is verified.
 
-## Staging readiness and remaining work
+## Original staging capacity investigation
 
-Hostinger dashboard inspection on 2026-10-05 confirmed Premium hosting, PHP 8.4,
+Hostinger dashboard inspection on 2026-10-05 confirmed Premium hosting, production PHP 8.4,
 active SSH, database creation controls, 2.87/25 GB disk usage, 163040/400000
 inodes and spare website capacity. The subdomain page showed no existing entries.
 These observations establish apparent capacity, not a successful deployment.
@@ -183,13 +226,10 @@ production deployment script unchanged: it recycles all account PHP workers,
 which could interrupt production. Verify staging-specific worker/cache behavior
 before deploying. Do not store credentials in this document or repository.
 
-Still required: authenticated server preflight, staging document-root and
-database provisioning, access protection, deploy workflow, first successful
-deployment and browser verification. No staging deployment or environment
-publication has been verified yet. Keep the existing production workflow
-unchanged during this setup.
+Those provisioning and verification steps have since completed; see the current
+checkpoint above. Preserve the separate staging layout and production workflow.
 
-## Staging SSH preflight (prepared, not yet run)
+## Staging SSH preflight
 
 The new `staging-preflight.yml` workflow has a syntax-only PR check and a manual
 SSH job. The manual job uses the `staging` GitHub environment and requires:
@@ -219,9 +259,8 @@ release authorization because the current main push triggers production CI.
 A successful SSH connection followed by a missing-directory error proves only
 connection, not hosting readiness. Completion requires runtime, staging marker,
 canonical directory and disk checks to pass. This preflight does not create a
-subdomain, database, files, or a deployment. A separate staging deployment script
-and build/test pipeline remain to be implemented after the hosting layout is
-verified. The production workflow is unchanged.
+subdomain, database, files, or a deployment. The separate protected staging deployment script and build/test pipeline now
+implement the publication and browser verification described above. The production workflow is unchanged.
 
 ## Revised bootstrap sequence
 
