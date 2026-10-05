@@ -128,3 +128,31 @@ canonical directory and disk checks to pass. This preflight does not create a
 subdomain, database, files, or a deployment. A separate staging deployment script
 and build/test pipeline remain to be implemented after the hosting layout is
 verified. The production workflow is unchanged.
+
+## Revised bootstrap sequence
+
+The preflight now offers three explicit manual operations:
+
+1. `export-host-record`: references the existing production environment only to
+   compare its host/port to staging's hPanel-confirmed endpoint and extract a
+   matching public SSH host record. It does not reference the production private
+   key, authenticate to SSH, or deploy. Its one-day artifact contains public
+   server identity, not a client credential. Download and store that record in
+   `STAGING_SSH_KNOWN_HOSTS`; preserve provenance as the existing production pin,
+   not as newly independently verified vendor identity.
+2. `connection`: uses staging secrets to authenticate and check the runtime/tools.
+   It needs no staging root, marker or database. Passing proves connectivity and
+   runtime only.
+3. `readiness`: additionally checks the exact independent website root, marker,
+   public directory and disk capacity. Provision an independent PHP/HTML website
+   through Add Website onboarding, rather than the nested Subdomains form.
+
+The production record export intentionally fails if production host/port differs
+from staging. Resolve that mismatch before changing its comparison. Production
+protection rules still apply to the export job. Exported host records need a
+reviewed transfer into the staging environment; no admin API token is introduced.
+
+The workflow must be made available on main before manual dispatch. The existing
+main-push pipeline may redeploy production when this PR merges. Do not merge as
+an implicit setup step: review checks and obtain approval for that concrete effect.
+The production deployment workflow itself remains unchanged.

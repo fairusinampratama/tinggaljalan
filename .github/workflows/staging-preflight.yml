@@ -2,6 +2,15 @@ name: Staging SSH preflight
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Read-only operation
+        type: choice
+        options:
+          - connection
+          - readiness
+          - export-host-record
+        default: connection
   pull_request:
     paths:
       - .github/workflows/staging-preflight.yml
@@ -19,7 +28,7 @@ jobs:
         run: bash -n scripts/deployment/staging-preflight.sh
 
   connection:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record'
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -32,6 +41,7 @@ jobs:
       SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
       SSH_USER: ${{ secrets.STAGING_SSH_USER }}
       STAGING_ROOT: ${{ vars.STAGING_ROOT }}
+      OPERATION: ${{ inputs.operation }}
     steps:
       - uses: actions/checkout@v4
       - name: Configure pinned SSH access
@@ -45,7 +55,9 @@ jobs:
           [[ "$SSH_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
           test -n "$PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
-          [[ "$STAGING_ROOT" =~ ^/home/[a-zA-Z0-9_-]+/domains/preview[.]tinggaljalan[.]com$ ]]
+          if [[ "$OPERATION" == readiness ]]; then
+            [[ "$STAGING_ROOT" =~ ^/home/[a-zA-Z0-9_-]+/domains/preview[.]tinggaljalan[.]com$ ]]
+          fi
           umask 077
           mkdir -p "$RUNNER_TEMP/staging-ssh"
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
@@ -56,11 +68,43 @@ jobs:
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
-            "$SSH_USER@$SSH_HOST" "bash -s -- '$STAGING_ROOT'" \
+            "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
       - name: Record result
         run: |
-          printf '## Staging preflight\n\nSSH authentication, pinned server identity and staging prerequisites passed. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Remove runner credentials
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/staging-ssh"
+
+  export-host-record:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'export-host-record'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - name: Extract existing public server identity
+        env:
+          HOST: ${{ secrets.PROD_SSH_HOST }}
+          PORT: ${{ secrets.PROD_SSH_PORT }}
+          RECORDS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          # These are the independently observed staging endpoint details.
+          [[ "$HOST" == 153.92.9.54 && "$PORT" == 65002 ]]
+          test -n "$RECORDS"
+          umask 077
+          printf '%s\n' "$RECORDS" > "$RUNNER_TEMP/existing-known-hosts"
+          ssh-keygen -F "[$HOST]:$PORT" -f "$RUNNER_TEMP/existing-known-hosts" \
+            | sed '/^#/d' > "$RUNNER_TEMP/staging-known-hosts"
+          test -s "$RUNNER_TEMP/staging-known-hosts"
+          ssh-keygen -lf "$RUNNER_TEMP/staging-known-hosts" >/dev/null
+          printf 'Matched existing production host record to the configured staging endpoint. No SSH session or deployment was started.\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve public host record for staging configuration
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-host-record-${{ github.run_id }}
+          path: ${{ runner.temp }}/staging-known-hosts
+          retention-days: 1
+          if-no-files-found: error
