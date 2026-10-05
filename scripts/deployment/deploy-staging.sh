@@ -135,7 +135,7 @@ publish_entry "$PREVIOUS_ENTRY"
 printf 'User-agent: *\nDisallow: /\n' > "$PUBLIC/robots.txt"
 [[ "$(curl --silent --show-error --max-time 30 --output /dev/null --write-out '%{http_code}' "$BASE/")" == 401 ]]
 
-for asset in build images storage favicon.ico favicon.png favicon-96x96.png apple-touch-icon.png; do
+for asset in build images storage js css fonts favicon.ico favicon.png favicon-96x96.png apple-touch-icon.png; do
     if [[ -e "$PUBLIC/$asset" && ! -L "$PUBLIC/$asset" ]]; then
         echo "Unexpected existing public asset: $asset" >&2; false
     fi
@@ -168,7 +168,7 @@ done
 ln -s "$RELEASE" "$CURRENT.next"
 mv -Tf "$CURRENT.next" "$CURRENT"
 SWITCHED=1
-for asset in build images storage favicon.ico favicon.png favicon-96x96.png apple-touch-icon.png; do
+for asset in build images storage js css fonts favicon.ico favicon.png favicon-96x96.png apple-touch-icon.png; do
     ln -sfn "../deployments/current/public/$asset" "$PUBLIC/$asset"
 done
 printf "<?php require '%s/public/index.php';\n" "$RELEASE" > "$PUBLIC/index-$SHA.php"

@@ -74,7 +74,7 @@ class StagingTransactionTest(unittest.TestCase):
                 (public / ('index-' + 'b' * 40 + '.php')).write_text('previous-wrapper')
                 (root / "deployments/current").symlink_to(old)
             package = work / "package"
-            for directory in ["vendor", "public/build", "public/images", "scripts/deployment", "bootstrap/cache"]:
+            for directory in ["vendor", "public/build", "public/images", "public/js/filament", "public/css/filament", "public/fonts/filament", "scripts/deployment", "bootstrap/cache"]:
                 (package / directory).mkdir(parents=True, exist_ok=True)
             for filename in ["vendor/autoload.php", "artisan", "public/index.php", "scripts/deployment/configure-staging.php"]:
                 (package / filename).write_text("")
@@ -134,6 +134,8 @@ class StagingTransactionTest(unittest.TestCase):
                 self.assertFalse((releases / SHA).exists())
             else:
                 self.assertEqual((root / "deployments/current").resolve(), releases / SHA)
+                for asset in ['js', 'css', 'fonts']:
+                    self.assertEqual((public / asset).resolve(), releases / SHA / 'public' / asset)
                 self.assertIn(SHA, (public / f"index-{SHA}.php").read_text())
                 self.assertIn(f'DirectoryIndex index-{SHA}.php', (public / '.htaccess').read_text())
 
