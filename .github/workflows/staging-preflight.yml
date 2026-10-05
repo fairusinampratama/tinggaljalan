@@ -94,7 +94,11 @@ jobs:
               code = response.status
           except urllib.error.HTTPError as error:
               code = error.code
+              response = error
           print('Existing preview authenticated HTTP status:', code)
+          print('Preview PHP header:', response.headers.get('X-Powered-By', 'not advertised'))
+          body = response.read(16384)
+          print('Preview setup placeholder returned:', b'Preview setup incomplete' in body)
           PY
       - name: Record result
         run: |

@@ -18,6 +18,22 @@ test -x "$PHP"
 "$PHP" -r 'foreach (["pdo_mysql", "mbstring", "intl", "dom", "curl", "zip", "gd"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing extension: $extension\n"); exit(1); } } exit(function_exists("imagewebp") ? 0 : 1);'
 for tool in tar gzip curl sha256sum readlink; do command -v "$tool" >/dev/null; done
 curl --version | head -n 1
+if [[ "$ROOT" == /home/u304629909/domains/preview.tinggaljalan.com ]]; then
+    "$PHP" -r '
+    $root = $argv[1];
+    foreach (["deployments/shared/storage/logs/laravel.log", "public_html/error_log", "error_log"] as $path) {
+        $file = $root."/".$path;
+        if (!is_file($file)) { echo "No preview log: ".$path.PHP_EOL; continue; }
+        $text = substr(file_get_contents($file), -131072);
+        echo "Preview log inspected: ".$path.PHP_EOL;
+        foreach (["Permission denied", "Failed opening required", "Composer detected issues in your platform", "requires a PHP version", "Vite manifest not found", "could not find driver", "No application encryption key"] as $reason) {
+            if (str_contains($text, $reason)) echo "Detected error category: ".$reason.PHP_EOL;
+        }
+        preg_match_all("~#[0-9]+ ([^\\r\\n]+?\\([0-9]+\\)):~", $text, $frames);
+        foreach (array_slice($frames[1], -8) as $frame) echo "Stack location: ".$frame.PHP_EOL;
+    }
+    ' "$ROOT"
+fi
 if [[ "$MODE" == connection ]]; then
     echo 'SSH and runtime checks passed. Staging provisioning was not checked.'
     exit 0
