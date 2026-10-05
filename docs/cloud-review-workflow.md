@@ -49,6 +49,54 @@ Remaining execution gates:
 7. Deliver the protected review URL and screenshots, with actual checks recorded.
    Application review, user approval and a production promotion remain separate.
 
+## Protected staging deployment implementation
+
+`staging-deploy.yml` offers manual deployment of the selected workflow branch's
+exact SHA. It builds and tests that revision with PHP and all configured browser
+projects, packages the built frontend and production Composer dependencies, then
+uses only the staging environment to upload and deploy it. Its PR validation job
+exercises publication, rollback, first-release failure and rejection of the
+production path using local fake runtime and HTTP adapters.
+
+The owner must enter a `STAGING_BOOTSTRAP_JSON` secret into the GitHub `staging`
+environment with this structure (replace all placeholders privately):
+
+```json
+{
+  "db_password": "the existing preview database password",
+  "review_password": "a separate strong preview access password",
+  "admin_password": "a separate strong preview admin password"
+}
+```
+
+Use different passwords of 16–64 characters, with no control characters. JSON
+requires quotes and backslashes inside values to be escaped. Preview HTTP username
+is `reviewer`; application admin email is `preview-admin@tinggaljalan.test`.
+Do not send secret values in chat or store them in the repository. App key creation
+occurs only on the hosting account, once. Existing credentials are verified rather
+than implicitly rotated. The deployment does not start queues or schedule jobs.
+
+`deploy-staging.sh` validates the fixed preview root and identity marker before
+writing files, uses a staging lock, checks archive SHA256, verifies the dedicated
+database before migrating, and installs HTTP authentication before publication.
+Every revision has its own immutable PHP front-controller filename, with an atomic
+`.htaccess` update. This avoids reliance on account-wide worker restarts. Old PHP
+entry files are denied. Shared storage and configuration remain preview-specific.
+
+Curated content seeders run on first setup without `DatabaseSeeder`'s default admin
+or gateway credentials. Gateway and notification database flags are disabled and
+credentials cleared; the development admin is rejected. Health checks verify
+the SHA, noindex, denied anonymous access, secret-file denial and live JS/CSS.
+Failure restores the prior application entry/release. Migrations and shared data
+are not rolled back; candidate migrations must remain backward-compatible.
+Browser verification captures real desktop/mobile home, lists, detail pages and
+admin login in a seven-day `staging-review-<sha>` artifact. It does not claim a
+booking/payment submission test or application admin login authentication test.
+
+This implementation still requires PR checks, default-branch workflow availability,
+private configuration entry, a successful Hostinger deployment and hosted rendering
+verification before the preview can be reported as ready.
+
 ## Working agreement
 
 Define the problem and observable acceptance criteria. Inspect the implementation,
