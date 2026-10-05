@@ -94,3 +94,37 @@ database provisioning, access protection, deploy workflow, first successful
 deployment and browser verification. No staging deployment or environment
 publication has been verified yet. Keep the existing production workflow
 unchanged during this setup.
+
+## Staging SSH preflight (prepared, not yet run)
+
+The new `staging-preflight.yml` workflow has a syntax-only PR check and a manual
+SSH job. The manual job uses the `staging` GitHub environment and requires:
+
+| Setting | Type | Purpose |
+|---|---|---|
+| STAGING_SSH_HOST | Secret | Hostinger SSH server |
+| STAGING_SSH_PORT | Secret | Hostinger SSH port |
+| STAGING_SSH_USER | Secret | Hosting account user |
+| STAGING_SSH_PRIVATE_KEY | Secret | Dedicated staging key |
+| STAGING_SSH_KNOWN_HOSTS | Secret | Independently verified SSH host-key entry |
+| STAGING_ROOT | Environment variable | Exact `/home/<user>/domains/preview.tinggaljalan.com` root |
+
+Verify the server key through a trusted source before storing it. A network
+keyscan alone does not establish identity. The workflow never disables SSH host
+verification. Its directory guard intentionally fails until hosting is provisioned
+with a `.tinggaljalan-staging` file containing `preview.tinggaljalan.com`.
+If Hostinger uses a different document-root layout, inspect and review that layout
+before changing the guard; do not point it to the production domain directory.
+
+Run the workflow from the feature branch after GitHub recognizes the manual
+workflow. GitHub requires a workflow_dispatch workflow to exist on the default
+branch for normal manual dispatch; adding this file to a feature branch alone
+may not expose its Run workflow button. Any workflow-only merge needs separate
+release authorization because the current main push triggers production CI.
+
+A successful SSH connection followed by a missing-directory error proves only
+connection, not hosting readiness. Completion requires runtime, staging marker,
+canonical directory and disk checks to pass. This preflight does not create a
+subdomain, database, files, or a deployment. A separate staging deployment script
+and build/test pipeline remain to be implemented after the hosting layout is
+verified. The production workflow is unchanged.

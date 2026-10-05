@@ -1,0 +1,66 @@
+name: Staging SSH preflight
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/staging-preflight.yml
+      - scripts/deployment/staging-preflight.sh
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate script syntax
+        run: bash -n scripts/deployment/staging-preflight.sh
+
+  connection:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: staging
+    concurrency:
+      group: staging
+      cancel-in-progress: false
+    env:
+      SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+      SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+      SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+      STAGING_ROOT: ${{ vars.STAGING_ROOT }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure pinned SSH access
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$SSH_HOST"
+          [[ "$SSH_PORT" =~ ^[0-9]+$ ]]
+          [[ "$SSH_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
+          test -n "$PRIVATE_KEY"
+          test -n "$KNOWN_HOSTS"
+          [[ "$STAGING_ROOT" =~ ^/home/[a-zA-Z0-9_-]+/domains/preview[.]tinggaljalan[.]com$ ]]
+          umask 077
+          mkdir -p "$RUNNER_TEMP/staging-ssh"
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
+      - name: Inspect staging prerequisites without changing hosting
+        run: |
+          ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            "$SSH_USER@$SSH_HOST" "bash -s -- '$STAGING_ROOT'" \
+            < scripts/deployment/staging-preflight.sh
+      - name: Record result
+        run: |
+          printf '## Staging preflight\n\nSSH authentication, pinned server identity and staging prerequisites passed. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove runner credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/staging-ssh"
