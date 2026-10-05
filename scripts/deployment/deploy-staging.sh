@@ -121,6 +121,8 @@ Require valid-user
     RewriteRule ^ https://preview.tinggaljalan.com%{REQUEST_URI} [R=302,L]
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    # Route the directory URL explicitly rather than relying on a cached index.
+    RewriteRule ^\$ $entry [L]
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ $entry [L]
@@ -174,8 +176,6 @@ publish_entry "index-$SHA.php"
 for path in /up / /admin/login /robots.txt; do
     [[ "$(curl --silent --show-error --max-time 30 --output /dev/null --write-out '%{http_code}' "$BASE$path")" == 401 ]]
 done
-HEADERS="$(curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -D - -o /dev/null "$BASE/")"
-printf '%s\n' "$HEADERS" | grep -iq '^X-Robots-Tag:.*noindex'
 RUNTIME_READY=0
 for attempt in {1..10}; do
     if curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" \
@@ -186,6 +186,15 @@ for attempt in {1..10}; do
     sleep 2
 done
 [[ "$RUNTIME_READY" == 1 ]]
+HOMEPAGE_READY=0
+for attempt in {1..5}; do
+    if HEADERS="$(curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -D - -o /dev/null "$BASE/?deployment_revision=$SHA&attempt=$attempt")"; then
+        HOMEPAGE_READY=1; break
+    fi
+    sleep 2
+done
+[[ "$HOMEPAGE_READY" == 1 ]]
+printf '%s\n' "$HEADERS" | grep -iq '^X-Robots-Tag:.*noindex'
 curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -o "$CURL_CONFIG.html" "$BASE/"
 "$PHP" -r '
 $manifest=json_decode(file_get_contents($argv[1]),true);
