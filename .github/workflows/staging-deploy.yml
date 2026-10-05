@@ -32,6 +32,14 @@ jobs:
         run: |
           composer install --prefer-dist --no-interaction --no-progress --no-scripts
           php tests/deployment/test_staging_config.php
+      - name: Check staging PHP formatting
+        run: |
+          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php)
+          if ! vendor/bin/pint --test "${FILES[@]}"; then
+            vendor/bin/pint "${FILES[@]}"
+            git diff -- "${FILES[@]}"
+            exit 1
+          fi
       - name: Validate staging scripts and refuse production root
         run: |
           bash -n scripts/deployment/deploy-staging.sh
