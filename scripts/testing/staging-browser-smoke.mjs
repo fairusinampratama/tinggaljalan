@@ -11,6 +11,10 @@ const base = 'https://preview.tinggaljalan.com';
 await mkdir(output, { recursive: true, mode: 0o700 });
 const browser = await chromium.launch();
 const results = [];
+const diagnostics = [];
+const redact = value => Object.values(config).filter(value => typeof value === 'string' && value.length).reduce(
+    (text, secret) => text.replaceAll(secret, '[redacted]'), String(value),
+);
 try {
     const anonymous = await browser.newContext();
     for (const route of ['/', '/up', '/admin/login']) {
@@ -34,9 +38,12 @@ try {
         const page = await context.newPage();
         const errors = [];
         const failedAssets = [];
-        page.on('pageerror', () => errors.push('Application JavaScript error'));
+        page.on('pageerror', error => errors.push({ route: new URL(page.url()).pathname, message: redact(error.message) }));
         page.on('response', response => {
-            if (response.url().startsWith(`${base}/build/`) && response.status() >= 400) failedAssets.push('Built asset failed');
+            const url = new URL(response.url());
+            if (url.origin === base && /\.(js|css)$/.test(url.pathname) && response.status() >= 400) {
+                failedAssets.push({ path: url.pathname, status: response.status() });
+            }
         });
         for (const [label, route] of [['home', '/'], ['routes', '/routes'], ['news', '/news'], ['admin-login', '/admin/login']]) {
             const response = await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
@@ -74,10 +81,15 @@ try {
                 results.push(`${name}: ${label} detail rendered`);
             }
         }
-        if (errors.length || failedAssets.length) throw new Error('Preview JavaScript or asset errors were detected.');
+        diagnostics.push({ viewport: name, errors, failedAssets });
         await context.close();
     }
     await writeFile(path.join(output, 'verification.txt'), `Revision: ${revision}\n${results.join('\n')}\n`, { mode: 0o600 });
+    await writeFile(path.join(output, 'diagnostics.json'), JSON.stringify(diagnostics, null, 2), { mode: 0o600 });
+    if (diagnostics.some(result => result.errors.length || result.failedAssets.length)) {
+        console.error(JSON.stringify(diagnostics));
+        throw new Error('Preview JavaScript or asset errors were detected; see diagnostics.json.');
+    }
 } finally {
     await browser.close();
 }

@@ -8,12 +8,48 @@ import tarfile
 import tempfile
 import unittest
 import hashlib
+import base64
+import http.server
+import re
+import threading
 
 SOURCE = Path(__file__).resolve().parents[2]
 SHA = "a" * 40
 
 
 class StagingTransactionTest(unittest.TestCase):
+    def test_real_curl_receives_exact_password_from_private_config(self):
+        password = 'fixture spaces "quotes" \\ slash $value #tag:colon'
+        expected = 'Basic ' + base64.b64encode(('reviewer:' + password).encode()).decode()
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(204 if self.headers.get('Authorization') == expected else 401)
+                self.end_headers()
+
+            def log_message(self, *args):
+                pass
+
+        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                source = (SOURCE / 'scripts/deployment/deploy-staging.sh').read_text()
+                snippet = re.search(r'"\$PHP" -r \'\n(\$input = json_decode.*?chmod\(\$argv\[2\], 0600\);\n)\'', source, re.S).group(1)
+                input_path = Path(directory) / 'input.json'
+                config_path = Path(directory) / 'curl.config'
+                input_path.write_text(json.dumps({'review_password': password}))
+                subprocess.run([shutil.which('php'), '-r', snippet, str(input_path), str(config_path)], check=True)
+                self.assertEqual(config_path.stat().st_mode & 0o777, 0o600)
+                result = subprocess.run(['curl', '--fail', '--silent', '--show-error', '--config', str(config_path),
+                                         f'http://127.0.0.1:{server.server_port}/'], capture_output=True)
+                self.assertEqual(result.returncode, 0, 'Credential encoding did not preserve the password')
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+
     def test_production_root_is_rejected_before_any_work(self):
         result = subprocess.run(["bash", str(SOURCE / "scripts/deployment/deploy-staging.sh"),
                                  "/home/u304629909/domains/tinggaljalan.com", SHA, "unused", "0" * 64, "unused"], capture_output=True)
@@ -38,7 +74,7 @@ class StagingTransactionTest(unittest.TestCase):
                 (public / ('index-' + 'b' * 40 + '.php')).write_text('previous-wrapper')
                 (root / "deployments/current").symlink_to(old)
             package = work / "package"
-            for directory in ["vendor", "public/build", "public/images", "scripts/deployment", "bootstrap/cache"]:
+            for directory in ["vendor", "public/build", "public/images", "public/js/filament", "public/css/filament", "public/fonts/filament", "scripts/deployment", "bootstrap/cache"]:
                 (package / directory).mkdir(parents=True, exist_ok=True)
             for filename in ["vendor/autoload.php", "artisan", "public/index.php", "scripts/deployment/configure-staging.php"]:
                 (package / filename).write_text("")
@@ -58,13 +94,13 @@ class StagingTransactionTest(unittest.TestCase):
             php.write_text("#!/usr/bin/env bash\nset -e\n"
                            f"if [[ $1 == -r ]]; then exec '{shutil.which('php')}' \"$@\"; fi\n"
                            'if [[ $1 == *configure-staging.php && $4 == configure ]]; then\n'
-                           '  printf env > "$3/deployments/shared/.env"\n'
+                           '  printf env > "$3/deployments/shared/.env"; chmod 600 "$3/deployments/shared/.env"\n'
                            '  printf auth > "$3/deployments/shared/.htpasswd"\n'
                            'fi\n')
             php.chmod(0o755)
             curl = adapters / "curl"
             curl.write_text("#!/usr/bin/env python3\nimport sys,os\n"
-                            "args=sys.argv[1:]; url=args[-1]; authenticated='--netrc-file' in args\n"
+                            "args=sys.argv[1:]; url=args[-1]; authenticated='--config' in args\n"
                             "if '--write-out' in args:\n"
                             " print(('403' if url.endswith('/.env') or url.endswith('/.htpasswd') else '200') if authenticated else '401',end=''); sys.exit()\n"
                             "if not authenticated: sys.exit(1)\n"
@@ -83,6 +119,9 @@ class StagingTransactionTest(unittest.TestCase):
                                     env=environment, capture_output=True, text=True)
             self.assertEqual(result.returncode == 0, not fail, result.stderr)
             self.assertFalse(config.exists(), "Transferred secret must be removed")
+            self.assertEqual((shared / ".env").stat().st_mode & 0o077, 0)
+            self.assertTrue(shared.stat().st_mode & 0o001, "Web server must traverse to auth file")
+            self.assertFalse(shared.stat().st_mode & 0o004, "Shared directory must not be world-listable")
             self.assertIn("Require valid-user", (public / ".htaccess").read_text())
             if fail and previous:
                 self.assertEqual((root / "deployments/current").resolve(), old)
@@ -95,6 +134,8 @@ class StagingTransactionTest(unittest.TestCase):
                 self.assertFalse((releases / SHA).exists())
             else:
                 self.assertEqual((root / "deployments/current").resolve(), releases / SHA)
+                for asset in ['js', 'css', 'fonts']:
+                    self.assertEqual((public / asset).resolve(), releases / SHA / 'public' / asset)
                 self.assertIn(SHA, (public / f"index-{SHA}.php").read_text())
                 self.assertIn(f'DirectoryIndex index-{SHA}.php', (public / '.htaccess').read_text())
 

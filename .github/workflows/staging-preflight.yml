@@ -15,6 +15,7 @@ on:
     paths:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/staging-preflight.sh
+      - scripts/deployment/prepare-staging-secrets.py
 
 permissions:
   contents: read
@@ -44,6 +45,12 @@ jobs:
       OPERATION: ${{ inputs.operation }}
     steps:
       - uses: actions/checkout@v4
+      - name: Validate staging credentials without revealing values
+        env:
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: python3 scripts/deployment/prepare-staging-secrets.py
       - name: Configure pinned SSH access
         env:
           PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
@@ -70,6 +77,29 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
+      - name: Inspect existing preview authentication without changing hosting
+        env:
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, urllib.request, urllib.error
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args, **kwargs):
+                  return None
+          request = urllib.request.Request('https://preview.tinggaljalan.com/')
+          token = base64.b64encode(('reviewer:' + os.environ['STAGING_REVIEW_PASSWORD']).encode()).decode()
+          request.add_header('Authorization', 'Basic ' + token)
+          try:
+              response = urllib.request.build_opener(NoRedirect).open(request, timeout=30)
+              code = response.status
+          except urllib.error.HTTPError as error:
+              code = error.code
+              response = error
+          print('Existing preview authenticated HTTP status:', code)
+          print('Preview PHP header:', response.headers.get('X-Powered-By', 'not advertised'))
+          body = response.read(16384)
+          print('Preview setup placeholder returned:', b'Preview setup incomplete' in body)
+          PY
       - name: Record result
         run: |
           printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
