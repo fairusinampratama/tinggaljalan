@@ -41,12 +41,12 @@ exec 9>"$DEPLOY/.lock"
 flock -n 9 || { echo 'Another staging deployment holds the lock.' >&2; exit 1; }
 chmod 600 "$CONFIG"
 cleanup() {
-    rm -f -- "$CONFIG" "$NETRC" "$NETRC.html" "$NETRC.assets"
+    rm -f -- "$CONFIG" "$CURL_CONFIG" "$CURL_CONFIG.html" "$CURL_CONFIG.assets"
     if [[ "${COMPLETED:-0}" != 1 && "${CREATED:-0}" == 1 && "$(readlink -f "$CURRENT" || true)" != "$RELEASE" ]]; then
         rm -rf -- "$RELEASE"
     fi
 }
-NETRC="$(mktemp "$DEPLOY/incoming/curl-XXXXXX")"
+CURL_CONFIG="$(mktemp "$DEPLOY/incoming/curl-XXXXXX")"
 trap cleanup EXIT
 [[ "$(sha256sum "$ARCHIVE" | cut -d' ' -f1)" == "$DIGEST" ]]
 gzip -t "$ARCHIVE"
@@ -65,7 +65,8 @@ test -f "$RELEASE/public/build/manifest.json"
 "$PHP" "$RELEASE/scripts/deployment/configure-staging.php" "$RELEASE" "$ROOT" configure "$CONFIG"
 mkdir -p "$SHARED/storage/app/public/admin/hero" "$SHARED/storage/framework/cache/data" \
     "$SHARED/storage/framework/sessions" "$SHARED/storage/framework/views" "$SHARED/storage/logs"
-chmod 700 "$SHARED"
+# The web server must traverse to the auth file; private files stay mode 600.
+chmod 711 "$DEPLOY" "$SHARED"
 ln -s "$SHARED/.env" "$RELEASE/.env"
 ln -s "$SHARED/storage" "$RELEASE/storage"
 rm -rf -- "$RELEASE/public/storage"
@@ -75,9 +76,9 @@ ln -s "$SHARED/storage/app/public" "$RELEASE/public/storage"
 "$PHP" -r '
 $input = json_decode(file_get_contents($argv[1]), true, flags: JSON_THROW_ON_ERROR);
 $password = str_replace(["\\", "\""], ["\\\\", "\\\""], $input["review_password"]);
-file_put_contents($argv[2], "machine preview.tinggaljalan.com login reviewer password \"".$password."\"\n");
+file_put_contents($argv[2], "user = \"reviewer:".$password."\"\n");
 chmod($argv[2], 0600);
-' "$CONFIG" "$NETRC"
+' "$CONFIG" "$CURL_CONFIG"
 
 PREVIOUS=''
 PREVIOUS_ENTRY=index.php
@@ -173,11 +174,11 @@ publish_entry "index-$SHA.php"
 for path in /up / /admin/login /robots.txt; do
     [[ "$(curl --silent --show-error --max-time 30 --output /dev/null --write-out '%{http_code}' "$BASE$path")" == 401 ]]
 done
-HEADERS="$(curl --fail --silent --show-error --max-time 30 --netrc-file "$NETRC" -D - -o /dev/null "$BASE/")"
+HEADERS="$(curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -D - -o /dev/null "$BASE/")"
 printf '%s\n' "$HEADERS" | grep -iq '^X-Robots-Tag:.*noindex'
 RUNTIME_READY=0
 for attempt in {1..10}; do
-    if curl --fail --silent --show-error --max-time 30 --netrc-file "$NETRC" \
+    if curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" \
         "$BASE/up?deployment_revision=$SHA&attempt=$attempt" | "$PHP" -r '
         $result=json_decode(stream_get_contents(STDIN),true);
         exit(($result["status"]??null)==="up" && ($result["revision"]??null)===$argv[1] ? 0 : 1);
@@ -185,7 +186,7 @@ for attempt in {1..10}; do
     sleep 2
 done
 [[ "$RUNTIME_READY" == 1 ]]
-curl --fail --silent --show-error --max-time 30 --netrc-file "$NETRC" -o "$NETRC.html" "$BASE/"
+curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -o "$CURL_CONFIG.html" "$BASE/"
 "$PHP" -r '
 $manifest=json_decode(file_get_contents($argv[1]),true);
 $entry=$manifest["resources/js/app.jsx"]??null;
@@ -194,17 +195,17 @@ foreach ([$entry["file"], ...$entry["css"]] as $asset) {
     if (!is_string($asset) || !preg_match("~^assets/[a-zA-Z0-9_.-]+$~",$asset)) exit(1);
     echo $asset.PHP_EOL;
 }
-' "$RELEASE/public/build/manifest.json" > "$NETRC.assets"
+' "$RELEASE/public/build/manifest.json" > "$CURL_CONFIG.assets"
 while IFS= read -r asset; do
-    grep -Fq "/build/$asset" "$NETRC.html"
-    curl --fail --silent --show-error --max-time 30 --netrc-file "$NETRC" -o /dev/null "$BASE/build/$asset"
+    grep -Fq "/build/$asset" "$CURL_CONFIG.html"
+    curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -o /dev/null "$BASE/build/$asset"
     [[ "$(curl --silent --show-error --max-time 30 --output /dev/null --write-out '%{http_code}' "$BASE/build/$asset")" == 401 ]]
-done < "$NETRC.assets"
+done < "$CURL_CONFIG.assets"
 for path in / /admin/login /routes /news; do
-    curl --fail --silent --show-error --max-time 30 --netrc-file "$NETRC" -o /dev/null "$BASE$path"
+    curl --fail --silent --show-error --max-time 30 --config "$CURL_CONFIG" -o /dev/null "$BASE$path"
 done
 for path in /.env /.htpasswd; do
-    STATUS="$(curl --silent --show-error --max-time 30 --netrc-file "$NETRC" -o /dev/null --write-out '%{http_code}' "$BASE$path")"
+    STATUS="$(curl --silent --show-error --max-time 30 --config "$CURL_CONFIG" -o /dev/null --write-out '%{http_code}' "$BASE$path")"
     [[ "$STATUS" == 403 || "$STATUS" == 404 ]]
 done
 trap - ERR
