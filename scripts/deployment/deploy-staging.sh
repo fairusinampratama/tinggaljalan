@@ -27,6 +27,16 @@ for directory in "$DEPLOY/releases" "$SHARED"; do
     mkdir -p "$directory"
     [[ "$(readlink -f "$directory")" == "$directory" ]]
 done
+for path in "$ARCHIVE" "$CONFIG" "$SHARED/.env" "$SHARED/.htpasswd" "$SHARED/.seeded" \
+    "$PUBLIC/robots.txt" "$PUBLIC/index-$SHA.php" "$PUBLIC/.htaccess.next"; do
+    [[ ! -L "$path" ]]
+done
+for directory in "$SHARED/storage" "$SHARED/storage/app" "$SHARED/storage/app/public" \
+    "$SHARED/storage/app/public/admin" "$SHARED/storage/app/public/admin/hero" \
+    "$SHARED/storage/framework" "$SHARED/storage/framework/cache" "$SHARED/storage/framework/cache/data" \
+    "$SHARED/storage/framework/sessions" "$SHARED/storage/framework/views" "$SHARED/storage/logs"; do
+    [[ ! -L "$directory" ]]
+done
 exec 9>"$DEPLOY/.lock"
 flock -n 9 || { echo 'Another staging deployment holds the lock.' >&2; exit 1; }
 chmod 600 "$CONFIG"

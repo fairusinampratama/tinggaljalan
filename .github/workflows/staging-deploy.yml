@@ -139,6 +139,8 @@ jobs:
           DIGEST="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
           REMOTE_ARCHIVE="$STAGING_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
           REMOTE_CONFIG="$STAGING_ROOT/deployments/incoming/config-$GITHUB_SHA.json"
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "test ! -L '$REMOTE_ARCHIVE' && test ! -L '$REMOTE_CONFIG'"
           scp -F "$RUNNER_TEMP/staging-ssh/ssh_config" "$ARCHIVE" "staging:$REMOTE_ARCHIVE"
           scp -F "$RUNNER_TEMP/staging-ssh/ssh_config" "$RUNNER_TEMP/staging-ssh/config.json" "staging:$REMOTE_CONFIG"
           ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
