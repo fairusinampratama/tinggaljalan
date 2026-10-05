@@ -77,6 +77,25 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
+      - name: Inspect existing preview authentication without changing hosting
+        env:
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import base64, os, urllib.request, urllib.error
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args, **kwargs):
+                  return None
+          request = urllib.request.Request('https://preview.tinggaljalan.com/')
+          token = base64.b64encode(('reviewer:' + os.environ['STAGING_REVIEW_PASSWORD']).encode()).decode()
+          request.add_header('Authorization', 'Basic ' + token)
+          try:
+              response = urllib.request.build_opener(NoRedirect).open(request, timeout=30)
+              code = response.status
+          except urllib.error.HTTPError as error:
+              code = error.code
+          print('Existing preview authenticated HTTP status:', code)
+          PY
       - name: Record result
         run: |
           printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"

@@ -17,6 +17,7 @@ test -x "$PHP"
 "$PHP" -r 'exit(version_compare(PHP_VERSION, "8.4.1", ">=") ? 0 : 1);'
 "$PHP" -r 'foreach (["pdo_mysql", "mbstring", "intl", "dom", "curl", "zip", "gd"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing extension: $extension\n"); exit(1); } } exit(function_exists("imagewebp") ? 0 : 1);'
 for tool in tar gzip curl sha256sum readlink; do command -v "$tool" >/dev/null; done
+curl --version | head -n 1
 if [[ "$MODE" == connection ]]; then
     echo 'SSH and runtime checks passed. Staging provisioning was not checked.'
     exit 0
