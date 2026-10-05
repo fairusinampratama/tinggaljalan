@@ -58,19 +58,26 @@ uses only the staging environment to upload and deploy it. Its PR validation job
 exercises publication, rollback, first-release failure and rejection of the
 production path using local fake runtime and HTTP adapters.
 
-The owner must enter a `STAGING_BOOTSTRAP_JSON` secret into the GitHub `staging`
-environment with this structure (replace all placeholders privately):
+The owner must enter three independent secrets in the GitHub `staging` environment:
 
-```json
-{
-  "db_password": "the existing preview database password",
-  "review_password": "a separate strong preview access password",
-  "admin_password": "a separate strong preview admin password"
-}
-```
+| Secret | Value |
+| --- | --- |
+| `STAGING_DB_PASSWORD` | Exact existing password for `u304629909_tj_preview`; nonempty, no control characters. No new database length policy is imposed by deployment. |
+| `STAGING_REVIEW_PASSWORD` | Unique preview access password, 16–64 UTF-8 bytes, no control characters. |
+| `STAGING_ADMIN_PASSWORD` | Unique preview admin password, 16–64 UTF-8 bytes, no control characters. |
 
-Use different passwords of 16–64 characters, with no control characters. JSON
-requires quotes and backslashes inside values to be escaped. Preview HTTP username
+All three values must differ. Enter raw passwords, without JSON quotes or escaping.
+GitHub masks each independently. Actions validates all fields before building and
+serializes a private JSON transfer file automatically. `STAGING_BOOTSTRAP_JSON`
+is obsolete and is not read by the updated workflows. Do not delete it until
+migration is verified; the old main workflow still reads it before this PR merges.
+
+The host checks the selected schema and existing credentials before committing
+new configuration using atomic file replacement. A failed database connection
+writes no new environment or access-password file. Existing credentials are not
+silently rotated; use their original values or a separate explicit rotation.
+
+Preview HTTP username
 is `reviewer`; application admin email is `preview-admin@tinggaljalan.test`.
 Do not send secret values in chat or store them in the repository. App key creation
 occurs only on the hosting account, once. Existing credentials are verified rather

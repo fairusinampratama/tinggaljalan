@@ -7,6 +7,10 @@ on:
       - .github/workflows/staging-deploy.yml
       - scripts/deployment/deploy-staging.sh
       - scripts/deployment/configure-staging.php
+      - scripts/deployment/staging-config.php
+      - scripts/deployment/prepare-staging-secrets.py
+      - tests/deployment/test_staging_config.php
+      - tests/deployment/test_staging_secrets.py
       - .env.staging.example
       - tests/deployment/test_staging_deploy.py
       - scripts/testing/staging-browser-smoke.mjs
@@ -23,19 +27,40 @@ jobs:
         with:
           php-version: '8.4'
           coverage: none
+          tools: composer:v2
+      - name: Test real staging configuration helper
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress --no-scripts
+          php tests/deployment/test_staging_config.php
       - name: Validate staging scripts and refuse production root
         run: |
           bash -n scripts/deployment/deploy-staging.sh
           php -l scripts/deployment/configure-staging.php
+          php -l scripts/deployment/staging-config.php
+          python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
           if bash scripts/deployment/deploy-staging.sh /home/u304629909/domains/tinggaljalan.com invalid invalid invalid invalid; then
             echo 'Production root was accepted.' >&2
             exit 1
           fi
 
-  build-test-package:
+  credentials:
     if: github.event_name == 'workflow_dispatch'
     needs: validate
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate all credential fields before building
+        env:
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: python3 scripts/deployment/prepare-staging-secrets.py
+
+  build-test-package:
+    if: github.event_name == 'workflow_dispatch'
+    needs: credentials
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -59,6 +84,7 @@ jobs:
           npm run build:performance
       - name: Verify PHP and responsive browsers
         run: |
+          php tests/deployment/test_staging_config.php
           composer test
           npx playwright install --with-deps chromium firefox webkit
           npm run test:browser
@@ -99,19 +125,20 @@ jobs:
         env:
           PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
-          CONFIG_JSON: ${{ secrets.STAGING_BOOTSTRAP_JSON }}
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
         run: |
           set -euo pipefail
           [[ "$STAGING_ROOT" == /home/u304629909/domains/preview.tinggaljalan.com ]]
           [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
           test -n "$PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
-          test -n "$CONFIG_JSON"
           umask 077
           mkdir -p "$RUNNER_TEMP/staging-ssh"
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
-          printf '%s\n' "$CONFIG_JSON" > "$RUNNER_TEMP/staging-ssh/config.json"
+          python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/staging-ssh/config.json"
           cat > "$RUNNER_TEMP/staging-ssh/ssh_config" <<CONFIG
           Host staging
               HostName $SSH_HOST
