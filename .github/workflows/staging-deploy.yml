@@ -2,6 +2,15 @@ name: Protected staging deployment
 
 on:
   workflow_dispatch:
+    inputs:
+      review_only:
+        description: Review the existing preview without deploying
+        type: boolean
+        default: false
+      revision:
+        description: Exact existing preview revision for review-only runs
+        type: string
+        default: ''
   pull_request:
     paths:
       - .github/workflows/staging-deploy.yml
@@ -67,7 +76,7 @@ jobs:
         run: python3 scripts/deployment/prepare-staging-secrets.py
 
   build-test-package:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && !inputs.review_only
     needs: credentials
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -109,6 +118,7 @@ jobs:
           retention-days: 7
 
   deploy:
+    if: github.event_name == 'workflow_dispatch' && !inputs.review_only
     needs: build-test-package
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -194,7 +204,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: staging-review-${{ github.sha }}
+          name: staging-review-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/staging-review
           if-no-files-found: warn
           retention-days: 7
@@ -206,3 +216,45 @@ jobs:
               "rm -f '$STAGING_ROOT/deployments/incoming/config-$GITHUB_SHA.json'" || true
           fi
           rm -rf -- "$RUNNER_TEMP/staging-ssh"
+
+  review-existing:
+    if: github.event_name == 'workflow_dispatch' && inputs.review_only
+    needs: credentials
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: staging
+    concurrency:
+      group: staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare private browser credentials
+        env:
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
+          python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/browser-review/config.json"
+      - name: Review existing desktop and mobile preview without hosting writes
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: staging-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/staging-review
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Remove browser credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/browser-review"
