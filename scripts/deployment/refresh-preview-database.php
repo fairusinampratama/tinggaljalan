@@ -30,6 +30,13 @@ try {
     }
     $lock = fopen($deploy.'/.lock', 'c');
     refreshAssert($lock !== false && flock($lock, LOCK_EX | LOCK_NB));
+    if ($operation !== 'finalize' && is_file($pending)) {
+        // Close HTTP before any recovery precondition can fail.
+        $closed = "# Pending preview database refresh: fail closed\nRewriteEngine On\nRewriteRule ^ - [R=503,L]\n".file_get_contents($offline);
+        refreshAssert(file_put_contents($offline.'.refresh-next', $closed) === strlen($closed));
+        chmod($offline.'.refresh-next', 0644);
+        refreshAssert(rename($offline.'.refresh-next', $offline));
+    }
     $release = realpath($deploy.'/current');
     $revision = trim(file_get_contents($release.'/REVISION'));
     refreshAssert((bool) preg_match('/^[a-f0-9]{40}$/', $revision) && $release === $deploy.'/releases/'.$revision);
