@@ -17,6 +17,7 @@ try {
         $pdo = new PDO('mysql:host='.$env['DB_HOST'].';dbname='.$db, $env['DB_USERNAME'], $env['DB_PASSWORD'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $stage = $label.' read-only snapshot';
         echo $label.' server version: '.$pdo->query('SELECT VERSION()')->fetchColumn()."\n";
+        $pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ');
         $pdo->exec('SET TRANSACTION READ ONLY');
         $stage = $label.' start snapshot';
         $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
