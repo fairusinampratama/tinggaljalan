@@ -130,6 +130,7 @@ try {
     refreshAssert(curl_getinfo($probe, CURLINFO_RESPONSE_CODE) === 503);
     curl_close($probe);
     $target->exec('SET FOREIGN_KEY_CHECKS=0');
+    $target->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
     $target->beginTransaction();
     $stage = 'preview backup';
     $digest = refreshBackup($target, $schema, $backup);
@@ -148,7 +149,7 @@ try {
     refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $state['production_revision']);
     $stage = 'public tourism images';
     $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);
-    $route = $target->query("SELECT slug FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0)) ORDER BY id LIMIT 1")->fetchColumn();
+    $route = $target->query('SELECT slug FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0)) ORDER BY id LIMIT 1')->fetchColumn();
     refreshAssert(is_string($route) && preg_match('/^[a-z0-9-]+$/', $route) === 1);
     refreshAssert(file_put_contents(__DIR__.'/functional-route.json', json_encode(['functional_route' => $route], JSON_THROW_ON_ERROR)) !== false);
     $target->commit();
@@ -157,7 +158,10 @@ try {
     $stage = 'responsive tourism images';
     $process = proc_open(['/opt/alt/php84/usr/bin/php', $release.'/artisan', 'images:generate-responsive', '--missing'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $release);
     refreshAssert(is_resource($process));
-    foreach ($pipes as $pipe) { stream_get_contents($pipe); fclose($pipe); }
+    foreach ($pipes as $pipe) {
+        stream_get_contents($pipe);
+        fclose($pipe);
+    }
     refreshAssert(proc_close($process) === 0);
     $stage = 'preview cache';
     foreach (['sessions', 'cache/data'] as $part) {

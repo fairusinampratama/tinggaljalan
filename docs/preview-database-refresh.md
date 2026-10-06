@@ -22,7 +22,7 @@ The dedicated workflow is `.github/workflows/preview-database-refresh.yml`, name
 
 Until the new workflow exists on the default branch, use the already registered **Staging SSH preflight** workflow, select the feature branch, and choose **refresh-preview-database**. That manual entry point calls the same reusable refresh workflow from the selected commit. No merge or production deployment is needed to test it. After an approved merge, the dedicated entry is available directly.
 
-No database-name input is accepted. Fixed production source: `u304629909_tinggaljalan`; fixed target: `u304629909_tj_preview`. The application keeps its preview environment, APP_KEY, DB user, storage, cookies, and Basic Auth. The refresh never boots the production application.
+No database-name input is accepted. Fixed production source: `u304629909_tinggaljalan`; fixed target: `u304629909_tj_preview`. The tested feature revision is deployed to preview before first execution, adding a staging-only Laravel HTTP fail-closed guard for overlooked integrations such as exchange-rate lookup. Production behavior is unchanged. The application keeps its preview environment, APP_KEY, DB user, storage, cookies, and Basic Auth. The refresh never boots the production application.
 
 ## Copy and recovery
 
