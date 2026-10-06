@@ -49,7 +49,7 @@ jobs:
           php tests/deployment/test_staging_config.php
       - name: Check staging PHP formatting
         run: |
-          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php)
+          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php scripts/testing/staging-functional-guard.php)
           if ! vendor/bin/pint --test "${FILES[@]}"; then
             vendor/bin/pint "${FILES[@]}"
             git diff -- "${FILES[@]}"
