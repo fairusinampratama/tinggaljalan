@@ -69,6 +69,9 @@ try {
         refreshAssert(rename($offline.'.refresh-next', $offline));
         refreshAssert(preg_match('/^preview-before-[0-9]+-[0-9]+\.jsonl\.gz$/', $record['backup']) === 1);
         refreshRestore($target, $schema, $deploy.'/database-backups/'.$record['backup'], $record['digest']);
+        if (isset($record['media_baseline'])) {
+            refreshRestoreMedia($shared, $record['media_baseline']);
+        }
         refreshAssert(file_put_contents($offline.'.refresh-next', base64_decode($record['htaccess'], true)) !== false);
         chmod($offline.'.refresh-next', 0644);
         refreshAssert(rename($offline.'.refresh-next', $offline));
@@ -76,7 +79,7 @@ try {
             unlink($shared.'/storage/framework/down');
         }
         unlink($pending);
-        echo "Previous preview database restored; production not modified.\n";
+        echo "Previous preview database and matching media restored; production not modified.\n";
     };
     if ($operation === 'rollback') {
         if (is_file($pending)) {
@@ -92,7 +95,8 @@ try {
         refreshAssert(hash_file('sha256', $productionRoot.'/deployments/shared/.env') === $record['production_env_hash']);
         refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $record['production_revision']);
         // Browser checks add explicitly synthetic bookings; do not re-run the pristine-copy verifier here.
-        unlink($pending);
+        refreshPruneBackups($deploy.'/database-backups', $record['backup']);
+        refreshAssert(unlink($pending));
         refreshAssert(unlink($argv[2]));
         echo "Preview refresh finalized after browser verification; protected preview backup retained on Hostinger.\n";
         exit;
@@ -151,7 +155,8 @@ try {
     $target->beginTransaction();
     $stage = 'preview backup';
     $digest = refreshBackup($target, $schema, $backup);
-    $state = ['backup' => basename($backup), 'digest' => $digest, 'htaccess' => base64_encode($htaccess), 'production_env_hash' => hash_file('sha256', $productionEnvPath), 'production_revision' => trim(file_get_contents($productionRoot.'/deployments/current/REVISION'))];
+    $mediaBaseline = refreshManagedMediaState($shared);
+    $state = ['media_baseline' => $mediaBaseline, 'backup' => basename($backup), 'digest' => $digest, 'htaccess' => base64_encode($htaccess), 'production_env_hash' => hash_file('sha256', $productionEnvPath), 'production_revision' => trim(file_get_contents($productionRoot.'/deployments/current/REVISION'))];
     refreshAssert(file_put_contents($pending, json_encode($state, JSON_THROW_ON_ERROR), LOCK_EX) !== false);
     $stage = 'copy and sanitize';
     $counts = refreshCopy($source, $target, $schema);
@@ -166,6 +171,8 @@ try {
     refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $state['production_revision']);
     $stage = 'public tourism images';
     $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);
+    $stage = 'canonical media consistency';
+    refreshVerifyMedia($target, $shared, $release);
     $stage = 'functional route selection';
     $GLOBALS['refreshDetail'] = 'functional-route-format';
     $route = refreshFunctionalRoute($target);
@@ -176,15 +183,11 @@ try {
     $target->exec('SET FOREIGN_KEY_CHECKS=1');
     $source->rollBack();
     $stage = 'responsive tourism images';
-    umask(0022);
-    $process = proc_open(['/opt/alt/php84/usr/bin/php', $release.'/artisan', 'images:generate-responsive', '--missing'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $release);
-    umask(0077);
-    refreshAssert(is_resource($process));
-    foreach ($pipes as $pipe) {
-        stream_get_contents($pipe);
-        fclose($pipe);
+    $variantCount = refreshGenerateMedia($target, $shared, $release, new App\Support\ResponsiveImageGenerator);
+    // Existing immutable media bytes must remain intact throughout the refresh.
+    foreach ($mediaBaseline as $relative => $digest) {
+        refreshAssert(hash_file('sha256', refreshCanonicalFile($shared.'/storage/app/public', $relative)) === $digest);
     }
-    refreshAssert(proc_close($process) === 0);
     $stage = 'preview cache';
     foreach (['sessions', 'cache/data'] as $part) {
         $path = $shared.'/storage/framework/'.$part;
@@ -202,6 +205,7 @@ try {
     refreshAssert(unlink($shared.'/storage/framework/down'));
     refreshAssert(rename($offline.'.refresh-next', $offline));
     echo 'Public tourism images copied into separate preview storage: '.$imageCount."\n";
+    echo 'DB media references and responsive WebP variants verified; new variants generated: '.$variantCount."\n";
     echo 'Preview revision: '.$revision."\n";
     echo "Preview database: u304629909_tj_preview; production connection read-only; raw production dump never created.\n";
     foreach (['destinations', 'tour_packages', 'itinerary_items', 'package_price_tiers', 'news_articles', 'bookings'] as $table) {

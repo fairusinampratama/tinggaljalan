@@ -47,10 +47,13 @@ try {
             foreach ($pdo->query('SELECT slug FROM tour_packages WHERE is_active = 1 ORDER BY id')->fetchAll(PDO::FETCH_COLUMN) as $slug) {
                 echo 'Public active tour slug: '.json_encode($slug, JSON_THROW_ON_ERROR)."\n";
             }
-            foreach (['hero_slides' => ['desktop_image', 'mobile_image'], 'tour_packages' => ['cover_image', 'gallery'], 'destinations' => ['cover_image'], 'news_articles' => ['cover_image'], 'team_members' => ['portrait'], 'company_milestones' => ['image']] as $table => $fields) {
+            foreach (['hero_slides' => ['desktop_image', 'mobile_image'], 'tour_packages' => ['cover_image', 'gallery'], 'destinations' => ['cover_image'], 'news_articles' => ['cover_image'], 'team_members' => ['portrait'], 'company_milestones' => ['image'], 'platform_links' => ['logo'], 'site_settings' => ['logo_url'], 'about_pages' => ['hero', 'story', 'seo']] as $table => $fields) {
                 foreach ($pdo->query('SELECT '.implode(',', $fields).' FROM `'.$table.'`')->fetchAll(PDO::FETCH_ASSOC) as $row) {
                     foreach ($row as $field => $value) {
-                        if ($field === 'gallery') {
+                        if (in_array($field, ['hero', 'story', 'seo'], true)) {
+                            $decoded = json_decode($value ?? '{}', true) ?? [];
+                            $values = [$decoded['image'] ?? null];
+                        } elseif ($field === 'gallery') {
                             $values = json_decode($value ?? '[]', true) ?? [];
                         } else {
                             $values = [$value];

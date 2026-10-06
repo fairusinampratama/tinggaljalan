@@ -68,11 +68,12 @@ function refreshSanitize(PDO $db, string $adminPassword): void
     refreshUpdate($db, 'tour_packages', ['testimonials' => null, 'review_source' => null]);
     refreshUpdate($db, 'package_availabilities', ['reason' => null, 'notes' => null]);
     // Public contact links are neutralized too, preventing accidental real contact.
-    refreshUpdate($db, 'site_settings', ['whatsapp_number' => null, 'contact_email' => 'preview@example.invalid', 'business_address' => null, 'google_maps_url' => null, 'logo_url' => '/images/logo-tj.png']);
+    refreshUpdate($db, 'site_settings', ['whatsapp_number' => null, 'contact_email' => 'preview@example.invalid', 'business_address' => null, 'google_maps_url' => null]);
     refreshUpdate($db, 'email_gateway_settings', ['provider' => 'log', 'is_enabled' => 0, 'host' => null, 'port' => null, 'username' => null, 'password' => null, 'scheme' => null, 'from_address' => 'preview@example.invalid', 'from_name' => 'TinggalJalan Preview', 'last_tested_at' => null, 'last_test_status' => null, 'last_test_message' => null]);
     refreshUpdate($db, 'whatsapp_gateway_settings', ['provider' => 'manual', 'is_enabled' => 0, 'api_base_url' => null, 'api_token' => null, 'session_id' => null, 'manual_fallback_enabled' => 0, 'last_tested_at' => null, 'last_test_status' => null, 'last_test_message' => null]);
     refreshUpdate($db, 'notification_settings', ['is_enabled' => 0, 'whatsapp_enabled' => 0, 'email_enabled' => 0, 'admin_whatsapp_number' => null, 'admin_email' => null]);
     refreshUpdate($db, 'payment_settings', ['is_enabled' => 0, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null, 'manual_bank_accounts' => null, 'booking_note' => 'Preview only. Payments disabled.', 'usd_note' => 'Preview only. Payments disabled.']);
+    refreshSanitizeLinks($db);
     // Private voucher codes/labels are not published promotions.
     $db->exec("UPDATE vouchers SET code = CONCAT('PREVIEW-', id), label = CONCAT('Preview voucher ', id), public_title = NULL, public_description = NULL WHERE is_public = 0");
 }
@@ -181,69 +182,4 @@ function refreshRestore(PDO $db, array $schema, string $path, string $digest): v
     }
 }
 
-function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previewShared): int
-{
-    $sourceRoot = $productionRoot.'/deployments/shared/storage/app/public';
-    $targetRoot = $previewShared.'/storage/app/public/admin/preview-refresh';
-    $GLOBALS['refreshDetail'] = 'media-source-root';
-    refreshAssert(realpath($sourceRoot) === $sourceRoot);
-    $GLOBALS['refreshDetail'] = 'media-destination-directory';
-    refreshAssert(! is_link($targetRoot));
-    if (! is_dir($targetRoot)) {
-        refreshAssert(mkdir($targetRoot, 0755));
-    }
-    refreshAssert(realpath($targetRoot) === $targetRoot);
-    refreshAssert(chmod($targetRoot, 0755));
-    $copied = [];
-    $replace = function ($value) use (&$replace, &$copied, $sourceRoot, $targetRoot) {
-        if (is_array($value)) {
-            return array_map($replace, $value);
-        }
-        if (! is_string($value)) {
-            return $value;
-        }
-        $path = preg_replace('~^https://(?:www\.)?tinggaljalan\.com/~', '/', $value);
-        $path = preg_replace('~^(?:/)?(?:storage/|public/)?~', '', $path);
-        if (! preg_match('~^(?:admin/|uploads/)[a-zA-Z0-9_./-]+\.(?:jpg|jpeg|png|webp)$~i', $path)) {
-            return $value;
-        }
-        $GLOBALS['refreshDetail'] = 'media-source-path';
-        refreshAssert(! in_array('..', explode('/', $path), true));
-        $GLOBALS['refreshDetail'] = 'media-source-image';
-        $source = realpath($sourceRoot.'/'.$path);
-        refreshAssert(is_string($source) && str_starts_with($source, $sourceRoot.'/') && is_file($source) && getimagesize($source) !== false);
-        $name = hash_file('sha256', $source).'.'.strtolower(pathinfo($source, PATHINFO_EXTENSION));
-        $destination = $targetRoot.'/'.$name;
-        $GLOBALS['refreshDetail'] = 'media-destination-file';
-        refreshAssert(! is_link($destination));
-        if (! is_file($destination)) {
-            $GLOBALS['refreshDetail'] = 'media-copy-write';
-            refreshAssert(copy($source, $destination));
-            chmod($destination, 0644);
-        }
-        $GLOBALS['refreshDetail'] = 'media-digest';
-        refreshAssert(hash_file('sha256', $destination) === hash_file('sha256', $source));
-        $copied[$name] = true;
-
-        return '/storage/admin/preview-refresh/'.$name;
-    };
-    foreach (['destinations' => ['cover_image'], 'tour_packages' => ['cover_image', 'gallery'], 'news_articles' => ['cover_image'], 'hero_slides' => ['desktop_image', 'mobile_image'], 'team_members' => ['portrait'], 'company_milestones' => ['image']] as $table => $columns) {
-        foreach ($db->query('SELECT id,'.implode(',', $columns).' FROM '.refreshIdentifier($table))->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            foreach ($columns as $column) {
-                $original = $row[$column];
-                $json = $column === 'gallery';
-                $value = $json && $original !== null ? json_decode($original, true, flags: JSON_THROW_ON_ERROR) : $original;
-                $updated = $replace($value);
-                if ($updated !== $value) {
-                    $encoded = $json ? json_encode($updated, JSON_THROW_ON_ERROR) : $updated;
-                    $GLOBALS['refreshDetail'] = 'media-row-update';
-                    $db->prepare('UPDATE '.refreshIdentifier($table).' SET '.refreshIdentifier($column).' = ? WHERE id = ?')->execute([$encoded, $row['id']]);
-                }
-            }
-        }
-    }
-
-    unset($GLOBALS['refreshDetail']);
-
-    return count($copied);
-}
+require_once __DIR__.'/preview-media-refresh-lib.php';

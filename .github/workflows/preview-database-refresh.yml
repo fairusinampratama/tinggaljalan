@@ -1,4 +1,4 @@
-name: Refresh Preview Database
+name: Refresh Preview Data
 
 on:
   workflow_dispatch:
@@ -8,6 +8,8 @@ on:
       - .github/workflows/preview-database-refresh.yml
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/preview-db-*.php
+      - scripts/deployment/preview-media-refresh-lib.php
+      - scripts/testing/staging-media-browser.mjs
       - scripts/deployment/preview-db-schema.json
       - scripts/deployment/refresh-preview-database.php
       - tests/deployment/test_preview_database_refresh.php
@@ -54,7 +56,7 @@ jobs:
         run: php tests/deployment/test_preview_database_refresh.php
       - name: Check PHP syntax and formatting
         run: |
-          FILES=(scripts/deployment/preview-db-audit.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/refresh-preview-database.php tests/deployment/test_preview_database_refresh.php)
+          FILES=(scripts/deployment/preview-db-audit.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-media-refresh-lib.php scripts/deployment/refresh-preview-database.php tests/deployment/test_preview_database_refresh.php)
           for file in "${FILES[@]}"; do php -l "$file"; done
           if ! vendor/bin/pint --test "${FILES[@]}"; then
             vendor/bin/pint "${FILES[@]}"
@@ -130,7 +132,7 @@ jobs:
           set -euo pipefail
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "bash -s -- readiness /home/u304629909/domains/preview.tinggaljalan.com" < scripts/deployment/staging-preflight.sh
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "umask 077; test ! -e '$REFRESH_REMOTE' && test ! -L '$REFRESH_REMOTE' && mkdir '$REFRESH_REMOTE' && test \"\$(readlink -f '$REFRESH_REMOTE')\" = '$REFRESH_REMOTE'"
-          scp -F "$RUNNER_TEMP/preview-refresh/ssh_config" scripts/deployment/refresh-preview-database.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-db-schema.json scripts/deployment/staging-config.php "$RUNNER_TEMP/preview-refresh/config.json" "staging:$REFRESH_REMOTE/"
+          scp -F "$RUNNER_TEMP/preview-refresh/ssh_config" scripts/deployment/refresh-preview-database.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-db-schema.json scripts/deployment/preview-media-refresh-lib.php scripts/deployment/staging-config.php "$RUNNER_TEMP/preview-refresh/config.json" "staging:$REFRESH_REMOTE/"
           REVISION="$(ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging 'cat /home/u304629909/domains/preview.tinggaljalan.com/deployments/current/REVISION')"
           [[ "$REVISION" =~ ^[a-f0-9]{40}$ ]]
           printf 'PREVIEW_REVISION=%s\n' "$REVISION" >> "$GITHUB_ENV"
@@ -147,6 +149,7 @@ jobs:
       - name: Verify desktop, mobile, booking submission and preview admin
         run: |
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review"
+          node scripts/testing/staging-media-browser.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review"
           node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review" "$GITHUB_RUN_ID"
       - name: Confirm production remains healthy at the same revision
         run: |
@@ -173,6 +176,6 @@ jobs:
         if: always()
         run: |
           if test -f "$RUNNER_TEMP/preview-refresh/ssh_config" && test -n "${REFRESH_REMOTE:-}"; then
-            ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "rm -f '$REFRESH_REMOTE/config.json' '$REFRESH_REMOTE/refresh-preview-database.php' '$REFRESH_REMOTE/preview-db-refresh-lib.php' '$REFRESH_REMOTE/preview-db-schema.json' '$REFRESH_REMOTE/staging-config.php' '$REFRESH_REMOTE/functional-route.json'; rmdir '$REFRESH_REMOTE'" || true
+            ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "rm -f '$REFRESH_REMOTE/config.json' '$REFRESH_REMOTE/refresh-preview-database.php' '$REFRESH_REMOTE/preview-db-refresh-lib.php' '$REFRESH_REMOTE/preview-db-schema.json' '$REFRESH_REMOTE/preview-media-refresh-lib.php' '$REFRESH_REMOTE/staging-config.php' '$REFRESH_REMOTE/functional-route.json'; rmdir '$REFRESH_REMOTE'" || true
           fi
           rm -rf -- "$RUNNER_TEMP/preview-refresh"
