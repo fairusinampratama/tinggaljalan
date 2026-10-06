@@ -209,6 +209,12 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/staging-ssh/config.json" "$GITHUB_SHA" "$RUNNER_TEMP/staging-review"
+      - name: Verify disabled gateways and synthetic booking flows after deployment
+        if: inputs.functional_checks
+        run: |
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "/opt/alt/php84/usr/bin/php /dev/stdin '$GITHUB_SHA'" < scripts/testing/staging-functional-guard.php
+          node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/staging-ssh/config.json" "$GITHUB_SHA" "$RUNNER_TEMP/staging-review" "$GITHUB_RUN_ID"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
