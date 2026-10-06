@@ -137,6 +137,10 @@ jobs:
       - name: Backup, copy, sanitize and verify on Hostinger
         run: |
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "/opt/alt/php84/usr/bin/php '$REFRESH_REMOTE/refresh-preview-database.php' refresh '$REFRESH_REMOTE/config.json' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'"
+      - name: Select functional test route from refreshed tourism data
+        run: |
+          scp -F "$RUNNER_TEMP/preview-refresh/ssh_config" "staging:$REFRESH_REMOTE/functional-route.json" "$RUNNER_TEMP/preview-refresh/functional-route.json"
+          node -e 'const fs=require("fs");const p=process.argv[1];const c=JSON.parse(fs.readFileSync(p));const r=JSON.parse(fs.readFileSync(process.argv[2]));if(!/^[a-z0-9-]+$/.test(r.functional_route))process.exit(1);c.functional_route=r.functional_route;fs.writeFileSync(p,JSON.stringify(c),{mode:0o600})' "$RUNNER_TEMP/preview-refresh/config.json" "$RUNNER_TEMP/preview-refresh/functional-route.json"
       - name: Verify effective preview database and disabled providers
         run: |
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$PREVIEW_REVISION'" < scripts/testing/staging-functional-guard.php
@@ -169,6 +173,6 @@ jobs:
         if: always()
         run: |
           if test -f "$RUNNER_TEMP/preview-refresh/ssh_config" && test -n "${REFRESH_REMOTE:-}"; then
-            ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "rm -f '$REFRESH_REMOTE/config.json' '$REFRESH_REMOTE/refresh-preview-database.php' '$REFRESH_REMOTE/preview-db-refresh-lib.php' '$REFRESH_REMOTE/preview-db-schema.json' '$REFRESH_REMOTE/staging-config.php'; rmdir '$REFRESH_REMOTE'" || true
+            ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "rm -f '$REFRESH_REMOTE/config.json' '$REFRESH_REMOTE/refresh-preview-database.php' '$REFRESH_REMOTE/preview-db-refresh-lib.php' '$REFRESH_REMOTE/preview-db-schema.json' '$REFRESH_REMOTE/staging-config.php' '$REFRESH_REMOTE/functional-route.json'; rmdir '$REFRESH_REMOTE'" || true
           fi
           rm -rf -- "$RUNNER_TEMP/preview-refresh"

@@ -1,11 +1,15 @@
 <?php
 
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+
 // Runs against disposable MySQL/MariaDB databases in CI, never Hostinger.
 require __DIR__.'/../../vendor/autoload.php';
 require __DIR__.'/../../scripts/deployment/preview-db-refresh-lib.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
-$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-$db = Illuminate\Support\Facades\DB::connection()->getPdo();
+$app->make(Kernel::class)->bootstrap();
+$db = DB::connection()->getPdo();
 refreshAssert($db->query('SELECT DATABASE()')->fetchColumn() === 'preview_refresh_test');
 $policy = json_decode(file_get_contents(__DIR__.'/../../scripts/deployment/preview-db-schema.json'), true, flags: JSON_THROW_ON_ERROR);
 $schema = refreshSchema($db);
@@ -29,7 +33,7 @@ $column = $schema;
 $column['bookings'][] = 'passport_number';
 $expectFailure(fn () => refreshValidateSchema($column, $column, $policy));
 $expectFailure(fn () => refreshValidateSchema($schema, $column, $policy));
-Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'DatabaseSeeder', '--force' => true]);
+Artisan::call('db:seed', ['--class' => 'DatabaseSeeder', '--force' => true]);
 $now = gmdate('Y-m-d H:i:s');
 refreshInsert($db, 'bookings', ['booking_code' => 'REAL-PRIVATE-CODE', 'name' => 'Real Customer', 'email' => 'real@private.example', 'whatsapp' => '628123456789', 'pickup' => 'Private hotel room', 'notes' => 'Passport and personal information', 'travel_date' => '2026-12-01', 'selected_add_ons' => '{"private":"payload"}', 'voucher_code' => 'PRIVATE-CODE', 'payment_gateway' => 'midtrans', 'admin_notification_error' => 'Private gateway payload', 'total' => 123456, 'created_at' => $now, 'updated_at' => $now]);
 refreshInsert($db, 'sessions', ['id' => 'real-session', 'payload' => 'private-payload', 'last_activity' => time()]);
@@ -57,6 +61,17 @@ $db->beginTransaction();
 refreshSanitize($db, $adminPassword);
 refreshVerifySanitized($db, $adminPassword);
 $db->commit();
+foreach (['whatsapp' => 'real-number', 'notes' => 'private-notes', 'selected_add_ons' => '{"private":"value"}', 'admin_notification_error' => 'private-response'] as $field => $unsafe) {
+    refreshUpdate($db, 'bookings', [$field => $unsafe]);
+    $expectFailure(fn () => refreshVerifySanitized($db, $adminPassword));
+    refreshSanitize($db, $adminPassword);
+}
+refreshUpdate($db, 'whatsapp_gateway_settings', ['api_token' => 'private-token']);
+$expectFailure(fn () => refreshVerifySanitized($db, $adminPassword));
+refreshSanitize($db, $adminPassword);
+refreshUpdate($db, 'notification_settings', ['email_enabled' => 1]);
+$expectFailure(fn () => refreshVerifySanitized($db, $adminPassword));
+refreshSanitize($db, $adminPassword);
 refreshUpdate($db, 'payment_settings', ['is_enabled' => 1]);
 $expectFailure(fn () => refreshVerifySanitized($db, $adminPassword));
 refreshRestore($db, $schema, $backup, $digest);
@@ -82,6 +97,19 @@ refreshSanitize($target, $adminPassword);
 refreshVerifySanitized($target, $adminPassword);
 refreshAssert($counts['bookings'] === 1 && $counts['tour_packages'] > 0);
 $target->commit();
+// An exception after a partial replacement must recover the pre-copy data.
+$targetBackup = $backup.'.target';
+$targetDigest = refreshBackup($target, $schema, $targetBackup);
+$target->beginTransaction();
+$target->exec('DELETE FROM bookings');
+$target->rollBack();
+refreshAssert((int) $target->query('SELECT COUNT(*) FROM bookings')->fetchColumn() === 1);
+$checks++;
+$target->exec('DELETE FROM bookings');
+refreshRestore($target, $schema, $targetBackup, $targetDigest);
+refreshAssert((int) $target->query('SELECT COUNT(*) FROM bookings')->fetchColumn() === 1);
+$checks++;
+unlink($targetBackup);
 $db->rollBack();
 refreshAssert($db->query('SELECT email FROM bookings')->fetchColumn() === 'real@private.example');
 $checks++;

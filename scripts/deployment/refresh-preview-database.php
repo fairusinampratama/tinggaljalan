@@ -37,6 +37,10 @@ try {
     // Validate existing preview .env; never import production config or APP_KEY.
     stagingConfigure($shared, $release.'/.env.staging.example', $input, fn () => 'u304629909_tj_preview');
     $env = Dotenv\Dotenv::parse(file_get_contents($shared.'/.env'));
+    $effective = require $release.'/bootstrap/cache/config.php';
+    refreshAssert($effective['app']['env'] === 'staging' && $effective['app']['url'] === 'https://preview.tinggaljalan.com');
+    refreshAssert($effective['database']['default'] === 'mysql' && $effective['database']['connections']['mysql']['database'] === 'u304629909_tj_preview');
+    refreshAssert($effective['mail']['default'] === 'log' && $effective['cache']['default'] === 'file' && $effective['session']['driver'] === 'file');
     foreach (['SESSION_DRIVER' => 'file', 'CACHE_STORE' => 'file', 'SESSION_DOMAIN' => 'preview.tinggaljalan.com', 'SESSION_COOKIE' => 'tinggaljalan_preview_session', 'APP_MAINTENANCE_DRIVER' => 'file', 'FILESYSTEM_DISK' => 'local', 'BROADCAST_CONNECTION' => 'log'] as $key => $value) {
         refreshAssert(($env[$key] ?? null) === $value);
     }
@@ -142,9 +146,19 @@ try {
     refreshAssert($counts['destinations'] > 0 && $counts['tour_packages'] > 0);
     refreshAssert(hash_file('sha256', $productionEnvPath) === $state['production_env_hash']);
     refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $state['production_revision']);
+    $stage = 'public tourism images';
+    $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);
+    $route = $target->query("SELECT slug FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0)) ORDER BY id LIMIT 1")->fetchColumn();
+    refreshAssert(is_string($route) && preg_match('/^[a-z0-9-]+$/', $route) === 1);
+    refreshAssert(file_put_contents(__DIR__.'/functional-route.json', json_encode(['functional_route' => $route], JSON_THROW_ON_ERROR)) !== false);
     $target->commit();
     $target->exec('SET FOREIGN_KEY_CHECKS=1');
     $source->rollBack();
+    $stage = 'responsive tourism images';
+    $process = proc_open(['/opt/alt/php84/usr/bin/php', $release.'/artisan', 'images:generate-responsive', '--missing'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $release);
+    refreshAssert(is_resource($process));
+    foreach ($pipes as $pipe) { stream_get_contents($pipe); fclose($pipe); }
+    refreshAssert(proc_close($process) === 0);
     $stage = 'preview cache';
     foreach (['sessions', 'cache/data'] as $part) {
         $path = $shared.'/storage/framework/'.$part;
@@ -161,6 +175,7 @@ try {
     chmod($offline.'.refresh-next', 0644);
     refreshAssert(unlink($shared.'/storage/framework/down'));
     refreshAssert(rename($offline.'.refresh-next', $offline));
+    echo 'Public tourism images copied into separate preview storage: '.$imageCount."\n";
     echo 'Preview revision: '.$revision."\n";
     echo "Preview database: u304629909_tj_preview; production connection read-only; raw production dump never created.\n";
     foreach (['destinations', 'tour_packages', 'itinerary_items', 'package_price_tiers', 'news_articles', 'bookings'] as $table) {
@@ -184,7 +199,9 @@ try {
         file_put_contents($offline.'.refresh-next', $htaccess);
         chmod($offline.'.refresh-next', 0644);
         rename($offline.'.refresh-next', $offline);
-        if (is_file($shared.'/storage/framework/down')) unlink($shared.'/storage/framework/down');
+        if (is_file($shared.'/storage/framework/down')) {
+            unlink($shared.'/storage/framework/down');
+        }
     }
     fwrite(STDERR, 'Preview refresh failed at '.$stage.'. No credentials or row values logged.'.PHP_EOL);
     exit(1);

@@ -23,8 +23,8 @@ function refreshSchema(PDO $db): array
         $quoted = refreshIdentifier($table);
         $columns = $db->query('SHOW FULL COLUMNS FROM '.$quoted)->fetchAll(PDO::FETCH_ASSOC);
         $schema[$table] = array_column($columns, 'Field');
-        refreshAssert($db->query("SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ".$db->quote($table))->fetchColumn() === 'InnoDB');
-        refreshAssert((int) $db->query("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = ".$db->quote($table))->fetchColumn() === 0);
+        refreshAssert($db->query('SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '.$db->quote($table))->fetchColumn() === 'InnoDB');
+        refreshAssert((int) $db->query('SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = '.$db->quote($table))->fetchColumn() === 0);
     }
     ksort($schema);
 
@@ -64,7 +64,7 @@ function refreshSanitize(PDO $db, string $adminPassword): void
     refreshUpdate($db, 'bookings', ['whatsapp' => null, 'whatsapp_country' => null, 'pickup' => 'Preview pickup', 'notes' => null, 'selected_add_ons' => null, 'voucher_code' => null, 'payment_gateway' => null, 'travel_date' => null, 'admin_notification_attempted_at' => null, 'admin_whatsapp_sent_at' => null, 'admin_whatsapp_failed_at' => null, 'admin_email_sent_at' => null, 'admin_email_failed_at' => null, 'admin_notification_error' => null]);
     $db->exec("UPDATE reviews SET name = CONCAT('Preview Reviewer ', id)");
     refreshUpdate($db, 'reviews', ['origin' => null, 'source' => null, 'text' => '{"id":"Contoh ulasan preview.","us":"Preview example review."}']);
-    refreshUpdate($db, 'tour_packages', ['testimonials' => null]);
+    refreshUpdate($db, 'tour_packages', ['testimonials' => null, 'review_source' => null]);
     refreshUpdate($db, 'package_availabilities', ['reason' => null, 'notes' => null]);
     // Public contact links are neutralized too, preventing accidental real contact.
     refreshUpdate($db, 'site_settings', ['whatsapp_number' => null, 'contact_email' => 'preview@example.invalid', 'business_address' => null, 'google_maps_url' => null, 'logo_url' => '/images/logo-tj.png']);
@@ -73,7 +73,7 @@ function refreshSanitize(PDO $db, string $adminPassword): void
     refreshUpdate($db, 'notification_settings', ['is_enabled' => 0, 'whatsapp_enabled' => 0, 'email_enabled' => 0, 'admin_whatsapp_number' => null, 'admin_email' => null]);
     refreshUpdate($db, 'payment_settings', ['is_enabled' => 0, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null, 'manual_bank_accounts' => null, 'booking_note' => 'Preview only. Payments disabled.', 'usd_note' => 'Preview only. Payments disabled.']);
     // Private voucher codes/labels are not published promotions.
-    $db->exec("UPDATE vouchers SET code = CONCAT('PREVIEW-', id), label = CONCAT('Preview voucher ', id) WHERE is_public = 0");
+    $db->exec("UPDATE vouchers SET code = CONCAT('PREVIEW-', id), label = CONCAT('Preview voucher ', id), public_title = NULL, public_description = NULL WHERE is_public = 0");
 }
 
 function refreshVerifySanitized(PDO $db, string $adminPassword): void
@@ -83,7 +83,7 @@ function refreshVerifySanitized(PDO $db, string $adminPassword): void
     }
     $users = $db->query('SELECT * FROM users')->fetchAll(PDO::FETCH_ASSOC);
     refreshAssert(count($users) === 1 && $users[0]['email'] === 'preview-admin@tinggaljalan.test' && (int) $users[0]['is_admin'] === 1 && $users[0]['remember_token'] === null && password_verify($adminPassword, $users[0]['password']));
-    refreshAssert((int) $db->query("SELECT COUNT(*) FROM bookings WHERE booking_code <> CONCAT('PREVIEW-', id) OR name <> CONCAT('Preview Customer ', id) OR email <> CONCAT('customer-', id, '@example.invalid') OR whatsapp IS NOT NULL OR whatsapp_country IS NOT NULL OR pickup <> 'Preview pickup' OR notes IS NOT NULL OR selected_add_ons IS NOT NULL OR voucher_code IS NOT NULL OR payment_gateway IS NOT NULL OR travel_date IS NOT NULL OR admin_notification_error IS NOT NULL")->fetchColumn() === 0);
+    refreshAssert((int) $db->query("SELECT COUNT(*) FROM bookings WHERE NOT (booking_code <=> CONCAT('PREVIEW-', id)) OR NOT (name <=> CONCAT('Preview Customer ', id)) OR NOT (email <=> CONCAT('customer-', id, '@example.invalid')) OR whatsapp IS NOT NULL OR whatsapp_country IS NOT NULL OR pickup <> 'Preview pickup' OR notes IS NOT NULL OR selected_add_ons IS NOT NULL OR voucher_code IS NOT NULL OR payment_gateway IS NOT NULL OR travel_date IS NOT NULL OR admin_notification_error IS NOT NULL")->fetchColumn() === 0);
     foreach (['email_gateway_settings', 'whatsapp_gateway_settings', 'notification_settings', 'payment_settings'] as $table) {
         refreshAssert((int) $db->query('SELECT COUNT(*) FROM '.refreshIdentifier($table))->fetchColumn() > 0);
         refreshAssert((int) $db->query('SELECT COUNT(*) FROM '.refreshIdentifier($table).' WHERE is_enabled <> 0')->fetchColumn() === 0);
@@ -170,4 +170,60 @@ function refreshRestore(PDO $db, array $schema, string $path, string $digest): v
     } finally {
         $db->exec('SET FOREIGN_KEY_CHECKS=1');
     }
+}
+
+function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previewShared): int
+{
+    $sourceRoot = $productionRoot.'/deployments/shared/storage/app/public';
+    $targetRoot = $previewShared.'/storage/app/public/admin/preview-refresh';
+    refreshAssert(realpath($sourceRoot) === $sourceRoot);
+    refreshAssert(! is_link($targetRoot));
+    if (! is_dir($targetRoot)) {
+        refreshAssert(mkdir($targetRoot, 0755));
+    }
+    refreshAssert(realpath($targetRoot) === $targetRoot);
+    $copied = [];
+    $replace = function ($value) use (&$replace, &$copied, $sourceRoot, $targetRoot) {
+        if (is_array($value)) {
+            return array_map($replace, $value);
+        }
+        if (! is_string($value)) {
+            return $value;
+        }
+        $path = preg_replace('~^https://(?:www\.)?tinggaljalan\.com/~', '/', $value);
+        $path = preg_replace('~^(?:/)?(?:storage/|public/)?~', '', $path);
+        if (! preg_match('~^(?:admin/|uploads/)[a-zA-Z0-9_./-]+\.(?:jpg|jpeg|png|webp)$~i', $path)) {
+            return $value;
+        }
+        refreshAssert(! in_array('..', explode('/', $path), true));
+        $source = realpath($sourceRoot.'/'.$path);
+        refreshAssert(is_string($source) && str_starts_with($source, $sourceRoot.'/') && is_file($source) && getimagesize($source) !== false);
+        $name = hash_file('sha256', $source).'.'.strtolower(pathinfo($source, PATHINFO_EXTENSION));
+        $destination = $targetRoot.'/'.$name;
+        refreshAssert(! is_link($destination));
+        if (! is_file($destination)) {
+            refreshAssert(copy($source, $destination));
+            chmod($destination, 0644);
+        }
+        refreshAssert(hash_file('sha256', $destination) === hash_file('sha256', $source));
+        $copied[$name] = true;
+
+        return '/storage/admin/preview-refresh/'.$name;
+    };
+    foreach (['destinations' => ['cover_image'], 'tour_packages' => ['cover_image', 'gallery'], 'news_articles' => ['cover_image'], 'hero_slides' => ['desktop_image', 'mobile_image'], 'team_members' => ['portrait'], 'company_milestones' => ['image']] as $table => $columns) {
+        foreach ($db->query('SELECT id,'.implode(',', $columns).' FROM '.refreshIdentifier($table))->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            foreach ($columns as $column) {
+                $original = $row[$column];
+                $json = $column === 'gallery';
+                $value = $json && $original !== null ? json_decode($original, true, flags: JSON_THROW_ON_ERROR) : $original;
+                $updated = $replace($value);
+                if ($updated !== $value) {
+                    $encoded = $json ? json_encode($updated, JSON_THROW_ON_ERROR) : $updated;
+                    $db->prepare('UPDATE '.refreshIdentifier($table).' SET '.refreshIdentifier($column).' = ? WHERE id = ?')->execute([$encoded, $row['id']]);
+                }
+            }
+        }
+    }
+
+    return count($copied);
 }
