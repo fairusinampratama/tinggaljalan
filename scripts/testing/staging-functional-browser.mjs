@@ -8,6 +8,7 @@ const base = 'https://preview.tinggaljalan.com';
 await mkdir(output, { recursive: true, mode: 0o700 });
 const browser = await chromium.launch();
 const results = [];
+let stage = "runtime";
 try {
     for (const [name, viewport] of [['desktop', {width:1440,height:1000}], ['mobile', {width:390,height:844}]]) {
         const context = await browser.newContext({viewport, httpCredentials:{username:'reviewer',password:config.review_password,origin:base}});
@@ -18,6 +19,7 @@ try {
         page.on('pageerror', () => jsErrors++);
         // Block every external request: these checks must not contact payment or messaging services.
         await context.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
+        stage = `${name}: booking form`;
         await page.goto(`${base}/language/us`);
         await page.goto(`${base}/booking?route=jogja-heritage`, {waitUntil:'networkidle'});
         const consent = page.getByTestId('consent-decline');
@@ -31,6 +33,7 @@ try {
         await page.locator('input[type="email"]').fill(`${fixture}@tinggaljalan.test`);
         await page.locator('textarea').fill('SYNTHETIC PREVIEW TEST. No travel, payment, email or WhatsApp requested.');
         await page.screenshot({path:path.join(output,`${name}-booking-contact.png`),fullPage:true});
+        stage = `${name}: booking submission`;
         await page.locator('form button[type="submit"]').click();
         await expect(page).toHaveURL(/\/checkout\/confirmation$/, {timeout:30000});
         await expect(page.getByText(/waiting.*confirmation/i).first()).toBeVisible();
@@ -38,16 +41,18 @@ try {
         await page.goto(`${base}/checkout/payment`);
         await expect(page).toHaveURL(/\/checkout\/confirmation$/);
         // Never write passwords to logs, traces, screenshots, or artifacts.
+        stage = `${name}: admin sign-in`;
         await page.goto(`${base}/admin/login`, {waitUntil:'networkidle'});
         await page.locator('input[type="email"]').fill('preview-admin@tinggaljalan.test');
         await page.locator('input[type="password"]').fill(config.admin_password);
         await page.getByRole('button', {name:'Sign in',exact:true}).click();
         await expect(page).toHaveURL(/\/admin\/?$/, {timeout:30000});
         await page.screenshot({path:path.join(output,`${name}-admin-signed-in.png`),fullPage:true});
+        stage = `${name}: admin booking search`;
         await page.goto(`${base}/admin/bookings`, {waitUntil:'networkidle'});
         const search = page.getByPlaceholder('Search', {exact:true});
         await search.fill(`${fixture}@tinggaljalan.test`);
-        await expect(page.getByText(`${fixture}@tinggaljalan.test`, {exact:true}).first()).toBeVisible({timeout:15000});
+        await expect(page.getByText(`Synthetic Preview ${run} ${name}`, {exact:true}).first()).toBeVisible({timeout:15000});
         await page.screenshot({path:path.join(output,`${name}-admin-booking.png`),fullPage:true});
         if (jsErrors) throw new Error('Functional preview pages have JavaScript errors.');
         results.push(`${name}: booking submitted, confirmation displayed, payment route deferred, admin sign-in succeeded, saved booking found in admin.`);
@@ -56,6 +61,6 @@ try {
     await writeFile(path.join(output,'functional-verification.txt'), `Revision: ${revision}\n${results.join('\n')}\nSynthetic booking records retained for review. No external requests permitted.\n`, {mode:0o600});
 } catch (error) {
     // Playwright errors may include input values: emit a static failure only.
-    console.error('Functional preview verification failed. Inspect the last completed screenshots and workflow step.');
+    console.error(`Functional preview verification failed at ${stage}. Inspect the last completed screenshots.`);
     process.exitCode = 1;
 } finally { await browser.close(); }
