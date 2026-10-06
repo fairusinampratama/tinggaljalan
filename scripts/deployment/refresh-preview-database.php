@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\PublicSite;
 use App\Support\ResponsiveImageGenerator;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Http;
@@ -55,6 +56,7 @@ try {
     $app = require $release.'/bootstrap/app.php';
     $app->make(Kernel::class)->bootstrap();
     refreshAssert(Http::preventingStrayRequests());
+    refreshAssert(PublicSite::whatsappBase() === '#');
     foreach (['SESSION_DRIVER' => 'file', 'CACHE_STORE' => 'file', 'SESSION_DOMAIN' => 'preview.tinggaljalan.com', 'SESSION_COOKIE' => 'tinggaljalan_preview_session', 'APP_MAINTENANCE_DRIVER' => 'file', 'FILESYSTEM_DISK' => 'local', 'BROADCAST_CONNECTION' => 'log'] as $key => $value) {
         refreshAssert(($env[$key] ?? null) === $value);
     }

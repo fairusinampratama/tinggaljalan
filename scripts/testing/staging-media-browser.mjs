@@ -30,6 +30,8 @@ try {
             }).length),{timeout:30000}).toBe(0);
             const images = await page.locator('img').evaluateAll(images => images.map(image => image.currentSrc || image.src));
             if (images.some(url => /https?:\/\/(?:www\.)?tinggaljalan\.com\//i.test(url))) throw new Error('Preview references production media.');
+            const links = await page.locator('a[href]').evaluateAll(links => links.map(link => link.href));
+            if (links.some(url => /^https?:\/\/(?:wa\.me|(?:api|web)\.whatsapp\.com)(?:\/|$)/i.test(url))) throw new Error('Preview contact action is not disabled.');
             checked += images.filter(url => url.startsWith(base)).length;
             variants += images.filter(url => url.includes('/storage/generated/')).length;
             if (route === '/about-us') await page.screenshot({path:path.join(output,`${name}-about-media.png`),fullPage:true});
