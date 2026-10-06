@@ -138,7 +138,7 @@ export function AboutUsPage() {
   const internalMembers = teamMembers.filter((member) => member.category !== 'field' && member.id !== featuredMember?.id);
   const fieldPartners = teamMembers.filter((member) => member.category === 'field');
   const teamCategories = ['leadership', 'booking', 'operations'];
-  const mapUrl = contact.map_url || (contact.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}` : null);
+  const mapUrl = contact.actionsEnabled === false ? '#' : (contact.map_url || (contact.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}` : null));
 
   const legalDetails = [
     profile.show_legal_name && profile.legal_name ? { icon: Building2, label: getLocalized(profile.legal_name_label, language) || t.aboutLegalName, value: profile.legal_name } : null,
@@ -154,7 +154,7 @@ export function AboutUsPage() {
   ].filter((item) => item?.value);
   const profileActions = [
     mapUrl ? { icon: MapPin, label: t.aboutOpenMap, href: mapUrl, className: secondaryButtonClass } : null,
-    contact.email ? { icon: Mail, label: t.aboutEmailUs, href: `mailto:${contact.email}`, className: secondaryButtonClass } : null,
+    contact.email ? { icon: Mail, label: t.aboutEmailUs, href: contact.emailHref ?? `mailto:${contact.email}`, className: secondaryButtonClass } : null,
     contact.whatsapp ? { icon: MessageCircle, label: t.aboutChatWhatsapp, href: whatsappUrl, className: whatsappButtonClass } : null,
   ].filter(Boolean);
 

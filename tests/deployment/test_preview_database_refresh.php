@@ -59,6 +59,14 @@ refreshUpdate($db, 'payment_settings', ['is_enabled' => 1, 'public_key' => 'real
 refreshUpdate($db, 'email_gateway_settings', ['is_enabled' => 1, 'password' => 'real-smtp-password']);
 refreshUpdate($db, 'whatsapp_gateway_settings', ['is_enabled' => 1, 'api_token' => 'real-whatsapp-token']);
 refreshUpdate($db, 'notification_settings', ['is_enabled' => 1, 'admin_email' => 'real-admin@private.example', 'admin_whatsapp_number' => '628111111']);
+refreshUpdate($db, 'reviews', ['name' => 'Published Traveler', 'origin' => '{"us":"Singapore"}', 'source' => '{"us":"Public review platform"}', 'text' => '{"us":"Published tourism review."}', 'rating' => 4.5, 'review_count' => 17, 'sort_order' => 42]);
+refreshUpdate($db, 'tour_packages', ['testimonials' => '[{"name":"Public Traveler","meta":{"us":"Public source"},"quote":{"us":"Published package testimonial."}}]', 'review_source' => '{"us":"Published review source"}']);
+refreshUpdate($db, 'site_settings', ['contact_email' => 'public@example.org', 'whatsapp_number' => '628111111111', 'business_address' => 'Published business office', 'google_maps_url' => 'https://maps.example.org/public-office', 'service_hours' => '{"us":"Every day"}', 'service_areas' => '["East Java"]', 'trust_badges' => '["Local guides"]']);
+refreshInsert($db, 'package_availabilities', ['tour_package_id' => $firstTour, 'date' => '2026-12-20', 'status' => 'blocked', 'reason' => 'Public local closure explanation', 'notes' => 'Private driver contact and operational notes']);
+refreshUpdate($db, 'route_filters', ['description' => '{"us":"Private internal taxonomy note"}']);
+refreshUpdate($db, 'hero_slides', ['admin_label' => 'Private campaign planning name']);
+refreshInsert($db, 'vouchers', ['code' => 'PRIVATE-CUSTOMER-CODE', 'label' => 'Private customer gift', 'is_public' => 0, 'discount_type' => 'percent', 'discount_value' => 10, 'public_title' => '{"us":"Private draft"}', 'public_description' => '{"us":"Private draft description"}']);
+$publicSnapshot = refreshPublicContentSnapshot($db);
 $backup = sys_get_temp_dir().'/preview-refresh-test-'.bin2hex(random_bytes(8)).'.jsonl.gz';
 $digest = refreshBackup($db, $schema, $backup);
 refreshAssert((fileperms($backup) & 0777) === 0600);
@@ -67,6 +75,10 @@ $db->exec('SET FOREIGN_KEY_CHECKS=0');
 $db->beginTransaction();
 refreshSanitize($db, $adminPassword);
 refreshVerifySanitized($db, $adminPassword);
+refreshAssert(refreshPublicContentSnapshot($db) === $publicSnapshot);
+refreshAssert($db->query('SELECT reason FROM package_availabilities ORDER BY id DESC LIMIT 1')->fetchColumn() === 'Public local closure explanation');
+refreshAssert($db->query('SELECT notes FROM package_availabilities ORDER BY id DESC LIMIT 1')->fetchColumn() === null);
+$checks++;
 refreshAssert((int) $db->query('SELECT total FROM bookings')->fetchColumn() === 123456);
 refreshAssert((int) $db->query('SELECT COUNT(*) FROM tour_packages')->fetchColumn() > 0);
 $checks++;
@@ -111,6 +123,31 @@ $target->beginTransaction();
 $counts = refreshCopy($db, $target, $schema);
 refreshSanitize($target, $adminPassword);
 refreshVerifySanitized($target, $adminPassword);
+refreshVerifyPublicContent($db, $target);
+$checks++;
+// Public fidelity verification must detect accidental CMS redaction.
+$reviewId = (int) $target->query('SELECT id FROM reviews ORDER BY id LIMIT 1')->fetchColumn();
+$target->prepare('UPDATE reviews SET name = ? WHERE id = ?')->execute(['Preview Reviewer', $reviewId]);
+$expectFailure(fn () => refreshVerifyPublicContent($db, $target));
+$target->prepare('UPDATE reviews SET name = ? WHERE id = ?')->execute(['Published Traveler', $reviewId]);
+refreshVerifyPublicContent($db, $target);
+$expectedTestimonials = $target->query('SELECT testimonials FROM tour_packages LIMIT 1')->fetchColumn();
+refreshUpdate($target, 'tour_packages', ['testimonials' => '[{"name":"Public Traveler","quote":{"us":"Public quote"},"booking_id":7,"raw_payment":{"secret":"private"}}]']);
+$expectFailure(fn () => refreshValidatePublicContentShapes($target));
+refreshUpdate($target, 'tour_packages', ['testimonials' => $expectedTestimonials]);
+refreshUpdate($target, 'package_availabilities', ['notes' => 'private internal note']);
+$expectFailure(fn () => refreshVerifySanitized($target, $adminPassword));
+refreshSanitize($target, $adminPassword);
+$privateVoucherId = (int) $target->query('SELECT id FROM vouchers WHERE is_public = 0 ORDER BY id LIMIT 1')->fetchColumn();
+$target->prepare('UPDATE vouchers SET code = ? WHERE id = ?')->execute(['PRIVATE-LEAK', $privateVoucherId]);
+$expectFailure(fn () => refreshVerifySanitized($target, $adminPassword));
+// Reset public voucher codes too before testing source fidelity again.
+$target->exec('DELETE FROM vouchers');
+foreach ($db->query('SELECT * FROM vouchers')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    refreshInsert($target, 'vouchers', $row);
+}
+refreshSanitize($target, $adminPassword);
+refreshVerifyPublicContent($db, $target);
 refreshAssert($counts['bookings'] === 1 && $counts['tour_packages'] > 0);
 $target->commit();
 // An exception after a partial replacement must recover the pre-copy data.

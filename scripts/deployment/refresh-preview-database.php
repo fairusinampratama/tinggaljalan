@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\InertiaPublicData;
 use App\Support\PublicSite;
 use App\Support\ResponsiveImageGenerator;
 use Illuminate\Contracts\Console\Kernel;
@@ -57,6 +58,7 @@ try {
     $app->make(Kernel::class)->bootstrap();
     refreshAssert(Http::preventingStrayRequests());
     refreshAssert(PublicSite::whatsappBase() === '#');
+    refreshAssert(InertiaPublicData::site()['contactDetails']['actionsEnabled'] === false);
     foreach (['SESSION_DRIVER' => 'file', 'CACHE_STORE' => 'file', 'SESSION_DOMAIN' => 'preview.tinggaljalan.com', 'SESSION_COOKIE' => 'tinggaljalan_preview_session', 'APP_MAINTENANCE_DRIVER' => 'file', 'FILESYSTEM_DISK' => 'local', 'BROADCAST_CONNECTION' => 'log'] as $key => $value) {
         refreshAssert(($env[$key] ?? null) === $value);
     }
@@ -166,6 +168,7 @@ try {
     refreshSanitize($target, $input['admin_password']);
     $stage = 'sanitization verification';
     refreshVerifySanitized($target, $input['admin_password']);
+    $publicCounts = refreshVerifyPublicContent($source, $target);
     foreach (['destinations', 'tour_packages', 'itinerary_items', 'package_price_tiers', 'package_add_ons', 'package_availabilities', 'news_articles', 'bookings'] as $table) {
         refreshAssert((int) $target->query('SELECT COUNT(*) FROM '.refreshIdentifier($table))->fetchColumn() === $counts[$table]);
     }
@@ -215,6 +218,9 @@ try {
         echo 'Copied '.$table.' rows: '.$counts[$table]."\n";
     }
     echo "Sanitization verified; production users, tokens, sessions, queue payloads and payment records removed; preview admin reset; all integrations disabled.\n";
+    foreach ($publicCounts as $table => $count) {
+        echo 'Public CMS fidelity verified against source snapshot: '.$table.'; rows='.$count."\n";
+    }
     echo "Preview reopened with sanitized committed data; backup retained pending functional verification.\n";
 } catch (Throwable $error) {
     if ($target instanceof PDO && $target->inTransaction()) {

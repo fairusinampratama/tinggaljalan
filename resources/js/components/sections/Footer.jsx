@@ -7,8 +7,8 @@ export function Footer({ t, whatsappUrl }) {
   const site = publicData.site ?? {};
   const contactDetails = site.contactDetails ?? {};
   const address = contactDetails.address?.trim();
-  const mapUrl = contactDetails.map_url
-    || (address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null);
+  const mapUrl = contactDetails.actionsEnabled === false ? '#' : (contactDetails.map_url
+    || (address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}` : null));
   const logoUrl = site.logoUrl ?? '/images/logo-tj.png';
   const trustBadges = site.trustBadges ?? [];
   const footerColumns = [

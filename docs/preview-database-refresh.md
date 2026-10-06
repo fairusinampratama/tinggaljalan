@@ -47,15 +47,17 @@ The current and two most recent other preview backups are retained privately on 
 | Cache, queued/failed jobs and job batches | Delete opaque payloads; clear preview file cache and sessions |
 | Bookings | Replace codes, names, and emails with preview placeholders; clear phone/country, exact travel date, pickup details, notes, add-on snapshots, voucher code, gateway and notification timestamps/errors |
 | Booking payment records | Delete all provider IDs, tokens, links, raw payloads, bank/payment/receipt/contact data |
-| Customer reviews | Replace reviewer names/text; clear origin/source; retain ratings and counts |
-| Package testimonials/review source | Clear nested customer material |
-| Availability notes/reasons | Clear private free text; retain dates, seats and statuses |
+| Public CMS reviews | Preserve every field unchanged, including name/origin/source/text, rating/count, status/order and timestamps; standalone CMS records have no customer/booking/user relationship |
+| Public package testimonials/review source | Preserve reviewed name/meta/quote/text and localized source; fail closed on unexpected nested fields or raw transactional payloads |
+| Availability reason/notes | Preserve customer-facing reason, dates, seats and statuses; remove internal notes |
 | Generic settings | Delete opaque values without a reviewed public schema |
 | Email and WhatsApp settings | Force disabled; clear credentials, endpoints, accounts, session IDs and test diagnostics; disable manual WhatsApp fallback |
 | Notification settings | Force all channels disabled; clear admin destinations |
 | Payment settings | Disable every gateway and manual transfer; sandbox mode; clear public/secret keys and bank accounts |
-| Website contacts | Replace email with `.invalid`; clear phone/address/map link |
+| Website/business information | Preserve public address, map URL, email, phone, hours, service areas, trust badges and hero settings; copy logo through existing media policy; staging disables contact/map actions independently of display values |
+| Internal CMS metadata | Clear route-filter description (admin form calls it internal); replace hero admin_label with a preview label; preserve public filter labels/hero content |
 | Private vouchers | Replace code/label; clear public text; retain discount rules |
+| Public vouchers | Preserve public codes, titles/descriptions, discount configuration, eligibility/status/order and package scopes. Public labels are also used as homepage title fallback and checkout text, so retain them; non-public labels remain anonymized |
 | Tourism/business content | Keep destinations, routes, package descriptions/prices, tiers, itineraries, add-ons, availability, news, public promotions and published business profiles |
 
 Only referenced uploaded tourism images from explicit public image columns are copied. They are validated as images, confined to production public storage, and stored under content-hashed names in separate preview storage. Existing preview images are never overwritten. The durable pending record includes hashes of the existing preview-owned originals and derivatives. Rollback restores the DB, removes only additions within the managed namespaces, and verifies all prior bytes remain unchanged before reopening. Private media/payment receipts and production logs/storage/session files are never bulk-copied. Files added by a failed refresh are removed during coordinated rollback; older content-hashed media remains available to retained database backups.
@@ -84,4 +86,14 @@ Known link fields (hero buttons, About CTAs, platform URLs and team profile URLs
 
 A browser media check forces local images to load on home, routes, news and About pages at desktop/mobile sizes, checks browser decoding and selected responsive variants, and rejects production media references. Existing rendering, booking/admin and production-health checks still run. Dirty queue/cache/session fixtures and coordinated DB/media rollback are tested against disposable MySQL; public storage is never bulk copied.
 
-Staging application contact helpers return an inert link and omit the server-rendered hardcoded production WhatsApp link, even if the database contains a real number. Production contact behavior is unchanged. The host helper refuses to refresh until this application guard is deployed, and the browser media check rejects active WhatsApp actions.
+Staging application contact helpers return an inert link and omit the server-rendered hardcoded production WhatsApp link, even if the database contains a real number. Inertia contact payloads retain display data but mark actions disabled and set email/telephone action URLs inert. Footer and About respect this flag, including address-derived map fallbacks. Production contact behavior is unchanged. The host helper refuses to refresh until these guards are deployed, and browser checks reject active WhatsApp/mailto/telephone and footer map actions.
+
+## Public content versus private data
+
+Classification follows representation and actual use, not the presence of a person's name or prose. Migrations/models, Filament forms, seeders and public payload/rendering confirm that reviews are standalone homepage content; package testimonials contain only public name/meta/quote/text; package availability reason is returned to customers while notes are internal. Tour-package notes are customer-facing route expectations and remain preserved. SiteDetails is public business branding/contact information, separate from private gateway and notification settings.
+
+The real Hostinger JSON audit reports only shape/count information, never names, prose, contact values or payloads. Public review and testimonial localized objects accept the reviewed id/us/cn strings; unknown nested structures fail closed for policy review. The schema manifest remains strict and unchanged.
+
+After sanitization, the host helper compares source-snapshot and preview public review rows, package testimonial/source/rating/count/public notes, availability data excluding internal notes, business display fields excluding remapped logo, and public voucher data. Values and hashes stay in memory; only family row counts and pass results are logged. This catches accidental content redaction before commit. Private booking/auth/runtime/payment/integration sanitization and coordinated DB/media rollback continue unchanged.
+
+Business contact data may be present for display/admin review, but contact actions are inert on staging and outbound HTTP remains blocked. Arbitrary prose or external public business links are not blindly rewritten; intentionally published personal information cannot be detected semantically by this policy. Private voucher codes/labels never become public promotions.
