@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Read-only operation
+        description: Operation (database refresh replaces preview data)
         type: choice
         options:
           - connection
           - readiness
           - database-audit
+          - refresh-preview-database
           - export-host-record
         default: connection
   pull_request:
@@ -30,7 +31,7 @@ jobs:
         run: bash -n scripts/deployment/staging-preflight.sh
 
   connection:
-    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record'
+    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record' && inputs.operation != 'refresh-preview-database'
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -149,3 +150,8 @@ jobs:
           path: ${{ runner.temp }}/staging-known-hosts
           retention-days: 1
           if-no-files-found: error
+
+  refresh-preview-database:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'refresh-preview-database'
+    uses: ./.github/workflows/preview-database-refresh.yml
+    secrets: inherit

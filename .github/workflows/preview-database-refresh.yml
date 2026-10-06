@@ -1,0 +1,174 @@
+name: Refresh Preview Database
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+    paths:
+      - .github/workflows/preview-database-refresh.yml
+      - .github/workflows/staging-preflight.yml
+      - scripts/deployment/preview-db-*.php
+      - scripts/deployment/preview-db-schema.json
+      - scripts/deployment/refresh-preview-database.php
+      - tests/deployment/test_preview_database_refresh.php
+
+permissions:
+  contents: read
+
+jobs:
+  safety-tests:
+    runs-on: ubuntu-24.04
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test-password
+          MYSQL_DATABASE: preview_refresh_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ptest-password"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: preview_refresh_test
+      DB_USERNAME: root
+      DB_PASSWORD: test-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, mbstring, intl, dom, curl, zip, gd
+          tools: composer:v2
+          coverage: none
+      - name: Install test application
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          cp .env.example .env
+          php artisan key:generate
+          php artisan migrate --force
+      - name: Test refresh and sanitization against real MySQL
+        run: php tests/deployment/test_preview_database_refresh.php
+      - name: Check PHP syntax and formatting
+        run: |
+          FILES=(scripts/deployment/preview-db-audit.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/refresh-preview-database.php tests/deployment/test_preview_database_refresh.php)
+          for file in "${FILES[@]}"; do php -l "$file"; done
+          if ! vendor/bin/pint --test "${FILES[@]}"; then
+            vendor/bin/pint "${FILES[@]}"
+            git diff -- "${FILES[@]}"
+            exit 1
+          fi
+
+  refresh:
+    if: github.event_name == 'workflow_dispatch'
+    needs: safety-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: staging
+      url: https://preview.tinggaljalan.com
+    concurrency:
+      group: staging
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare private staging access
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          STAGING_ROOT: ${{ vars.STAGING_ROOT }}
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [[ "$STAGING_ROOT" == /home/u304629909/domains/preview.tinggaljalan.com ]]
+          [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
+          test -n "$PRIVATE_KEY"
+          test -n "$KNOWN_HOSTS"
+          umask 077
+          mkdir -p "$RUNNER_TEMP/preview-refresh"
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/preview-refresh/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/preview-refresh/known_hosts"
+          python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/preview-refresh/config.json"
+          cat > "$RUNNER_TEMP/preview-refresh/ssh_config" <<CONFIG
+          Host staging
+              HostName $SSH_HOST
+              Port $SSH_PORT
+              User $SSH_USER
+              IdentityFile $RUNNER_TEMP/preview-refresh/key
+              UserKnownHostsFile $RUNNER_TEMP/preview-refresh/known_hosts
+              StrictHostKeyChecking yes
+              IdentitiesOnly yes
+              BatchMode yes
+              ConnectTimeout 20
+              ServerAliveInterval 10
+              ServerAliveCountMax 2
+          CONFIG
+          REMOTE="/home/u304629909/domains/preview.tinggaljalan.com/deployments/incoming/db-refresh-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          printf 'REFRESH_REMOTE=%s\n' "$REMOTE" >> "$GITHUB_ENV"
+      - name: Prepare browser tooling before preview downtime
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Check production health before refresh
+        run: |
+          curl --fail --silent --show-error --max-time 30 https://tinggaljalan.com/up > "$RUNNER_TEMP/preview-refresh/production-before.json"
+          node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.status!=="up"||!/^[a-f0-9]{40}$/.test(r.revision))process.exit(1)' "$RUNNER_TEMP/preview-refresh/production-before.json"
+      - name: Transfer host-only refresh helpers
+        run: |
+          set -euo pipefail
+          ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "bash -s -- readiness /home/u304629909/domains/preview.tinggaljalan.com" < scripts/deployment/staging-preflight.sh
+          ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "umask 077; test ! -e '$REFRESH_REMOTE' && test ! -L '$REFRESH_REMOTE' && mkdir '$REFRESH_REMOTE' && test \"\$(readlink -f '$REFRESH_REMOTE')\" = '$REFRESH_REMOTE'"
+          scp -F "$RUNNER_TEMP/preview-refresh/ssh_config" scripts/deployment/refresh-preview-database.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-db-schema.json scripts/deployment/staging-config.php "$RUNNER_TEMP/preview-refresh/config.json" "staging:$REFRESH_REMOTE/"
+          REVISION="$(ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging 'cat /home/u304629909/domains/preview.tinggaljalan.com/deployments/current/REVISION')"
+          [[ "$REVISION" =~ ^[a-f0-9]{40}$ ]]
+          printf 'PREVIEW_REVISION=%s\n' "$REVISION" >> "$GITHUB_ENV"
+      - name: Backup, copy, sanitize and verify on Hostinger
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "/opt/alt/php84/usr/bin/php '$REFRESH_REMOTE/refresh-preview-database.php' refresh '$REFRESH_REMOTE/config.json' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'"
+      - name: Verify effective preview database and disabled providers
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$PREVIEW_REVISION'" < scripts/testing/staging-functional-guard.php
+      - name: Verify desktop, mobile, booking submission and preview admin
+        run: |
+          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review"
+          node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review" "$GITHUB_RUN_ID"
+      - name: Confirm production remains healthy at the same revision
+        run: |
+          curl --fail --silent --show-error --max-time 30 https://tinggaljalan.com/up > "$RUNNER_TEMP/preview-refresh/production-after.json"
+          node -e 'const fs=require("fs");const a=JSON.parse(fs.readFileSync(process.argv[1]));const b=JSON.parse(fs.readFileSync(process.argv[2]));if(b.status!=="up"||a.revision!==b.revision)process.exit(1);console.log("Production healthy at unchanged revision: "+b.revision)' "$RUNNER_TEMP/preview-refresh/production-before.json" "$RUNNER_TEMP/preview-refresh/production-after.json"
+      - name: Finalize only after all verification passes
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "/opt/alt/php84/usr/bin/php '$REFRESH_REMOTE/refresh-preview-database.php' finalize '$REFRESH_REMOTE/config.json'"
+          printf '## Preview database refresh\n\nHost-only copy and sanitization passed. Separate preview DB verified. Desktop/mobile and synthetic booking/admin checks passed. Production healthy and unchanged. Previous preview backup remains private on Hostinger.\n' >> "$GITHUB_STEP_SUMMARY"
+      - name: Restore previous preview database if any verification fails
+        if: failure() || cancelled()
+        run: |
+          if test -f "$RUNNER_TEMP/preview-refresh/ssh_config" && test -n "${REFRESH_REMOTE:-}"; then
+            ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "if test -f '$REFRESH_REMOTE/refresh-preview-database.php'; then /opt/alt/php84/usr/bin/php '$REFRESH_REMOTE/refresh-preview-database.php' rollback '$REFRESH_REMOTE/config.json'; fi"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: preview-db-refresh-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/staging-review
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove temporary private credentials and host helpers
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/preview-refresh/ssh_config" && test -n "${REFRESH_REMOTE:-}"; then
+            ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "rm -f '$REFRESH_REMOTE/config.json' '$REFRESH_REMOTE/refresh-preview-database.php' '$REFRESH_REMOTE/preview-db-refresh-lib.php' '$REFRESH_REMOTE/preview-db-schema.json' '$REFRESH_REMOTE/staging-config.php'; rmdir '$REFRESH_REMOTE'" || true
+          fi
+          rm -rf -- "$RUNNER_TEMP/preview-refresh"
