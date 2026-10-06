@@ -43,17 +43,26 @@ try {
         if ($label === 'production') {
             $public = $root.'/deployments/shared/storage/app/public';
             echo 'Production public storage canonical: '.(realpath($public) === $public ? 'yes' : 'no')."\n";
+            echo 'Usable public tours for default two travelers: '.$pdo->query('SELECT COUNT(*) FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0))')->fetchColumn()."\n";
             foreach (['hero_slides' => ['desktop_image', 'mobile_image'], 'tour_packages' => ['cover_image', 'gallery'], 'destinations' => ['cover_image'], 'news_articles' => ['cover_image'], 'team_members' => ['portrait'], 'company_milestones' => ['image']] as $table => $fields) {
                 foreach ($pdo->query('SELECT '.implode(',', $fields).' FROM `'.$table.'`')->fetchAll(PDO::FETCH_ASSOC) as $row) {
                     foreach ($row as $field => $value) {
-                        if ($field === 'gallery') { $values = json_decode($value ?? '[]', true) ?? []; } else { $values = [$value]; }
+                        if ($field === 'gallery') {
+                            $values = json_decode($value ?? '[]', true) ?? [];
+                        } else {
+                            $values = [$value];
+                        }
                         array_walk_recursive($values, function ($path) use ($table, $field, $public): void {
-                            if (!is_string($path)) return;
+                            if (! is_string($path)) {
+                                return;
+                            }
                             $relative = preg_replace('~^https://(?:www\.)?tinggaljalan\.com/~', '/', $path);
                             $relative = preg_replace('~^(?:/)?(?:storage/|public/)?~', '', $relative);
-                            if (!str_starts_with($relative, 'admin/') && !str_starts_with($relative, 'uploads/')) return;
+                            if (! str_starts_with($relative, 'admin/') && ! str_starts_with($relative, 'uploads/')) {
+                                return;
+                            }
                             // Only explicitly public tourism image references; no customer/auth data.
-                            echo 'Public tourism media '.$table.'.'.$field.': '.$relative.'; exists='.(is_file($public.'/'.$relative) ? 'yes' : 'no').'; canonical='.(realpath($public.'/'.$relative) ?: 'missing')."\n";
+                            echo 'Public tourism media '.$table.'.'.$field.': '.$relative.'; exists='.(is_file($public.'/'.$relative) ? 'yes' : 'no').'; valid-image='.(is_file($public.'/'.$relative) && getimagesize($public.'/'.$relative) !== false ? 'yes' : 'no')."\n";
                         });
                     }
                 }
