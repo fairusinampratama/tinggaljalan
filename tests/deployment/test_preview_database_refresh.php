@@ -206,6 +206,10 @@ refreshAssert($target->query('SELECT secondary_cta_url FROM hero_slides LIMIT 1'
 $checks++;
 file_put_contents($sourceImages.'/active.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
 refreshAssert(! refreshValidImage($sourceImages.'/active.svg'));
+file_put_contents($sourceImages.'/active.svg', '<svg xmlns="http://www.w3.org/2000/svg"><set attributeName="href" to="javascript:alert(1)"/></svg>');
+refreshAssert(! refreshValidImage($sourceImages.'/active.svg'));
+file_put_contents($sourceImages.'/active.svg', '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 L1 1"/></svg>');
+refreshAssert(refreshValidImage($sourceImages.'/active.svg'));
 unlink($sourceImages.'/active.svg');
 $checks++;
 // A committed new DB plus media is restored as one logical snapshot.

@@ -37,6 +37,9 @@ function refreshVisitMedia(PDO $db, callable $visit): void
                             $updated[$nested] = $visit($value[$nested]);
                         }
                     }
+                    if ($updated === $value) {
+                        continue;
+                    }
                     $updated = json_encode($updated, JSON_THROW_ON_ERROR);
                 }
                 if ($updated !== $original) {
@@ -87,7 +90,17 @@ function refreshValidImage(string $file): bool
     $dom = new DOMDocument;
     $previous = libxml_use_internal_errors(true);
     try {
-        return $dom->loadXML($xml, LIBXML_NONET) && $dom->documentElement?->localName === 'svg';
+        if (! $dom->loadXML($xml, LIBXML_NONET) || $dom->documentElement?->localName !== 'svg') {
+            return false;
+        }
+        $passive = ['svg', 'g', 'path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'defs', 'linearGradient', 'radialGradient', 'stop', 'clipPath', 'mask', 'pattern', 'text', 'tspan', 'title', 'desc'];
+        foreach ($dom->getElementsByTagName('*') as $element) {
+            if (! in_array($element->localName, $passive, true) || $element->namespaceURI !== 'http://www.w3.org/2000/svg') {
+                return false;
+            }
+        }
+
+        return true;
     } finally {
         libxml_clear_errors();
         libxml_use_internal_errors($previous);
