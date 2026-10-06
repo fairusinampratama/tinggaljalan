@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Http;
+
 ini_set('zend.exception_ignore_args', '1');
 ini_set('display_errors', '0');
 ini_set('log_errors', '0');
@@ -41,6 +44,9 @@ try {
     refreshAssert($effective['app']['env'] === 'staging' && $effective['app']['url'] === 'https://preview.tinggaljalan.com');
     refreshAssert($effective['database']['default'] === 'mysql' && $effective['database']['connections']['mysql']['database'] === 'u304629909_tj_preview');
     refreshAssert($effective['mail']['default'] === 'log' && $effective['cache']['default'] === 'file' && $effective['session']['driver'] === 'file');
+    $app = require $release.'/bootstrap/app.php';
+    $app->make(Kernel::class)->bootstrap();
+    refreshAssert(Http::preventingStrayRequests());
     foreach (['SESSION_DRIVER' => 'file', 'CACHE_STORE' => 'file', 'SESSION_DOMAIN' => 'preview.tinggaljalan.com', 'SESSION_COOKIE' => 'tinggaljalan_preview_session', 'APP_MAINTENANCE_DRIVER' => 'file', 'FILESYSTEM_DISK' => 'local', 'BROADCAST_CONNECTION' => 'log'] as $key => $value) {
         refreshAssert(($env[$key] ?? null) === $value);
     }
@@ -97,6 +103,9 @@ try {
     $source->exec('SET TRANSACTION READ ONLY');
     $source->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
     refreshAssert($source->query('SELECT DATABASE()')->fetchColumn() === $sourceEnv['DB_DATABASE']);
+    foreach ($source->query('SELECT password FROM users')->fetchAll(PDO::FETCH_COLUMN) as $hash) {
+        refreshAssert(! password_verify($input['admin_password'], $hash));
+    }
     $stage = 'schema policy';
     refreshValidateSchema(refreshSchema($source), $schema, $policy);
     // A refresh may not run alongside preview queue workers or scheduled commands.
