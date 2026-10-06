@@ -40,6 +40,25 @@ try {
             echo $label.' '.$table.' columns: '.implode(',', array_column($columns, 'Field'))."\n";
             echo $label.' '.$table.' rows: '.$pdo->query('SELECT COUNT(*) FROM `'.$table.'`')->fetchColumn()."\n";
         }
+        if ($label === 'production') {
+            $public = $root.'/deployments/shared/storage/app/public';
+            echo 'Production public storage canonical: '.(realpath($public) === $public ? 'yes' : 'no')."\n";
+            foreach (['hero_slides' => ['desktop_image', 'mobile_image'], 'tour_packages' => ['cover_image', 'gallery'], 'destinations' => ['cover_image'], 'news_articles' => ['cover_image'], 'team_members' => ['portrait'], 'company_milestones' => ['image']] as $table => $fields) {
+                foreach ($pdo->query('SELECT '.implode(',', $fields).' FROM `'.$table.'`')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    foreach ($row as $field => $value) {
+                        if ($field === 'gallery') { $values = json_decode($value ?? '[]', true) ?? []; } else { $values = [$value]; }
+                        array_walk_recursive($values, function ($path) use ($table, $field, $public): void {
+                            if (!is_string($path)) return;
+                            $relative = preg_replace('~^https://(?:www\.)?tinggaljalan\.com/~', '/', $path);
+                            $relative = preg_replace('~^(?:/)?(?:storage/|public/)?~', '', $relative);
+                            if (!str_starts_with($relative, 'admin/') && !str_starts_with($relative, 'uploads/')) return;
+                            // Only explicitly public tourism image references; no customer/auth data.
+                            echo 'Public tourism media '.$table.'.'.$field.': '.$relative.'; exists='.(is_file($public.'/'.$relative) ? 'yes' : 'no').'; canonical='.(realpath($public.'/'.$relative) ?: 'missing')."\n";
+                        });
+                    }
+                }
+            }
+        }
         $pdo->rollBack();
         echo $label.' revision: '.trim(file_get_contents($root.'/deployments/current/REVISION'))."\n";
     }
