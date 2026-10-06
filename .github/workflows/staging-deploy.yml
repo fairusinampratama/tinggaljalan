@@ -60,6 +60,8 @@ jobs:
           bash -n scripts/deployment/deploy-staging.sh
           php -l scripts/deployment/configure-staging.php
           php -l scripts/deployment/staging-config.php
+          php -l scripts/testing/staging-functional-guard.php
+          node --check scripts/testing/staging-functional-browser.mjs
           python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
           if bash scripts/deployment/deploy-staging.sh /home/u304629909/domains/tinggaljalan.com invalid invalid invalid invalid; then
@@ -260,7 +262,7 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/browser-review/known_hosts"
           ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
             -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
-            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
+            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
             < scripts/testing/staging-functional-guard.php
       - name: Review existing desktop and mobile preview without hosting writes
