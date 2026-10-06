@@ -102,6 +102,14 @@ function refreshVerifySanitized(PDO $db, string $adminPassword): void
     refreshAssert((int) $db->query("SELECT COUNT(*) FROM reviews WHERE name <> CONCAT('Preview Reviewer ', id) OR origin IS NOT NULL OR source IS NOT NULL OR JSON_UNQUOTE(JSON_EXTRACT(text, '$.us')) <> 'Preview example review.' OR JSON_UNQUOTE(JSON_EXTRACT(text, '$.id')) <> 'Contoh ulasan preview.' OR JSON_LENGTH(text) <> 2")->fetchColumn() === 0);
 }
 
+function refreshFunctionalRoute(PDO $db): string
+{
+    $route = $db->query('SELECT slug FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0)) ORDER BY id LIMIT 1')->fetchColumn();
+    refreshAssert(is_string($route) && preg_match('/^[a-z0-9-]+$/i', $route) === 1);
+
+    return $route;
+}
+
 function refreshCopy(PDO $source, PDO $target, array $schema): array
 {
     $counts = [];

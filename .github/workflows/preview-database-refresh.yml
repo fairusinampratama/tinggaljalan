@@ -140,7 +140,7 @@ jobs:
       - name: Select functional test route from refreshed tourism data
         run: |
           scp -F "$RUNNER_TEMP/preview-refresh/ssh_config" "staging:$REFRESH_REMOTE/functional-route.json" "$RUNNER_TEMP/preview-refresh/functional-route.json"
-          node -e 'const fs=require("fs");const p=process.argv[1];const c=JSON.parse(fs.readFileSync(p));const r=JSON.parse(fs.readFileSync(process.argv[2]));if(!/^[a-z0-9-]+$/.test(r.functional_route))process.exit(1);c.functional_route=r.functional_route;fs.writeFileSync(p,JSON.stringify(c),{mode:0o600})' "$RUNNER_TEMP/preview-refresh/config.json" "$RUNNER_TEMP/preview-refresh/functional-route.json"
+          node -e 'const fs=require("fs");const p=process.argv[1];const c=JSON.parse(fs.readFileSync(p));const r=JSON.parse(fs.readFileSync(process.argv[2]));if(!/^[a-z0-9-]+$/i.test(r.functional_route))process.exit(1);c.functional_route=r.functional_route;fs.writeFileSync(p,JSON.stringify(c),{mode:0o600})' "$RUNNER_TEMP/preview-refresh/config.json" "$RUNNER_TEMP/preview-refresh/functional-route.json"
       - name: Verify effective preview database and disabled providers
         run: |
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$PREVIEW_REVISION'" < scripts/testing/staging-functional-guard.php
