@@ -16,7 +16,9 @@ try {
         $stage = $label.' connection';
         $pdo = new PDO('mysql:host='.$env['DB_HOST'].';dbname='.$db, $env['DB_USERNAME'], $env['DB_PASSWORD'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $stage = $label.' read-only snapshot';
-        $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        echo $label.' server version: '.$pdo->query('SELECT VERSION()')->fetchColumn()."\n";
+        $pdo->exec('SET TRANSACTION READ ONLY');
+        $stage = $label.' start snapshot';
         $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
         echo $label.' schema: '.$pdo->query('SELECT DATABASE()')->fetchColumn()."\n";
         $tables = $pdo->query('SHOW FULL TABLES')->fetchAll(PDO::FETCH_NUM);
@@ -32,5 +34,6 @@ try {
     echo "Read-only schema audit completed; no row values or credentials disclosed.\n";
 } catch (Throwable $error) {
     fwrite(STDERR, "Read-only schema audit failed at ".$stage."; no credentials or row values logged.\n");
+    if ($error instanceof PDOException) echo 'Database diagnostic code: '.(int) ($error->errorInfo[1] ?? 0)."\n";
     exit(1);
 }
