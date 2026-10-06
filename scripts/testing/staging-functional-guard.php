@@ -1,10 +1,8 @@
 <?php
 // Read-only safety checks; payment calls use an unsaved synthetic model.
 ini_set('zend.exception_ignore_args', '1');
-set_exception_handler(function (Throwable $error): void {
-    fwrite(STDERR, 'Preview functional guard failed ('.get_class($error)."). No credentials logged.\n");
-    exit(1);
-});
+$stage = 'layout';
+try {
 $root = '/home/u304629909/domains/preview.tinggaljalan.com';
 $revision = $argv[1] ?? '';
 if (! preg_match('/^[a-f0-9]{40}$/', $revision)
@@ -21,6 +19,7 @@ if (config('app.env') !== 'staging' || config('app.url') !== 'https://preview.ti
     || Illuminate\Support\Facades\DB::selectOne('SELECT DATABASE() AS name')->name !== 'u304629909_tj_preview') {
     throw new RuntimeException('Unexpected preview configuration.');
 }
+$stage = 'integration settings';
 foreach ([App\Models\EmailGatewaySetting::class, App\Models\WhatsappGatewaySetting::class,
     App\Models\NotificationSetting::class, App\Models\PaymentSetting::class] as $model) {
     if (! $model::query()->exists() || $model::query()->where('is_enabled', true)->exists()) {
@@ -32,6 +31,12 @@ if (App\Models\PaymentSetting::query()->whereNotNull('public_key')->exists()
     throw new RuntimeException('Payment credentials exist.');
 }
 Illuminate\Support\Facades\Http::preventStrayRequests();
+$settings = app(App\Payments\PaymentSettingsService::class);
+$stage = 'disabled gateway selection';
+if ($settings->midtransEnabled() || $settings->dokuEnabled() || $settings->isManualActive()) {
+    throw new RuntimeException('A disabled gateway is treated as active.');
+}
+$stage = 'disabled gateway rejection';
 $booking = new App\Models\Booking;
 $booking->forceFill(['status' => 'confirmed', 'pricing_status' => 'priced', 'total' => 100000, 'currency' => 'IDR']);
 $service = app(App\Payments\BookingPaymentService::class);
@@ -46,3 +51,8 @@ foreach (['createPaymentRequest', 'createMidtransPaymentRequest', 'createDokuPay
     }
 }
 echo "Preview database isolated; notifications disabled; all payment methods reject requests without network calls.\n";
+
+} catch (Throwable $error) {
+    fwrite(STDERR, 'Preview functional guard failed at '.$stage.'. No credentials logged.'.PHP_EOL);
+    exit(1);
+}

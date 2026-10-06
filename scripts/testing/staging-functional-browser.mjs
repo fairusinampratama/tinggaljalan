@@ -9,12 +9,14 @@ await mkdir(output, { recursive: true, mode: 0o700 });
 const browser = await chromium.launch();
 const results = [];
 let stage = "runtime";
+let currentPage;
 try {
     for (const [name, viewport] of [['desktop', {width:1440,height:1000}], ['mobile', {width:390,height:844}]]) {
         const context = await browser.newContext({viewport, httpCredentials:{username:'reviewer',password:config.review_password,origin:base}});
         const health = await (await context.request.get(`${base}/up?revision=${revision}`)).json();
         if (health.status !== 'up' || health.revision !== revision) throw new Error('Unexpected preview revision.');
         const page = await context.newPage();
+        currentPage = page;
         let jsErrors = 0;
         page.on('pageerror', () => jsErrors++);
         // Block every external request: these checks must not contact payment or messaging services.
@@ -60,6 +62,9 @@ try {
     }
     await writeFile(path.join(output,'functional-verification.txt'), `Revision: ${revision}\n${results.join('\n')}\nSynthetic booking records retained for review. No external requests permitted.\n`, {mode:0o600});
 } catch (error) {
+    if (currentPage && !currentPage.isClosed()) {
+        await currentPage.screenshot({path:path.join(output,"functional-failure.png"),fullPage:true,mask:[currentPage.locator('input[type="password"]')]}).catch(() => {});
+    }
     // Playwright errors may include input values: emit a static failure only.
     console.error(`Functional preview verification failed at ${stage}. Inspect the last completed screenshots.`);
     process.exitCode = 1;
