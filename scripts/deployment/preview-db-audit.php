@@ -41,6 +41,39 @@ try {
             echo $label.' '.$table.' rows: '.$pdo->query('SELECT COUNT(*) FROM `'.$table.'`')->fetchColumn()."\n";
         }
         if ($label === 'production') {
+            // Inspect CMS JSON shapes without logging names, prose, contact values or payloads.
+            foreach (['reviews' => ['origin', 'source', 'text'], 'tour_packages' => ['testimonials', 'review_source']] as $table => $fields) {
+                $populated = 0;
+                $unreviewed = 0;
+                foreach ($pdo->query('SELECT '.implode(',', $fields).' FROM `'.$table.'`')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    foreach ($row as $field => $raw) {
+                        if ($raw === null) {
+                            continue;
+                        }
+                        $value = json_decode($raw, true, flags: JSON_THROW_ON_ERROR);
+                        $populated += ! empty($value) ? 1 : 0;
+                        $localized = function ($item): bool {
+                            return $item === null || is_string($item) || (is_array($item)
+                                && ! array_diff(array_keys($item), ['id', 'us', 'cn'])
+                                && ! array_filter($item, fn ($text) => $text !== null && ! is_string($text)));
+                        };
+                        if ($field === 'testimonials') {
+                            if (! is_array($value) || ! array_is_list($value)) {
+                                $unreviewed++;
+                                continue;
+                            }
+                            foreach ($value as $item) {
+                                if (! is_array($item) || array_diff(array_keys($item), ['name', 'meta', 'quote', 'text']) || ! is_string($item['name'] ?? '') || ! $localized($item['meta'] ?? null) || ! $localized($item['quote'] ?? $item['text'] ?? null)) {
+                                    $unreviewed++;
+                                }
+                            }
+                        } elseif (! $localized($value)) {
+                            $unreviewed++;
+                        }
+                    }
+                }
+                echo 'CMS shape audit '.$table.': populated fields='.$populated.'; unreviewed structures='.$unreviewed."\n";
+            }
             $public = $root.'/deployments/shared/storage/app/public';
             echo 'Production public storage canonical: '.(realpath($public) === $public ? 'yes' : 'no')."\n";
             echo 'Usable public tours for default two travelers: '.$pdo->query('SELECT COUNT(*) FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0))')->fetchColumn()."\n";
