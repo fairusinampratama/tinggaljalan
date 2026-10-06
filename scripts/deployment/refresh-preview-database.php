@@ -168,8 +168,11 @@ try {
     $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);
     $stage = 'functional route selection';
     $route = $target->query('SELECT slug FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0)) ORDER BY id LIMIT 1')->fetchColumn();
+    $GLOBALS['refreshDetail'] = 'functional-route-format';
     refreshAssert(is_string($route) && preg_match('/^[a-z0-9-]+$/', $route) === 1);
+    $GLOBALS['refreshDetail'] = 'functional-route-write';
     refreshAssert(file_put_contents(__DIR__.'/functional-route.json', json_encode(['functional_route' => $route], JSON_THROW_ON_ERROR)) !== false);
+    unset($GLOBALS['refreshDetail']);
     $target->commit();
     $target->exec('SET FOREIGN_KEY_CHECKS=1');
     $source->rollBack();
