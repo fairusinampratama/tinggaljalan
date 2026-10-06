@@ -22,7 +22,7 @@ try {
     foreach ([$deploy, $shared, $root.'/public_html', $deploy.'/incoming'] as $directory) {
         refreshAssert(realpath($directory) === $directory && ! is_link($directory));
     }
-    foreach ([$pending, $offline, $shared.'/.env'] as $file) {
+    foreach ([$pending, $offline, $offline.'.refresh-next', $deploy.'/.lock', $shared.'/.env'] as $file) {
         refreshAssert(! is_link($file));
     }
     $lock = fopen($deploy.'/.lock', 'c');
@@ -80,6 +80,7 @@ try {
         refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $record['production_revision']);
         // Browser checks add explicitly synthetic bookings; do not re-run the pristine-copy verifier here.
         unlink($pending);
+        refreshAssert(unlink($argv[2]));
         echo "Preview refresh finalized after browser verification; protected preview backup retained on Hostinger.\n";
         exit;
     }

@@ -26,6 +26,7 @@ function refreshSchema(PDO $db): array
         refreshAssert($db->query('SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '.$db->quote($table))->fetchColumn() === 'InnoDB');
         refreshAssert((int) $db->query('SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND EVENT_OBJECT_TABLE = '.$db->quote($table))->fetchColumn() === 0);
     }
+    refreshAssert((int) $db->query('SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_SCHEMA IS NOT NULL AND REFERENCED_TABLE_SCHEMA <> DATABASE()')->fetchColumn() === 0);
     ksort($schema);
 
     return $schema;
