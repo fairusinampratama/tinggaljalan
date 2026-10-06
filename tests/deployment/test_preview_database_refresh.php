@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ResponsiveImageGenerator;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -170,7 +171,7 @@ refreshAssert(count($paths) === 1);
 $checks++;
 $originalStoragePath = $app->storagePath();
 $app->useStoragePath($previewShared.'/storage');
-refreshAssert(refreshGenerateMedia($target, $previewShared, dirname(__DIR__, 2), new App\Support\ResponsiveImageGenerator) === 5);
+refreshAssert(refreshGenerateMedia($target, $previewShared, dirname(__DIR__, 2), new ResponsiveImageGenerator) === 5);
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true);
 $app->useStoragePath($originalStoragePath);
 $checks++;
@@ -215,6 +216,19 @@ refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2));
 refreshAssert((int) $target->query('SELECT COUNT(*) FROM bookings')->fetchColumn() === 1);
 refreshAssert(file_get_contents($sourceImages.'/public.png') === $image);
 $checks++;
+$retention = $media.'/preview/database-backups';
+mkdir($retention, 0700);
+foreach ([1, 2, 3, 4, 5] as $number) {
+    file_put_contents($retention.'/preview-before-'.$number.'-1.jsonl.gz', 'synthetic-preview-backup');
+    touch($retention.'/preview-before-'.$number.'-1.jsonl.gz', 1000 + $number);
+}
+refreshPruneBackups($retention, 'preview-before-5-1.jsonl.gz');
+refreshAssert(count(glob($retention.'/*.gz')) === 3 && is_file($retention.'/preview-before-5-1.jsonl.gz'));
+$checks++;
+$expectFailure(fn () => refreshPruneBackups($media.'/production', 'preview-before-5-1.jsonl.gz'));
+foreach (glob($retention.'/*.gz') as $file) {
+    unlink($file);
+}
 unlink($targetBackup);
 unlink($sourceImages.'/public.png');
 $db->rollBack();

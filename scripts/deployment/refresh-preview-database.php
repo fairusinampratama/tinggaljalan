@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ResponsiveImageGenerator;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Http;
 
@@ -183,7 +184,7 @@ try {
     $target->exec('SET FOREIGN_KEY_CHECKS=1');
     $source->rollBack();
     $stage = 'responsive tourism images';
-    $variantCount = refreshGenerateMedia($target, $shared, $release, new App\Support\ResponsiveImageGenerator);
+    $variantCount = refreshGenerateMedia($target, $shared, $release, new ResponsiveImageGenerator);
     // Existing immutable media bytes must remain intact throughout the refresh.
     foreach ($mediaBaseline as $relative => $digest) {
         refreshAssert(hash_file('sha256', refreshCanonicalFile($shared.'/storage/app/public', $relative)) === $digest);

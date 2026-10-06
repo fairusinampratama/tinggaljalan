@@ -337,7 +337,8 @@ function refreshPruneBackups(string $directory, string $current): void
         $files[$file->getFilename()] = $file->getMTime();
     }
     arsort($files);
-    $keep = array_unique(array_merge([$current], array_slice(array_keys($files), 0, 3)));
+    refreshAssert(isset($files[$current]));
+    $keep = array_merge([$current], array_slice(array_keys(array_diff_key($files, [$current => true])), 0, 2));
     foreach (array_keys($files) as $file) {
         if (! in_array($file, $keep, true)) {
             refreshAssert(unlink(refreshCanonicalFile($directory, $file)));
