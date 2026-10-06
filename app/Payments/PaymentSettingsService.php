@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Schema;
 class PaymentSettingsService
 {
     private array $settingsCache = [];
+
     public function midtrans(): ?PaymentSetting
     {
         return $this->gateway(PaymentSetting::GATEWAY_MIDTRANS);
@@ -33,7 +34,7 @@ class PaymentSettingsService
             return null;
         }
 
-        return PaymentSetting::query()->where('is_enabled', true)->first() ?? $this->midtrans();
+        return PaymentSetting::query()->where('is_enabled', true)->first();
     }
 
     public function isManualActive(): bool

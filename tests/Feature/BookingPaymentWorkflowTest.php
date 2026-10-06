@@ -15,6 +15,7 @@ use App\Payments\BookingPaymentService;
 use App\Payments\Doku\DokuClient;
 use App\Payments\ExchangeRates\ExchangeRateClient;
 use App\Payments\Midtrans\MidtransClient;
+use App\Payments\PaymentSettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -44,6 +45,33 @@ class BookingPaymentWorkflowTest extends TestCase
         $this->midtrans = new FakeMidtransClient;
         $this->app->instance(MidtransClient::class, $this->midtrans);
         $this->app->instance(ExchangeRateClient::class, new FakeExchangeRateClient);
+    }
+
+    public function test_all_disabled_gateways_reject_payment_requests_without_creating_records_or_calling_providers(): void
+    {
+        PaymentSetting::query()->update(['is_enabled' => false]);
+        $doku = new FakeDokuClient;
+        $this->app->instance(DokuClient::class, $doku);
+        $booking = $this->booking();
+        $settings = app(PaymentSettingsService::class);
+        $this->assertNull($settings->active());
+        $this->assertFalse($settings->midtransEnabled());
+        $this->assertFalse($settings->dokuEnabled());
+        $this->assertFalse($settings->isManualActive());
+
+        foreach (['createPaymentRequest', 'createMidtransPaymentRequest', 'createDokuPaymentRequest', 'createManualPaymentRequest'] as $method) {
+            try {
+                app(BookingPaymentService::class)->$method($booking);
+                $this->fail('A disabled gateway accepted a payment request.');
+            } catch (InvalidArgumentException $error) {
+                $this->assertStringContainsString('payments are disabled', $error->getMessage());
+            }
+        }
+
+        $this->assertDatabaseCount('booking_payments', 0);
+        $this->assertSame([], $this->midtrans->createdPayloads);
+        $this->assertSame([], $doku->createdPayloads);
+        $this->assertSame('confirmed', $booking->refresh()->status);
     }
 
     public function test_invoice_email_can_be_sent_and_records_sent_timestamp(): void

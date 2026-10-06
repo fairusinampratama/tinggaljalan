@@ -1,6 +1,6 @@
 # Cloud development and UI review
 
-## Verified execution checkpoint — 2026-10-05 UTC
+## Verified execution checkpoint — 2026-10-06 UTC
 
 The independent Hostinger preview is deployed at https://preview.tinggaljalan.com.
 Its root is /home/u304629909/domains/preview.tinggaljalan.com and its database/user
@@ -13,6 +13,14 @@ and the exact schema were checked before configuration writes. Live deployment r
 detail, news, news detail and admin login pages. Screenshots and diagnostics are
 retained in that run's staging-review artifact for seven days. Admin login submission,
 booking submission and payment transactions were not tested by this rendering check.
+
+Functional review run 37399170636 subsequently verified desktop/mobile admin
+sign-in, synthetic booking submission, confirmation, deferred payment navigation
+and persistence in the admin booking list. Real payment transactions remain untested.
+This review exposed the disabled-Midtrans fallback described below; the fix passed
+246 PHP tests, including its no-record/no-provider-call regression, and 95 browser
+tests before preview promotion. Live disabled-payment checks must use the new exact
+preview revision, rather than treating that earlier run's guard as evidence.
 
 Resolved hosting differences:
 
@@ -40,6 +48,31 @@ The temporary branch-push recovery trigger was removed after deployment. Staging
 returns to manual dispatch; PRs run validation only. Production's existing deployment
 workflow is unchanged. Merging the approved workflow repair triggers the normal main
 production pipeline, which must pass its independent smoke test.
+
+## Functional review procedure
+
+To exercise the existing isolated preview, select the feature branch in Protected
+staging deployment, enable `review_only` and `functional_checks`, and enter the
+exact currently deployed revision. For a new preview deployment, leave `review_only` off and enable
+`functional_checks` to perform the same guarded checks after publishing. The default
+rendering review does not submit bookings. Functional review creates two clearly marked synthetic booking requests,
+one each for desktop and mobile, and retains them for inspection in the preview
+admin. It does not confirm trips, send messages, or collect payments.
+
+Before submissions, an SSH guard verifies the exact release, staging environment,
+preview database, disabled notification/payment settings and empty payment keys.
+It calls all four payment entry points using an unsaved synthetic booking and
+requires disabled-gateway rejection. Laravel exceptions are caught explicitly;
+any failure exits nonzero and prevents browser submissions. Browser tests reject
+external requests, sign in with the existing staging admin secret, and verify the
+new requests appear in the admin list. No credentials, traces or session state are
+uploaded. Screenshots and a functional verification file are retained for seven days.
+
+A disabled-gateway defect discovered during this review is covered by a regression:
+`PaymentSettingsService::active()` must return null when every gateway is disabled.
+Previously it returned the disabled Midtrans row, allowing payment creation to
+proceed. The regression checks all payment entry points, zero new payment records,
+zero provider calls and unchanged booking status.
 
 ## Earlier setup checkpoints (historical)
 

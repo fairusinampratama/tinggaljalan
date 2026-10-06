@@ -7,6 +7,10 @@ on:
         description: Review the existing preview without deploying
         type: boolean
         default: false
+      functional_checks:
+        description: Submit synthetic bookings and verify admin sign-in (preview only)
+        type: boolean
+        default: false
       revision:
         description: Exact existing preview revision for review-only runs
         type: string
@@ -23,6 +27,8 @@ on:
       - .env.staging.example
       - tests/deployment/test_staging_deploy.py
       - scripts/testing/staging-browser-smoke.mjs
+      - scripts/testing/staging-functional-browser.mjs
+      - scripts/testing/staging-functional-guard.php
 
 permissions:
   contents: read
@@ -43,7 +49,7 @@ jobs:
           php tests/deployment/test_staging_config.php
       - name: Check staging PHP formatting
         run: |
-          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php)
+          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php scripts/testing/staging-functional-guard.php)
           if ! vendor/bin/pint --test "${FILES[@]}"; then
             vendor/bin/pint "${FILES[@]}"
             git diff -- "${FILES[@]}"
@@ -54,6 +60,8 @@ jobs:
           bash -n scripts/deployment/deploy-staging.sh
           php -l scripts/deployment/configure-staging.php
           php -l scripts/deployment/staging-config.php
+          php -l scripts/testing/staging-functional-guard.php
+          node --check scripts/testing/staging-functional-browser.mjs
           python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
           if bash scripts/deployment/deploy-staging.sh /home/u304629909/domains/tinggaljalan.com invalid invalid invalid invalid; then
@@ -201,6 +209,12 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/staging-ssh/config.json" "$GITHUB_SHA" "$RUNNER_TEMP/staging-review"
+      - name: Verify disabled gateways and synthetic booking flows after deployment
+        if: inputs.functional_checks
+        run: |
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            "/opt/alt/php84/usr/bin/php /dev/stdin '$GITHUB_SHA'" < scripts/testing/staging-functional-guard.php
+          node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/staging-ssh/config.json" "$GITHUB_SHA" "$RUNNER_TEMP/staging-review" "$GITHUB_RUN_ID"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -241,6 +255,22 @@ jobs:
         run: |
           [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
           python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/browser-review/config.json"
+      - name: Verify isolated database and disabled integrations before submissions
+        if: inputs.functional_checks
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/browser-review/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/browser-review/known_hosts"
+          ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
+            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
+            < scripts/testing/staging-functional-guard.php
       - name: Review existing desktop and mobile preview without hosting writes
         env:
           REVISION: ${{ inputs.revision }}
@@ -248,6 +278,11 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
+      - name: Verify synthetic booking and admin sign-in on desktop and mobile
+        if: inputs.functional_checks
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review" "$GITHUB_RUN_ID"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
