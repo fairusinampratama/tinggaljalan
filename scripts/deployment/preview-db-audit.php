@@ -1,0 +1,32 @@
+<?php
+ini_set('zend.exception_ignore_args', '1');
+try {
+    $preview = '/home/u304629909/domains/preview.tinggaljalan.com';
+    $production = '/home/u304629909/domains/tinggaljalan.com';
+    require $preview.'/deployments/current/vendor/autoload.php';
+    foreach (['preview' => $preview, 'production' => $production] as $label => $root) {
+        $env = Dotenv\Dotenv::parse(file_get_contents($root.'/deployments/shared/.env'));
+        if (($env['DB_HOST'] ?? '') !== 'localhost' || !empty($env['DB_URL'])) throw new RuntimeException();
+        $db = $env['DB_DATABASE'];
+        if (!preg_match('/^u304629909_[a-zA-Z0-9_]+$/', $db)) throw new RuntimeException();
+        if ($label === 'preview' && $db !== 'u304629909_tj_preview') throw new RuntimeException();
+        if ($label === 'production' && $db === 'u304629909_tj_preview') throw new RuntimeException();
+        $pdo = new PDO('mysql:host=localhost;dbname='.$db, $env['DB_USERNAME'], $env['DB_PASSWORD'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        $pdo->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+        echo $label.' schema: '.$pdo->query('SELECT DATABASE()')->fetchColumn()."\n";
+        $tables = $pdo->query('SHOW FULL TABLES')->fetchAll(PDO::FETCH_NUM);
+        foreach ($tables as [$table, $type]) {
+            if (!preg_match('/^[a-z0-9_]+$/', $table) || $type !== 'BASE TABLE') throw new RuntimeException();
+            $columns = $pdo->query('SHOW COLUMNS FROM `'.$table.'`')->fetchAll(PDO::FETCH_ASSOC);
+            echo $label.' '.$table.' columns: '.implode(',', array_column($columns, 'Field'))."\n";
+            echo $label.' '.$table.' rows: '.$pdo->query('SELECT COUNT(*) FROM `'.$table.'`')->fetchColumn()."\n";
+        }
+        $pdo->rollBack();
+        echo $label.' revision: '.trim(file_get_contents($root.'/deployments/current/REVISION'))."\n";
+    }
+    echo "Read-only schema audit completed; no row values or credentials disclosed.\n";
+} catch (Throwable $error) {
+    fwrite(STDERR, "Read-only schema audit failed; no credentials or row values logged.\n");
+    exit(1);
+}

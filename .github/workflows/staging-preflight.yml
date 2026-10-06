@@ -9,6 +9,7 @@ on:
         options:
           - connection
           - readiness
+          - database-audit
           - export-host-record
         default: connection
   pull_request:
@@ -69,7 +70,17 @@ jobs:
           mkdir -p "$RUNNER_TEMP/staging-ssh"
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
+      - name: Inspect real database schema without row values
+        if: inputs.operation == 'database-audit'
+        run: |
+          ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php /dev/stdin" \
+            < scripts/deployment/preview-db-audit.php
       - name: Inspect staging prerequisites without changing hosting
+        if: inputs.operation != 'database-audit'
         run: |
           ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
