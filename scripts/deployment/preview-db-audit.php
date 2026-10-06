@@ -60,6 +60,7 @@ try {
                         if ($field === 'testimonials') {
                             if (! is_array($value) || ! array_is_list($value)) {
                                 $unreviewed++;
+
                                 continue;
                             }
                             foreach ($value as $item) {
