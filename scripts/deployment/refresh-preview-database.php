@@ -166,6 +166,7 @@ try {
     refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $state['production_revision']);
     $stage = 'public tourism images';
     $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);
+    $stage = 'functional route selection';
     $route = $target->query('SELECT slug FROM tour_packages WHERE is_active = 1 AND (base_price_idr > 0 OR EXISTS (SELECT 1 FROM package_price_tiers WHERE tour_package_id = tour_packages.id AND min_pax <= 2 AND (max_pax IS NULL OR max_pax >= 2) AND price_idr > 0)) ORDER BY id LIMIT 1')->fetchColumn();
     refreshAssert(is_string($route) && preg_match('/^[a-z0-9-]+$/', $route) === 1);
     refreshAssert(file_put_contents(__DIR__.'/functional-route.json', json_encode(['functional_route' => $route], JSON_THROW_ON_ERROR)) !== false);
@@ -173,7 +174,9 @@ try {
     $target->exec('SET FOREIGN_KEY_CHECKS=1');
     $source->rollBack();
     $stage = 'responsive tourism images';
+    umask(0022);
     $process = proc_open(['/opt/alt/php84/usr/bin/php', $release.'/artisan', 'images:generate-responsive', '--missing'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $release);
+    umask(0077);
     refreshAssert(is_resource($process));
     foreach ($pipes as $pipe) {
         stream_get_contents($pipe);
@@ -222,6 +225,17 @@ try {
         rename($offline.'.refresh-next', $offline);
         if (is_file($shared.'/storage/framework/down')) {
             unlink($shared.'/storage/framework/down');
+        }
+    }
+    if (isset($GLOBALS['refreshDetail'])) {
+        fwrite(STDERR, 'Safe failure category: '.$GLOBALS['refreshDetail'].PHP_EOL);
+    }
+    if ($error instanceof PDOException) {
+        fwrite(STDERR, 'Database diagnostic code: '.(int) ($error->errorInfo[1] ?? 0).PHP_EOL);
+    }
+    foreach (['quota', 'Permission denied', 'No space left', 'Invalid JSON'] as $reason) {
+        if (str_contains($error->getMessage(), $reason)) {
+            fwrite(STDERR, 'Host error category: '.$reason.PHP_EOL);
         }
     }
     fwrite(STDERR, 'Preview refresh failed at '.$stage.'. No credentials or row values logged.'.PHP_EOL);

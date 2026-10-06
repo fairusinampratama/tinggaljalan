@@ -177,12 +177,15 @@ function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previe
 {
     $sourceRoot = $productionRoot.'/deployments/shared/storage/app/public';
     $targetRoot = $previewShared.'/storage/app/public/admin/preview-refresh';
+    $GLOBALS['refreshDetail'] = 'media-source-root';
     refreshAssert(realpath($sourceRoot) === $sourceRoot);
+    $GLOBALS['refreshDetail'] = 'media-destination-directory';
     refreshAssert(! is_link($targetRoot));
     if (! is_dir($targetRoot)) {
         refreshAssert(mkdir($targetRoot, 0755));
     }
     refreshAssert(realpath($targetRoot) === $targetRoot);
+    refreshAssert(chmod($targetRoot, 0755));
     $copied = [];
     $replace = function ($value) use (&$replace, &$copied, $sourceRoot, $targetRoot) {
         if (is_array($value)) {
@@ -196,16 +199,21 @@ function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previe
         if (! preg_match('~^(?:admin/|uploads/)[a-zA-Z0-9_./-]+\.(?:jpg|jpeg|png|webp)$~i', $path)) {
             return $value;
         }
+        $GLOBALS['refreshDetail'] = 'media-source-path';
         refreshAssert(! in_array('..', explode('/', $path), true));
+        $GLOBALS['refreshDetail'] = 'media-source-image';
         $source = realpath($sourceRoot.'/'.$path);
         refreshAssert(is_string($source) && str_starts_with($source, $sourceRoot.'/') && is_file($source) && getimagesize($source) !== false);
         $name = hash_file('sha256', $source).'.'.strtolower(pathinfo($source, PATHINFO_EXTENSION));
         $destination = $targetRoot.'/'.$name;
+        $GLOBALS['refreshDetail'] = 'media-destination-file';
         refreshAssert(! is_link($destination));
         if (! is_file($destination)) {
+            $GLOBALS['refreshDetail'] = 'media-copy-write';
             refreshAssert(copy($source, $destination));
             chmod($destination, 0644);
         }
+        $GLOBALS['refreshDetail'] = 'media-digest';
         refreshAssert(hash_file('sha256', $destination) === hash_file('sha256', $source));
         $copied[$name] = true;
 
@@ -220,11 +228,14 @@ function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previe
                 $updated = $replace($value);
                 if ($updated !== $value) {
                     $encoded = $json ? json_encode($updated, JSON_THROW_ON_ERROR) : $updated;
+                    $GLOBALS['refreshDetail'] = 'media-row-update';
                     $db->prepare('UPDATE '.refreshIdentifier($table).' SET '.refreshIdentifier($column).' = ? WHERE id = ?')->execute([$encoded, $row['id']]);
                 }
             }
         }
     }
+
+    unset($GLOBALS['refreshDetail']);
 
     return count($copied);
 }
