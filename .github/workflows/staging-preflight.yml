@@ -4,11 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Read-only operation
+        description: Operation (database refresh replaces preview data)
         type: choice
         options:
           - connection
           - readiness
+          - database-audit
+          - repair-preview-logo
+          - refresh-preview-database
           - export-host-record
         default: connection
   pull_request:
@@ -25,14 +28,22 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - name: Verify branding preservation and deployment rollback
+        run: |
+          php -l scripts/deployment/repair-preview-logo.php
+          php -l scripts/deployment/configure-staging.php
+          python3 tests/deployment/test_staging_deploy.py
       - name: Validate script syntax
         run: bash -n scripts/deployment/staging-preflight.sh
 
   connection:
-    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record'
+    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record' && inputs.operation != 'refresh-preview-database'
     needs: validate
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     environment: staging
     concurrency:
       group: staging
@@ -69,7 +80,25 @@ jobs:
           mkdir -p "$RUNNER_TEMP/staging-ssh"
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/staging-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
+      - name: Inspect real database schema without row values
+        if: inputs.operation == 'database-audit'
+        run: |
+          ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php /dev/stdin" \
+            < scripts/deployment/preview-db-audit.php
+      - name: Restore copied public logo without touching production
+        if: inputs.operation == 'repair-preview-logo'
+        run: |
+          ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            -o ConnectTimeout=20 "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php /dev/stdin" \
+            < scripts/deployment/repair-preview-logo.php
       - name: Inspect staging prerequisites without changing hosting
+        if: inputs.operation != 'database-audit' && inputs.operation != 'repair-preview-logo'
         run: |
           ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
@@ -77,6 +106,9 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
+      - name: Install image comparison helper
+        if: inputs.operation == 'repair-preview-logo'
+        run: python3 -m pip install --quiet Pillow
       - name: Inspect existing preview authentication without changing hosting
         env:
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
@@ -99,10 +131,54 @@ jobs:
           print('Preview PHP header:', response.headers.get('X-Powered-By', 'not advertised'))
           body = response.read(16384)
           print('Preview setup placeholder returned:', b'Preview setup incomplete' in body)
+          if os.environ['OPERATION'] == 'repair-preview-logo':
+              import re, html, json, hashlib
+              body += response.read()
+              match = re.search(r'data-page=([\"\'])(.*?)\1', body.decode(), re.S)
+              assert match, 'Missing public page payload'
+              script = re.search(r'<script\b[^>]*data-page=[\"\']app[\"\'][^>]*>(.*?)</script>', body.decode(), re.S)
+              payload = json.loads(script.group(1) if script else html.unescape(match.group(2)))
+              logo = payload['props']['publicData']['site']['logoUrl']
+              assert logo.startswith('/storage/admin/preview-refresh/'), 'Logo still uses a fallback'
+              image_request = urllib.request.Request('https://preview.tinggaljalan.com' + logo)
+              image_request.add_header('Authorization', 'Basic ' + token)
+              image = urllib.request.urlopen(image_request, timeout=30).read()
+              from PIL import Image
+              from io import BytesIO
+              production_html = urllib.request.urlopen('https://tinggaljalan.com/', timeout=30).read().decode()
+              production_script = re.search(r'<script\b[^>]*data-page=[\"\']app[\"\'][^>]*>(.*?)</script>', production_html, re.S)
+              production_payload = json.loads(production_script.group(1))
+              production_logo = production_payload['props']['publicData']['site']['logoUrl']
+              production_image = urllib.request.urlopen('https://tinggaljalan.com' + production_logo, timeout=30).read()
+              rendered_preview = Image.open(BytesIO(image)).convert('RGBA')
+              rendered_production = Image.open(BytesIO(production_image)).convert('RGBA')
+              assert rendered_preview.size == rendered_production.size, 'Logo dimensions mismatch'
+              assert rendered_preview.tobytes() == rendered_production.tobytes(), 'Logo pixels mismatch' 
+              print('Authenticated preview logo URL:', logo)
+              print('Served preview logo pixels match served production logo: yes')
           PY
+      - uses: actions/setup-node@v4
+        if: inputs.operation == 'repair-preview-logo'
+        with:
+          node-version: '22'
+      - name: Verify actual navbar logo on desktop and mobile
+        if: inputs.operation == 'repair-preview-logo'
+        env:
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+          node scripts/testing/staging-logo-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: inputs.operation == 'repair-preview-logo'
+        with:
+          name: preview-logo-verification-${{ github.run_id }}
+          path: logo-verification
+          retention-days: 7
+          if-no-files-found: error
       - name: Record result
         run: |
-          printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '## Staging preflight\n\nSelected staging operation passed. Logo repair changes only the preview public-logo reference and keeps a private backup; other connection checks are read-only.\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Remove runner credentials
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/staging-ssh"
@@ -138,3 +214,8 @@ jobs:
           path: ${{ runner.temp }}/staging-known-hosts
           retention-days: 1
           if-no-files-found: error
+
+  refresh-preview-database:
+    if: github.event_name == 'workflow_dispatch' && inputs.operation == 'refresh-preview-database'
+    uses: ./.github/workflows/preview-database-refresh.yml
+    secrets: inherit

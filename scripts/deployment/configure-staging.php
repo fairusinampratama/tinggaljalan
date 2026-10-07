@@ -3,7 +3,6 @@
 use App\Models\EmailGatewaySetting;
 use App\Models\NotificationSetting;
 use App\Models\PaymentSetting;
-use App\Models\SiteSetting;
 use App\Models\User;
 use App\Models\WhatsappGatewaySetting;
 use Illuminate\Contracts\Console\Kernel;
@@ -66,7 +65,7 @@ NotificationSetting::current()->update(['is_enabled' => false, 'email_enabled' =
 PaymentSetting::midtrans()->update(['is_enabled' => false, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null]);
 PaymentSetting::doku()->update(['is_enabled' => false, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null]);
 PaymentSetting::query()->update(['is_enabled' => false, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null]);
-SiteSetting::query()->update(['logo_url' => '/images/logo-tj.png']);
+// Preserve public branding copied by the preview refresh. The frontend supplies its own fallback.
 $admin = User::firstOrNew(['email' => 'preview-admin@tinggaljalan.test']);
 $admin->forceFill(['name' => 'Preview Admin', 'password' => Hash::make($input['admin_password']), 'is_admin' => true])->save();
 if (User::where('email', 'admin@tinggaljalan.test')->exists()) {

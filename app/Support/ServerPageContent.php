@@ -326,12 +326,16 @@ class ServerPageContent
 
     private static function coreLinks(): array
     {
-        return [
+        $links = [
             ['label' => 'Indonesia tour packages', 'url' => '/routes'],
             ['label' => 'Travel guides and news', 'url' => '/news'],
             ['label' => 'About Tinggal Jalan', 'url' => '/about-us'],
             ['label' => 'Bromo tour packages', 'url' => '/routes/BROMO'],
             ['label' => 'Chat with Tinggal Jalan on WhatsApp', 'url' => 'https://wa.me/62811388330'],
         ];
+
+        return app()->environment('staging')
+            ? array_values(array_filter($links, fn ($link) => ! str_starts_with($link['url'], 'https://wa.me/')))
+            : $links;
     }
 }
