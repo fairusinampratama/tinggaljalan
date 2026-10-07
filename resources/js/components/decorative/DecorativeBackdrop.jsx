@@ -5,10 +5,10 @@ import mobile from '../../../images/decorative/approved-source/regional-mobile.s
 const motif = (asset) => ({ '--motif': `url("${asset}")` });
 
 /** A bounded section composition: content can grow without scaling the artwork. */
-export function DecorativeBackdrop({ variant = 'home', children }) {
+export function DecorativeBackdrop({ variant = 'home', className = '', children }) {
   const quiet = variant === 'transaction';
   return (
-    <div className="decorative-canvas" data-backdrop={variant}>
+    <div className={`decorative-canvas ${className}`} data-backdrop={variant}>
       <div className="decorative-backdrop" aria-hidden="true">
         {!quiet && variant !== 'continuation' ? <span className="decorative-backdrop__orangutan" style={motif(orangutan)} /> : null}
         {!quiet ? <span className="decorative-backdrop__flow" style={motif(flow)} /> : null}

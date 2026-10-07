@@ -18,7 +18,7 @@ export function AppLayout({ children }) {
   return (
     <main className="min-h-screen w-full min-w-0 overflow-x-clip bg-canvas text-ink">
       <Navbar language={language} setLanguage={setLanguage} t={t} />
-      {pathname === '/' ? children : <DecorativeBackdrop key={pathname} variant={backdrop}>{children}</DecorativeBackdrop>}
+      {pathname === '/' || pathname === '/privacy-policy' ? children : <DecorativeBackdrop key={pathname} variant={backdrop}>{children}</DecorativeBackdrop>}
       <Footer t={t} whatsappUrl={whatsappUrl} />
       <FloatingWhatsAppButton whatsappUrl={whatsappUrl} label={t.chat} avoidMobileBottomBar={isRouteDetailPage} />
       <ConsentBanner t={t} />

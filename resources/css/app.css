@@ -215,11 +215,10 @@ label {
 }
 [data-backdrop="home"],
 [data-backdrop="continuation"] { padding-bottom: 2.5rem; }
-[data-backdrop="continuation"] .decorative-backdrop__mobile { top: auto; bottom: 2.5rem; }
-[data-backdrop="detail"] .decorative-backdrop__mobile,
-[data-backdrop="public"] .decorative-backdrop__mobile,
-[data-backdrop="transaction"] .decorative-backdrop__mobile { top: 5rem; }
-[data-backdrop="transaction"] .decorative-backdrop__mobile { opacity: .16; }
+[data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__mobile,
+[data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__mobile,
+[data-backdrop="transaction"] > .decorative-backdrop > .decorative-backdrop__mobile { top: 5rem; }
+[data-backdrop="transaction"] > .decorative-backdrop > .decorative-backdrop__mobile { opacity: .16; }
 /* Preserve opaque cards, photos, and deliberately tinted content groups. */
 .decorative-canvas__content > section.bg-white,
 .decorative-canvas__content > section.bg-canvas,
@@ -234,7 +233,9 @@ label {
 }
 @media (min-width: 1280px) {
     .route-detail-intro,
-    [data-backdrop="public"] .decorative-intro { padding-left: 7rem; }
+    [data-backdrop="public"] .decorative-intro {
+        padding-left: clamp(7rem, calc(52rem - 50vw), 10rem);
+    }
     .decorative-backdrop__mobile { display: none !important; }
     .decorative-backdrop__orangutan {
         display: block !important;
@@ -257,9 +258,13 @@ label {
     }
     [data-backdrop="home"],
     [data-backdrop="continuation"] { padding-bottom: 4rem; }
-    [data-backdrop="detail"] .decorative-backdrop__orangutan,
-    [data-backdrop="public"] .decorative-backdrop__orangutan { top: 6rem; }
-    [data-backdrop="detail"] .decorative-backdrop__flow,
-    [data-backdrop="public"] .decorative-backdrop__flow { top: 6rem; }
-    [data-backdrop="transaction"] .decorative-backdrop__mobile { display: block !important; }
+    [data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__orangutan,
+    [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__orangutan { top: 6rem; }
+    [data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__flow,
+    [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__flow { top: 6rem; }
+    .decorative-canvas--story-imaged > .decorative-backdrop > .decorative-backdrop__flow {
+        left: max(1rem, calc(50% - 44rem));
+        right: auto;
+    }
+    [data-backdrop="transaction"] > .decorative-backdrop > .decorative-backdrop__mobile { display: block !important; }
 }
