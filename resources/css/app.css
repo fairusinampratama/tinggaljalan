@@ -262,6 +262,7 @@ label {
     [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__orangutan { top: 6rem; }
     [data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__flow,
     [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__flow { top: 6rem; }
+    [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__band { height: 3rem; }
     .decorative-canvas--story-imaged > .decorative-backdrop > .decorative-backdrop__flow {
         left: max(1rem, calc(50% - 44rem));
         right: auto;
