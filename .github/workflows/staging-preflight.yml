@@ -43,7 +43,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record' && inputs.operation != 'refresh-preview-database'
     needs: validate
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     environment: staging
     concurrency:
       group: staging
@@ -157,9 +157,28 @@ jobs:
               print('Authenticated preview logo URL:', logo)
               print('Served preview logo pixels match served production logo: yes')
           PY
+      - uses: actions/setup-node@v4
+        if: inputs.operation == 'repair-preview-logo'
+        with:
+          node-version: '22'
+      - name: Verify actual navbar logo on desktop and mobile
+        if: inputs.operation == 'repair-preview-logo'
+        env:
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+          node scripts/testing/staging-logo-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: inputs.operation == 'repair-preview-logo'
+        with:
+          name: preview-logo-verification-${{ github.run_id }}
+          path: logo-verification
+          retention-days: 7
+          if-no-files-found: error
       - name: Record result
         run: |
-          printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '## Staging preflight\n\nSelected staging operation passed. Logo repair changes only the preview public-logo reference and keeps a private backup; other connection checks are read-only.\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Remove runner credentials
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/staging-ssh"
