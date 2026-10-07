@@ -99,7 +99,7 @@ export function RoutesPage() {
       <Seo {...(props.seo ?? {})} language={language} />
       <PageShell eyebrow={t.packagesAndRoutes} title={title}>
       <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_320px] lg:items-end">
-        <div>
+        <div className="decorative-intro">
           <p className="max-w-3xl text-base font-semibold leading-7 text-muted">{intro}</p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-sm font-bold text-ink">
             <Sparkles className="h-4 w-4 text-secondary" />

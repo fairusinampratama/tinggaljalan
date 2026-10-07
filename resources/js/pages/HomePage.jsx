@@ -35,6 +35,8 @@ export function HomePage() {
         <PromotionsSection items={props.promotions} />
         <DecorativeBackdrop variant="home">
           <DestinationSection items={props.destinations} />
+        </DecorativeBackdrop>
+        <DecorativeBackdrop variant="continuation">
           <RouteArticlesSection
             t={t}
             routes={featuredRouteItems}
