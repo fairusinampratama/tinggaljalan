@@ -133,7 +133,8 @@ jobs:
               body += response.read()
               match = re.search(r'data-page=([\"\'])(.*?)\1', body.decode(), re.S)
               assert match, 'Missing public page payload'
-              payload = json.loads(html.unescape(match.group(2)))
+              script = re.search(r'<script\b[^>]*data-page=[\"\']app[\"\'][^>]*>(.*?)</script>', body.decode(), re.S)
+              payload = json.loads(script.group(1) if script else html.unescape(match.group(2)))
               logo = payload['props']['publicData']['site']['logoUrl']
               assert logo.startswith('/storage/admin/preview-refresh/'), 'Logo still uses a fallback'
               image_request = urllib.request.Request('https://preview.tinggaljalan.com' + logo)
