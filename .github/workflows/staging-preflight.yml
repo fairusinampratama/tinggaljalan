@@ -10,6 +10,7 @@ on:
           - connection
           - readiness
           - database-audit
+          - repair-preview-logo
           - refresh-preview-database
           - export-host-record
         default: connection
@@ -27,6 +28,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+      - name: Verify branding preservation and deployment rollback
+        run: |
+          php -l scripts/deployment/repair-preview-logo.php
+          php -l scripts/deployment/configure-staging.php
+          python3 tests/deployment/test_staging_deploy.py
       - name: Validate script syntax
         run: bash -n scripts/deployment/staging-preflight.sh
 
@@ -80,8 +89,16 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php /dev/stdin" \
             < scripts/deployment/preview-db-audit.php
+      - name: Restore copied public logo without touching production
+        if: inputs.operation == 'repair-preview-logo'
+        run: |
+          ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            -o ConnectTimeout=20 "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php /dev/stdin" \
+            < scripts/deployment/repair-preview-logo.php
       - name: Inspect staging prerequisites without changing hosting
-        if: inputs.operation != 'database-audit'
+        if: inputs.operation != 'database-audit' && inputs.operation != 'repair-preview-logo'
         run: |
           ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
@@ -111,6 +128,20 @@ jobs:
           print('Preview PHP header:', response.headers.get('X-Powered-By', 'not advertised'))
           body = response.read(16384)
           print('Preview setup placeholder returned:', b'Preview setup incomplete' in body)
+          if os.environ['OPERATION'] == 'repair-preview-logo':
+              import re, html, json, hashlib
+              body += response.read()
+              match = re.search(r'data-page=([\"\'])(.*?)\1', body.decode(), re.S)
+              assert match, 'Missing public page payload'
+              payload = json.loads(html.unescape(match.group(2)))
+              logo = payload['props']['publicData']['site']['logoUrl']
+              assert logo.startswith('/storage/admin/preview-refresh/'), 'Logo still uses a fallback'
+              image_request = urllib.request.Request('https://preview.tinggaljalan.com' + logo)
+              image_request.add_header('Authorization', 'Basic ' + token)
+              image = urllib.request.urlopen(image_request, timeout=30).read()
+              assert hashlib.sha256(image).hexdigest() == logo.rsplit('/', 1)[1].split('.')[0], 'Copied logo bytes mismatch'
+              print('Authenticated preview logo URL:', logo)
+              print('Copied logo HTTP bytes match production content hash: yes')
           PY
       - name: Record result
         run: |

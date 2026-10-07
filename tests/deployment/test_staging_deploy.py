@@ -50,6 +50,13 @@ class StagingTransactionTest(unittest.TestCase):
             server.server_close()
             thread.join()
 
+    def test_redeployment_preserves_refreshed_public_branding(self):
+        source = (SOURCE / 'scripts/deployment/configure-staging.php').read_text()
+        self.assertNotIn("SiteSetting::query()->update", source)
+        self.assertNotIn("'logo_url' => '/images/logo-tj.png'", source)
+        self.assertIn("PaymentSetting::query()->update(['is_enabled' => false", source)
+        self.assertIn("'email_enabled' => false, 'whatsapp_enabled' => false", source)
+
     def test_production_root_is_rejected_before_any_work(self):
         result = subprocess.run(["bash", str(SOURCE / "scripts/deployment/deploy-staging.sh"),
                                  "/home/u304629909/domains/tinggaljalan.com", SHA, "unused", "0" * 64, "unused"], capture_output=True)
