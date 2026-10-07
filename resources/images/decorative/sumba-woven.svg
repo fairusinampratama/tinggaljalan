@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 350" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="miter">
+  <defs>
+    <g id="d"><path d="M0-45h9v9h9v9h9v9h9v9h9v18h-9v9h-9v9h-9v9H9v9H-9v-9h-9v-9h-9v-9h-9v-9h-9V-9h9v-9h9v-9h9v-9h9v-9Z"/><path d="m0-27 27 27L0 27-27 0Z"/><path d="m0-12 12 12L0 12-12 0Z"/></g>
+  </defs>
+  <use href="#d" x="112" y="70"/><use href="#d" x="58" y="183"/><use href="#d" x="166" y="183"/><use href="#d" x="112" y="296"/>
+  <path d="m58 52 9 18-9 18-9-18Zm108 0 9 18-9 18-9-18ZM112 165l9 18-9 18-9-18Zm-54 113 9 18-9 18-9-18Zm108 0 9 18-9 18-9-18Z"/>
+</svg>

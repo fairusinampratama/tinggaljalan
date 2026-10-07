@@ -166,13 +166,12 @@ label {
     overflow-wrap: anywhere;
 }
 
-/* Homepage atmosphere: opaque cards sit above faint, clipped edge line art. */
+/* Decorative regional line art lives below content and outside interaction layers. */
 .decorative-canvas {
     position: relative;
     isolation: isolate;
     background: var(--color-canvas);
 }
-
 .decorative-backdrop {
     position: absolute;
     inset: 0;
@@ -181,49 +180,86 @@ label {
     user-select: none;
     z-index: -1;
 }
-
 .decorative-backdrop > span {
     position: absolute;
     display: block;
     mask-image: var(--motif);
     mask-size: contain;
     mask-repeat: no-repeat;
+    background: var(--color-secondary);
+    opacity: .22;
 }
-
-.decorative-backdrop__landscape {
-    top: 0.25rem;
-    left: -4.5rem;
-    width: 8rem;
-    aspect-ratio: 520 / 250;
-    background: var(--color-primary);
-    opacity: 0.055;
+.decorative-backdrop__orangutan { display: none; }
+.decorative-backdrop__kawung {
+    right: -1.9rem;
+    top: 5.3rem;
+    width: 4.3rem;
+    aspect-ratio: 240 / 280;
 }
-
-.decorative-backdrop .decorative-backdrop__botanical {
-    display: none;
+.decorative-backdrop .decorative-backdrop__mangosteen { display: none; }
+.decorative-backdrop__woven {
+    left: -1.7rem;
+    bottom: 2rem;
+    width: 4rem;
+    aspect-ratio: 210 / 350;
 }
-
-/* Only these two white homepage sections expose the already-white canvas. */
+/* Only page-level white canvases are transparent. Cards keep their own fills. */
+.decorative-canvas__content > section.bg-white,
+.decorative-canvas__content > section.bg-canvas,
+.decorative-canvas__content > article.bg-canvas,
+.decorative-canvas__content > .about-page > section.bg-white,
 .home-page .decorative-canvas #destination,
-.home-page .decorative-canvas #articles {
-    background-color: transparent;
-}
-
+.home-page .decorative-canvas #articles { background-color: transparent; }
+[data-backdrop="home"] .decorative-backdrop__kawung { top: .3rem; }
+[data-backdrop="transaction"] .decorative-backdrop > span { opacity: .16; }
+[data-backdrop="transaction"] .decorative-backdrop__woven { display: none; }
+[data-backdrop="public"] .decorative-backdrop__woven { top: 30rem; bottom: auto; }
 @media (min-width: 768px) {
-    .decorative-backdrop__landscape {
-        top: 1.5rem;
-        left: -7rem;
-        width: clamp(22rem, 30vw, 32rem);
-        opacity: 0.075;
+    .decorative-backdrop__kawung {
+        top: 5.3rem;
+        right: -2.8rem;
+        width: 9rem;
     }
-
-    .decorative-backdrop .decorative-backdrop__botanical {
+    .decorative-backdrop__woven {
+        right: -2rem;
+        left: auto;
+        width: 8rem;
+        top: 25rem;
+        bottom: auto;
+    }
+    .decorative-backdrop .decorative-backdrop__mangosteen {
         display: block;
-        right: -5.5rem;
-        bottom: 2rem;
-        width: clamp(12rem, 18vw, 19rem);
-        aspect-ratio: 280 / 410;
-        background: var(--color-secondary);
-        opacity: 0.085;
+        left: -3.6rem;
+        top: 29rem;
+        width: 8rem;
+        aspect-ratio: 220 / 300;
     }
+    [data-backdrop="home"] .decorative-backdrop__kawung { top: 2rem; }
+    [data-backdrop="home"] .decorative-backdrop__woven { top: 13rem; }
+    [data-backdrop="transaction"] .decorative-backdrop__kawung { width: 7rem; }
+    [data-backdrop="transaction"] .decorative-backdrop__woven {
+        display: block;
+        left: -3rem;
+        right: auto;
+        top: auto;
+        bottom: 1rem;
+        width: 7rem;
+    }
+}
+@media (min-width: 1280px) {
+    .decorative-backdrop__orangutan {
+        display: block;
+        position: absolute;
+        top: 11rem;
+        left: -7rem;
+        width: 15rem;
+        height: auto;
+        opacity: .15;
+    }
+    .decorative-backdrop__kawung { width: 12rem; right: -2.5rem; }
+    .decorative-backdrop__woven { width: 12rem; right: -3.5rem; }
+    .decorative-backdrop .decorative-backdrop__mangosteen { width: 11rem; left: -5rem; }
+    [data-backdrop="home"] .decorative-backdrop__orangutan { top: 4rem; width: 20rem; left: -7rem; }
+    [data-backdrop="home"] .decorative-backdrop__mangosteen { top: 27rem; }
+    [data-backdrop="public"] .decorative-backdrop__orangutan { top: 35rem; }
 }
