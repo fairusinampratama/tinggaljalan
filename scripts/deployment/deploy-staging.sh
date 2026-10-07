@@ -158,7 +158,11 @@ trap rollback ERR
 "$PHP" "$RELEASE/artisan" migrate --force
 "$PHP" "$RELEASE/scripts/deployment/configure-staging.php" "$RELEASE" "$ROOT" initialize "$CONFIG"
 for image in hero-bromo.jpg destination-tumpak-sewu.jpg; do
-    cp "$RELEASE/public/images/$image" "$SHARED/storage/app/public/admin/hero/$image"
+    destination="$SHARED/storage/app/public/admin/hero/$image"
+    [[ ! -L "$destination" ]]
+    if [[ ! -e "$destination" ]]; then
+        cp "$RELEASE/public/images/$image" "$destination"
+    fi
 done
 "$PHP" "$RELEASE/artisan" images:generate-responsive --missing
 "$PHP" "$RELEASE/artisan" config:cache
