@@ -106,6 +106,9 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
+      - name: Install image comparison helper
+        if: inputs.operation == 'repair-preview-logo'
+        run: python3 -m pip install --quiet Pillow
       - name: Inspect existing preview authentication without changing hosting
         env:
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
@@ -140,9 +143,19 @@ jobs:
               image_request = urllib.request.Request('https://preview.tinggaljalan.com' + logo)
               image_request.add_header('Authorization', 'Basic ' + token)
               image = urllib.request.urlopen(image_request, timeout=30).read()
-              assert hashlib.sha256(image).hexdigest() == logo.rsplit('/', 1)[1].split('.')[0], 'Copied logo bytes mismatch'
+              from PIL import Image
+              from io import BytesIO
+              production_html = urllib.request.urlopen('https://tinggaljalan.com/', timeout=30).read().decode()
+              production_script = re.search(r'<script\b[^>]*data-page=[\"\']app[\"\'][^>]*>(.*?)</script>', production_html, re.S)
+              production_payload = json.loads(production_script.group(1))
+              production_logo = production_payload['props']['publicData']['site']['logoUrl']
+              production_image = urllib.request.urlopen('https://tinggaljalan.com' + production_logo, timeout=30).read()
+              rendered_preview = Image.open(BytesIO(image)).convert('RGBA')
+              rendered_production = Image.open(BytesIO(production_image)).convert('RGBA')
+              assert rendered_preview.size == rendered_production.size, 'Logo dimensions mismatch'
+              assert rendered_preview.tobytes() == rendered_production.tobytes(), 'Logo pixels mismatch' 
               print('Authenticated preview logo URL:', logo)
-              print('Copied logo HTTP bytes match production content hash: yes')
+              print('Served preview logo pixels match served production logo: yes')
           PY
       - name: Record result
         run: |
