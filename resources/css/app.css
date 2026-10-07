@@ -165,3 +165,65 @@ button,
 label {
     overflow-wrap: anywhere;
 }
+
+/* Homepage atmosphere: opaque cards sit above faint, clipped edge line art. */
+.decorative-canvas {
+    position: relative;
+    isolation: isolate;
+    background: var(--color-canvas);
+}
+
+.decorative-backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    z-index: -1;
+}
+
+.decorative-backdrop > span {
+    position: absolute;
+    display: block;
+    mask-image: var(--motif);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+}
+
+.decorative-backdrop__landscape {
+    top: 0.25rem;
+    left: -4.5rem;
+    width: 8rem;
+    aspect-ratio: 520 / 250;
+    background: var(--color-primary);
+    opacity: 0.055;
+}
+
+.decorative-backdrop .decorative-backdrop__botanical {
+    display: none;
+}
+
+/* Only these two white homepage sections expose the already-white canvas. */
+.home-page .decorative-canvas #destination,
+.home-page .decorative-canvas #articles {
+    background-color: transparent;
+}
+
+@media (min-width: 768px) {
+    .decorative-backdrop__landscape {
+        top: 1.5rem;
+        left: -7rem;
+        width: clamp(22rem, 30vw, 32rem);
+        opacity: 0.075;
+    }
+
+    .decorative-backdrop .decorative-backdrop__botanical {
+        display: block;
+        right: -5.5rem;
+        bottom: 2rem;
+        width: clamp(12rem, 18vw, 19rem);
+        aspect-ratio: 280 / 410;
+        background: var(--color-secondary);
+        opacity: 0.085;
+    }
+}

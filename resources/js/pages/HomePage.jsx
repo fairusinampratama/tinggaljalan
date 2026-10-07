@@ -4,6 +4,7 @@ import { DestinationSection } from '../components/sections/DestinationSection';
 import { Hero } from '../components/sections/Hero';
 import { RouteArticlesSection } from '../components/sections/RouteArticlesSection';
 import { PromotionsSection } from '../components/sections/PromotionsSection';
+import { DecorativeBackdrop } from '../components/decorative/DecorativeBackdrop';
 import { Seo } from '../components/seo/Seo';
 import { useBooking } from '../context/BookingContext';
 
@@ -32,14 +33,16 @@ export function HomePage() {
           whatsappUrl={whatsappUrl}
         />
         <PromotionsSection items={props.promotions} />
-        <DestinationSection items={props.destinations} />
-        <RouteArticlesSection
-          t={t}
-          routes={featuredRouteItems}
-          setSelectedRouteId={setSelectedRouteId}
-          whatsappUrl={whatsappUrl}
-          showViewAll
-        />
+        <DecorativeBackdrop variant="home">
+          <DestinationSection items={props.destinations} />
+          <RouteArticlesSection
+            t={t}
+            routes={featuredRouteItems}
+            setSelectedRouteId={setSelectedRouteId}
+            whatsappUrl={whatsappUrl}
+            showViewAll
+          />
+        </DecorativeBackdrop>
         <Suspense fallback={null}>
           <SocialProofSection
             benefits={publicData.home?.whyChooseItems}
