@@ -166,7 +166,7 @@ label {
     overflow-wrap: anywhere;
 }
 
-/* Section-relative SVG compositions, traced from the reviewed visual concept.
+/* Section-relative SVG compositions from the approved source illustrations.
    All dimensions are bounded; no artwork scales with page/content height. */
 .decorative-canvas {
     position: relative;
@@ -193,11 +193,10 @@ label {
 }
 .decorative-backdrop > span { position: absolute; }
 .decorative-backdrop__orangutan,
-.decorative-backdrop__foliage,
 .decorative-backdrop__flow { display: none !important; }
 .decorative-backdrop__mobile {
     width: 7rem;
-    aspect-ratio: 151 / 112;
+    aspect-ratio: 1670 / 422;
     top: .5rem;
     right: .5rem;
 }
@@ -242,21 +241,14 @@ label {
         left: max(1rem, calc(50% - 44rem));
         top: 1rem;
         width: 10.5rem;
-        aspect-ratio: 145 / 248;
-    }
-    .decorative-backdrop__foliage {
-        display: block !important;
-        left: max(1rem, calc(50% - 44rem));
-        top: 19rem;
-        width: 11rem;
-        aspect-ratio: 160 / 436;
+        aspect-ratio: 708 / 1513;
     }
     .decorative-backdrop__flow {
         display: block !important;
         right: max(1rem, calc(50% - 44rem));
         top: .5rem;
-        width: 18rem;
-        aspect-ratio: 253 / 602;
+        width: 13.75rem;
+        aspect-ratio: 833 / 1523;
     }
     .decorative-backdrop__band {
         left: max(4rem, calc(50% - 38rem));
@@ -265,11 +257,8 @@ label {
     }
     [data-backdrop="home"],
     [data-backdrop="continuation"] { padding-bottom: 4rem; }
-    [data-backdrop="continuation"] .decorative-backdrop__foliage { top: 0; }
     [data-backdrop="detail"] .decorative-backdrop__orangutan,
     [data-backdrop="public"] .decorative-backdrop__orangutan { top: 6rem; }
-    [data-backdrop="detail"] .decorative-backdrop__foliage,
-    [data-backdrop="public"] .decorative-backdrop__foliage { top: 24rem; }
     [data-backdrop="detail"] .decorative-backdrop__flow,
     [data-backdrop="public"] .decorative-backdrop__flow { top: 6rem; }
     [data-backdrop="transaction"] .decorative-backdrop__mobile { display: block !important; }
