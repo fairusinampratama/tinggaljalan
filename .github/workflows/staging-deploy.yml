@@ -241,7 +241,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.review_only
     needs: credentials
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     environment: staging
     concurrency:
       group: staging
