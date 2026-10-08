@@ -1,8 +1,8 @@
 # Public HTML rendering audit — 8 October 2026
 
-## Verdict: Needs work in production; corrections prepared for review
+## Verdict: Production needs correction; protected preview passed and is ready for review
 
-Production and `main` serve Blade fallback content as the initial Inertia HTML. React subsequently replaces that content. The initial HTML has real content, but article hierarchy, route completeness, About visibility and homepage accuracy have confirmed defects. Privacy has no initial body. These corrections retain the architecture and indexing policy; production release requires approval.
+Production and `main` serve Blade fallback content as the initial Inertia HTML. React subsequently replaces that content. The initial HTML has real content, but article hierarchy, route completeness, About visibility and homepage accuracy have confirmed defects. Privacy has no initial body. These corrections retain the architecture and indexing policy; The protected preview passed; production release requires approval.
 
 Observed pipeline: Discovery PASS → Crawl PASS → HTTP PASS (one requested route redirects) → Render FAIL in current production / corrected candidate → Indexability PASS → Canonical PASS → Semantics FAIL in current production / corrected candidate → Ranking data UNKNOWN.
 
@@ -49,6 +49,7 @@ The generic fallback list model treats article sections as list items rather tha
 - Translation `.json` sources and small `.js` imports: move existing text unchanged into a format both PHP and Vite can consume, avoiding a second translation catalog.
 - `SeoInfrastructureTest.php`, `PublicHtmlParityTest.php`, `public-html-parity.spec.js`: structural, visibility, safe text, route content, SSR branch, no-JS, failed-bundle, fragment-navigation and DOM parity regressions.
 - `assert-article-html.php`, `seo-smoke-test.sh`: compare initial article H2 text/order, section count, paragraph text/count and line breaks with the actual embedded CMS payload on deployment.
+- `staging-browser-smoke.mjs`: authenticated read-only checks for normal/Googlebot fallback parity, all public page types without JavaScript, article CMS/visitor paragraph parity, fragment links and blocked-bundle screenshots.
 - Deployment prerequisite from `d774ad6`: preserve existing logo/public content/hero files when deploying preview; retain outbound integration safeguards. No data/media refresh operation is invoked.
 
 ## Before and after
@@ -83,9 +84,9 @@ The text remains complete and literal. Article numbering already stored as plain
 
 ## Verification
 
-- Full PHP suite: 253 tests, 251 passed, two existing skips; 2,675 assertions. Focused suite after final content changes: 26 passed, 495 assertions.
+- Local full PHP suite on both standalone and combined UI candidates: 253 tests, 251 passed, two environment-specific skips; 2,675 assertions. Focused suite after final content changes: 26 passed, 495 assertions. Protected preview CI: all 253 PHP tests passed, 2,680 assertions.
 - Production Vite build, PHP formatting, shell syntax and Git whitespace checks passed.
-- Local Chromium desktop/mobile full browser run: 57 passed and one existing voucher check failed; isolated rerun passed. Final rendering/metadata run: 38 passed; extra multiline/safety browser cases: two passed. Firefox/WebKit were not run locally; CI/preview must cover their configured projects.
+- Local Chromium desktop/mobile full browser run: 57 passed and one existing voucher check failed; isolated rerun passed. Final rendering/metadata run: 38 passed; extra multiline/safety browser cases: two passed. Firefox/WebKit were not run locally. Protected preview CI passed all 150 browser cases across desktop Chromium, Firefox, WebKit, iPhone WebKit and Android Chromium.
 - Seven deployment-preservation regression tests passed. The local CLI initially printed uncaught exceptions to stdout; correcting the local PHP display-errors setting restored the expected stderr test behavior. No application change was needed.
 - Article smoke validator passed against the representative corrected raw HTML fixtures, including long articles.
 - 146 before/after screenshots: nine live-content page fixtures, 390px/1440px viewports, four scroll positions, two revisions, plus no-JS/blocked-JS captures. Read-only production page payloads and public media were used locally; carousel autoplay was disabled in the fixture for repeatability. Both fallback failure scenarios remain visible. No browser page exceptions occurred. Article paragraph spacing is the intended visible change; other layouts are retained.
@@ -95,4 +96,4 @@ The text remains complete and literal. Article numbering already stored as plain
 
 This report does not establish Google indexing, rankings, snippets or AI Overview citations. GSC was not used. Production no-JS accessibility is inferred from its raw fallback/CSS; candidate no-JS and failed-bundle behavior were exercised locally. The currently configured architecture does not support a real SSR build. Near-midnight browser/server timezone differences may affect a date-based closure banner, as in existing availability rendering.
 
-The feature branch targets `main`. Preview must retain the separate unmerged UI candidate by deploying an integration branch carrying the same semantic fixes and the logo-preservation prerequisite. No merge to `main`, production deployment, database reset/reseed/refresh, media replacement, URL change, payment change or messaging change is authorized by this audit.
+Draft PR: https://github.com/fairusinampratama/tinggaljalan/pull/31. The feature branch targets `main`. The protected preview integration candidate retains the separate unmerged UI work and logo-preservation prerequisite. Deployed application candidate: `089299c7d5765572e5b056bf468ab51f8bd41a1b`. Protected deployment run: https://github.com/fairusinampratama/tinggaljalan/actions/runs/37726158039. Extended read-only review uses `0f992245f202cfa76706f0e31ae3387e7a279bea` to check that same deployed application revision; only the verification script differs. Review run: https://github.com/fairusinampratama/tinggaljalan/actions/runs/37726814033. Both runs completed successfully. Deployed desktop/mobile pages had no JavaScript or failed JS/CSS asset errors. The extended review passed normal/Googlebot initial fallback equality, readable no-JS fallback on all public page types and language/filter variants, visitor H1/no-duplicate-fallback checks, exact article CMS/server/visitor headings and paragraph/BR parity, fragment-link presence, and desktop/mobile blocked-bundle fallback. Preview remains authenticated and noindex. Production `/up` still reports the original `f2f2817f8c1e3bd459d64dfb0d86e7b5f7a40658` revision and its original article fallback, independently verified after deployment. No merge to `main`, production deployment, database reset/reseed/refresh, media replacement, URL change, payment change or messaging change is authorized by this audit.
