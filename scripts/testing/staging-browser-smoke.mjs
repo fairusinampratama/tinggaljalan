@@ -66,7 +66,13 @@ try {
             }
             observations.push({ viewport: name, route, width });
             for (const [index, fraction] of [0, 0.33, 0.67, 1].entries()) {
-                await page.evaluate(fraction => window.scrollTo(0, fraction * (document.documentElement.scrollHeight - window.innerHeight)), fraction);
+                const scroll = await page.evaluate(fraction => {
+                    const target = Math.round(fraction * Math.max(0, document.documentElement.scrollHeight - window.innerHeight));
+                    window.scrollTo({ top: target, behavior: 'instant' });
+                    return { target, actual: window.scrollY, viewport: window.innerWidth, document: document.documentElement.scrollWidth };
+                }, fraction);
+                if (Math.abs(scroll.actual - scroll.target) > 2) throw new Error(`Screenshot scroll position failed for ${route}.`);
+                observations.push({ viewport: name, route, screenshot: index, scroll });
                 await page.screenshot({ path: path.join(output, `${name}-${label}-scroll-${index}.png`) });
             }
             results.push(`${name}: ${label} rendered, authenticated, noindex`);
