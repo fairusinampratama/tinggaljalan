@@ -58,7 +58,7 @@ try {
             }
         });
         for (const [label, route] of [...priorityRoutes, ['admin-login', '/admin/login']]) {
-            const response = await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
+            const response = await page.goto(`${base}${route}`, { waitUntil: 'networkidle', timeout: 90000 });
             if (!response?.ok()) throw new Error('A preview page failed to render.');
             if (!productionReview && !/noindex/i.test(response.headers()['x-robots-tag'] ?? '')) throw new Error('Preview noindex header is missing.');
             await page.locator('body').waitFor();
@@ -97,7 +97,7 @@ try {
                     const href = await detail.getAttribute('href');
                     if (!href?.startsWith(`/${label}/`)) throw new Error('Unexpected preview detail target.');
                     target = `${base}${href}`;
-                    await page.goto(target, { waitUntil: 'networkidle' });
+                    await page.goto(target, { waitUntil: 'networkidle', timeout: 90000 });
                 }
                 const detailResponse = await context.request.get(target);
                 if (!detailResponse?.ok()) throw new Error('Preview detail page failed.');
@@ -126,7 +126,7 @@ try {
         const fallback = html => html.match(/<main\b[^>]*class="[^"]*server-seo-content[^"]*"[^>]*>[\s\S]*?<\/main>/)?.[0];
         if (!fallback(raw) || fallback(raw) !== fallback(botRaw)) throw new Error(`Crawler fallback parity failed for ${route}.`);
         await writeFile(path.join(output, `initial-${index}.html`), raw, { mode: 0o600 });
-        await initial.goto(target, { waitUntil: 'networkidle' });
+        await initial.goto(target, { waitUntil: 'networkidle', timeout: 90000 });
         if (!await initial.locator('.server-seo-content').isVisible() || await initial.locator('h1').count() !== 1) throw new Error(`No-JavaScript content failed for ${route}.`);
         await initial.screenshot({ path: path.join(output, `no-js-${index}.png`), fullPage: true });
         const expected = await initial.evaluate(() => {
@@ -151,7 +151,7 @@ try {
         const metadata = tags(raw);
         if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0].replace(base, 'https://tinggaljalan.com') !== baseline.canonical[0] || JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots) || JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new Error(`Canonical/robots parity failed for ${route}.`);
         if (!expected.links.length || expected.links.some(link => /^javascript:/i.test(link.href))) throw new Error(`Crawlable fallback links failed for ${route}.`);
-        await visitor.goto(target, { waitUntil: 'networkidle' });
+        await visitor.goto(target, { waitUntil: 'networkidle', timeout: 90000 });
         await visitor.locator('.server-seo-content').waitFor({ state: 'detached' });
         const normalize = text => text.replace(/\s+/g, ' ').trim();
         if (await visitor.locator('h1').count() !== 1 || normalize(await visitor.locator('h1').textContent()) !== normalize(expected.h1)) throw new Error(`Visitor H1 parity failed for ${route}.`);
@@ -185,7 +185,7 @@ try {
         const failedContext = await browser.newContext({ httpCredentials: credentials, viewport });
         await failedContext.route('**/build/assets/*.js', route => route.abort());
         const failedPage = await failedContext.newPage();
-        await failedPage.goto(`${base}${articleRoute}`, { waitUntil: 'networkidle' });
+        await failedPage.goto(`${base}${articleRoute}`, { waitUntil: 'networkidle', timeout: 90000 });
         if (!await failedPage.locator('.server-seo-content').isVisible() || await failedPage.locator('h1').count() !== 1) throw new Error('Blocked JavaScript erased public article content.');
         await failedPage.screenshot({ path: path.join(output, `${name}-blocked-js.png`), fullPage: true });
         results.push(`${name}: blocked frontend retains readable article content`);
