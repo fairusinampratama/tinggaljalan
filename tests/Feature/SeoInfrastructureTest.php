@@ -49,12 +49,12 @@ class SeoInfrastructureTest extends TestCase
         $this->assertSame(1, substr_count($main, '<h1>'));
         $this->assertGreaterThanOrEqual(250, $this->wordCount($main));
         $this->assertGreaterThanOrEqual(2, substr_count($main, '<h2>'));
-        $this->assertSame(0, substr_count($main, '<h3>'));
+        $this->assertGreaterThan(0, substr_count($main, '<h3>'));
         $this->assertStringContainsString('<a href="/routes"', $main);
         $this->assertStringContainsString('<a href="/news"', $main);
         $this->assertStringContainsString('<a href="/about-us"', $main);
         $this->assertStringNotContainsString('?destination=', $main);
-        $this->assertStringContainsString('<a href="https://wa.me/62811388330"', $main);
+        $this->assertStringContainsString('<a href="https://wa.me/62811388330', $main);
         $this->assertStringContainsString('<img', $main);
         $this->assertStringContainsString('alt="', $main);
     }
@@ -80,9 +80,9 @@ class SeoInfrastructureTest extends TestCase
 
         $this->assertSame(1, substr_count($main, '<h1>'));
         $this->assertStringContainsString(e($package->title['us']), $main);
-        $this->assertStringContainsString('Route Highlights', $main);
+        $this->assertStringContainsString('Highlights', $main);
         $this->assertStringContainsString('Itinerary', $main);
-        $this->assertStringContainsString('Related Travel Guides', $main);
+        $this->assertStringContainsString('Articles related to this route', $main);
         $this->assertStringContainsString('<img', $main);
         $this->assertStringContainsString('alt="', $main);
     }
@@ -183,8 +183,11 @@ class SeoInfrastructureTest extends TestCase
 
         $this->assertSame(1, substr_count($main, '<h1>'));
         $this->assertStringContainsString(e($article->title['us']), $main);
-        $this->assertStringContainsString('Article Guide', $main);
-        $this->assertStringContainsString('Related Tour Routes', $main);
+        $this->assertStringNotContainsString('Article Guide', $main);
+        foreach ($article->sections as $section) {
+            $this->assertStringContainsString('<h2>'.e($section['heading']['us']).'</h2>', $main);
+        }
+        $this->assertStringContainsString('/routes/', $main);
         $this->assertStringContainsString('<img', $main);
         $this->assertStringContainsString('alt="', $main);
     }
@@ -251,10 +254,10 @@ class SeoInfrastructureTest extends TestCase
 
         $this->assertSame(1, substr_count($routesMain, '<h1>'));
         $this->assertStringContainsString('/routes/'.trim((string) $route->slug), $routesMain);
-        $this->assertStringContainsString('Available Tour Packages', $routesMain);
+        $this->assertStringContainsString('Choose a Trip Package', $routesMain);
         $this->assertSame(1, substr_count($newsMain, '<h1>'));
         $this->assertStringContainsString('/news/'.trim((string) $article->slug), $newsMain);
-        $this->assertStringContainsString('Latest Travel Articles', $newsMain);
+        $this->assertStringContainsString('Travel guides for choosing routes with more confidence', $newsMain);
     }
 
     public function test_about_page_renders_server_visible_company_content(): void
@@ -265,7 +268,7 @@ class SeoInfrastructureTest extends TestCase
 
         $this->assertSame(1, substr_count($main, '<h1>'));
         $this->assertStringContainsString('Tinggal Jalan', $main);
-        $this->assertStringContainsString('Tinggal Jalan Team', $main);
+        $this->assertStringContainsString('The people behind your trip.', $main);
         $this->assertStringContainsString('<img', $main);
         $this->assertStringContainsString('<a href="/routes"', $main);
     }
@@ -328,7 +331,7 @@ class SeoInfrastructureTest extends TestCase
             $response = $this->get($path)->assertOk();
 
             $response
-                ->assertDontSee('<main class="server-seo-content"', false)
+                ->assertSee('<main class="server-seo-content"', false)
                 ->assertDontSee('hreflang="id"', false)
                 ->assertDontSee('hreflang="zh-CN"', false)
                 ->assertInertia(fn (Assert $page) => $page

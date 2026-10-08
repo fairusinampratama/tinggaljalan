@@ -16,22 +16,6 @@
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-        <script>
-            document.documentElement.classList.add('js');
-        </script>
-        <style>
-            .js .server-seo-content {
-                position: absolute;
-                width: 1px;
-                height: 1px;
-                margin: -1px;
-                overflow: hidden;
-                clip: rect(0 0 0 0);
-                clip-path: inset(50%);
-                white-space: nowrap;
-            }
-        </style>
-
         @include('partials.server-seo')
 
         @if (request()->routeIs('home'))

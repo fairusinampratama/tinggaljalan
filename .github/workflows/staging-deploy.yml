@@ -49,7 +49,7 @@ jobs:
           php tests/deployment/test_staging_config.php
       - name: Check staging PHP formatting
         run: |
-          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php scripts/testing/staging-functional-guard.php)
+          FILES=(scripts/deployment/configure-staging.php scripts/deployment/staging-config.php tests/deployment/test_staging_config.php scripts/testing/staging-functional-guard.php scripts/testing/staging-preservation-readonly.php)
           if ! vendor/bin/pint --test "${FILES[@]}"; then
             vendor/bin/pint "${FILES[@]}"
             git diff -- "${FILES[@]}"
@@ -61,6 +61,8 @@ jobs:
           php -l scripts/deployment/configure-staging.php
           php -l scripts/deployment/staging-config.php
           php -l scripts/testing/staging-functional-guard.php
+          php -l scripts/testing/staging-preservation-readonly.php
+          node --check scripts/testing/staging-browser-smoke.mjs
           node --check scripts/testing/staging-functional-browser.mjs
           python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
@@ -271,6 +273,22 @@ jobs:
             -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
             < scripts/testing/staging-functional-guard.php
+      - name: Snapshot public content and verify isolation without database writes
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/staging-review"
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/browser-review/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/browser-review/known_hosts"
+          ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
+            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
+            u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
+            < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/staging-review/preservation-before.json"
       - name: Review existing desktop and mobile preview without hosting writes
         env:
           REVISION: ${{ inputs.revision }}
@@ -278,6 +296,17 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
+      - name: Verify public content and media stayed unchanged during review
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: |
+          set -euo pipefail
+          ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
+            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
+            u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
+            < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/staging-review/preservation-after.json"
+          cmp "$RUNNER_TEMP/staging-review/preservation-before.json" "$RUNNER_TEMP/staging-review/preservation-after.json"
       - name: Verify synthetic booking and admin sign-in on desktop and mobile
         if: inputs.functional_checks
         env:
