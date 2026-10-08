@@ -7,7 +7,8 @@ if (!configFile || !/^[a-f0-9]{40}$/.test(revision ?? '') || !output) {
     throw new Error('Usage: staging-browser-smoke.mjs <private-config> <sha> <output>');
 }
 const config = JSON.parse(await readFile(configFile, 'utf8'));
-const base = 'https://preview.tinggaljalan.com';
+const productionReview = process.env.REVIEW_TARGET === 'production';
+const base = productionReview ? 'https://tinggaljalan.com' : 'https://preview.tinggaljalan.com';
 await mkdir(output, { recursive: true, mode: 0o700 });
 const browser = await chromium.launch();
 const results = [];
@@ -25,19 +26,21 @@ const redact = value => Object.values(config).filter(value => typeof value === '
     (text, secret) => text.replaceAll(secret, '[redacted]'), String(value),
 );
 try {
+    if (!productionReview) {
     const anonymous = await browser.newContext();
     for (const route of ['/', '/up', '/admin/login']) {
         const response = await anonymous.request.get(`${base}${route}`);
         if (response.status() !== 401) throw new Error('Unauthenticated preview access was not rejected.');
     }
     await anonymous.close();
+    }
     for (const [name, viewport, isMobile] of [
         ['desktop', { width: 1440, height: 1000 }, false],
         ['mobile', { width: 390, height: 844 }, true],
     ]) {
         const context = await browser.newContext({
             viewport, isMobile, deviceScaleFactor: 1,
-            httpCredentials: { username: 'reviewer', password: config.review_password, origin: base },
+            httpCredentials: productionReview ? undefined : { username: 'reviewer', password: config.review_password, origin: base },
         });
         const runtime = await context.request.get(`${base}/up?revision=${revision}`);
         const health = await runtime.json();
@@ -57,13 +60,14 @@ try {
         for (const [label, route] of [...priorityRoutes, ['admin-login', '/admin/login']]) {
             const response = await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
             if (!response?.ok()) throw new Error('A preview page failed to render.');
-            if (!/noindex/i.test(response.headers()['x-robots-tag'] ?? '')) throw new Error('Preview noindex header is missing.');
+            if (!productionReview && !/noindex/i.test(response.headers()['x-robots-tag'] ?? '')) throw new Error('Preview noindex header is missing.');
             await page.locator('body').waitFor();
             if (await page.locator('body').innerText() === '') throw new Error('The preview rendered an empty body.');
             const width = await page.evaluate(() => ({ viewport: window.innerWidth, document: document.documentElement.scrollWidth }));
             if (width.document > width.viewport + 2 && route !== '/routes/BROMO') {
                 throw new Error('Preview layout overflows the viewport.');
             }
+            if (await page.locator('.decorative-backdrop, .decorative-canvas, .decorative-divider, [data-backdrop]').count()) throw new Error('Excluded ornament UI is present.');
             observations.push({ viewport: name, route, width });
             for (const [index, fraction] of [0, 0.33, 0.67, 1].entries()) {
                 const scroll = await page.evaluate(fraction => {
@@ -75,7 +79,7 @@ try {
                 observations.push({ viewport: name, route, screenshot: index, scroll });
                 await page.screenshot({ path: path.join(output, `${name}-${label}-scroll-${index}.png`) });
             }
-            results.push(`${name}: ${label} rendered, authenticated, noindex`);
+            results.push(`${name}: ${label} rendered, ornament-free, target directives verified`);
             if (label === 'routes' || label === 'news') {
                 const detail = label === 'news'
                     ? page.locator('article[role="link"]').first()
@@ -84,7 +88,7 @@ try {
                 let target;
                 if (label === 'news') {
                     await Promise.all([
-                        page.waitForURL(new RegExp('^https://preview[.]tinggaljalan[.]com/news/[^/?]+')),
+                        page.waitForURL(new RegExp('^' + base.replaceAll('.', '[.]') + '/news/[^/?]+')),
                         detail.click(),
                     ]);
                     await page.waitForLoadState('networkidle');
@@ -105,7 +109,7 @@ try {
         diagnostics.push({ viewport: name, errors, failedAssets });
         await context.close();
     }
-    const credentials = { username: 'reviewer', password: config.review_password, origin: base };
+    const credentials = productionReview ? undefined : { username: 'reviewer', password: config.review_password, origin: base };
     const initialContext = await browser.newContext({ javaScriptEnabled: false, httpCredentials: credentials, viewport: { width: 1440, height: 1000 } });
     const visitorContext = await browser.newContext({ httpCredentials: credentials, viewport: { width: 1440, height: 1000 } });
     const initial = await initialContext.newPage();
@@ -118,7 +122,7 @@ try {
         if (!normal.ok() || !bot.ok()) throw new Error('Initial public HTML request failed.');
         const raw = await normal.text();
         const botRaw = await bot.text();
-        if (!/noindex/i.test(normal.headers()['x-robots-tag'] ?? '') || normal.headers()['x-robots-tag'] !== bot.headers()['x-robots-tag']) throw new Error(`Preview index protection differs for ${route}.`);
+        if ((!productionReview && !/noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || (productionReview && /noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || normal.headers()['x-robots-tag'] !== bot.headers()['x-robots-tag']) throw new Error(`Preview index protection differs for ${route}.`);
         const fallback = html => html.match(/<main\b[^>]*class="[^"]*server-seo-content[^"]*"[^>]*>[\s\S]*?<\/main>/)?.[0];
         if (!fallback(raw) || fallback(raw) !== fallback(botRaw)) throw new Error(`Crawler fallback parity failed for ${route}.`);
         await writeFile(path.join(output, `initial-${index}.html`), raw, { mode: 0o600 });

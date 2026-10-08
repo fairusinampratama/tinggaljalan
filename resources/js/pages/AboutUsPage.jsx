@@ -14,7 +14,6 @@ import {
   Users,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { DecorativeBackdrop } from '../components/decorative/DecorativeBackdrop';
 import { Seo } from '../components/seo/Seo';
 import { ResponsiveImage } from '../components/ui/ResponsiveImage';
 import { secondaryButtonClass, whatsappButtonClass } from '../components/ui/styles';
@@ -243,7 +242,6 @@ export function AboutUsPage() {
         ) : null}
 
         {visibility.story !== false && (getLocalized(story.title, language) || getLocalized(story.body, language)) ? (
-          <DecorativeBackdrop variant="continuation" className={story.image ? 'decorative-canvas--story-imaged' : ''}>
           <section className="public-section bg-white">
             <div className={`public-container grid gap-6 lg:gap-8 ${story.image ? 'lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-14' : ''}`}>
               {story.image ? <ResponsiveImage src={story.image} alt={getLocalized(story.image_alt, language)} className="aspect-[16/10] w-full rounded-2xl object-cover shadow-soft lg:aspect-[3/2]" sizes="(min-width: 1024px) 45vw, 100vw" width={1200} height={800} /> : null}
@@ -260,7 +258,6 @@ export function AboutUsPage() {
               </div>
             </div>
           </section>
-          </DecorativeBackdrop>
         ) : null}
 
         {visibility.workflow !== false && workflow.steps?.length ? (

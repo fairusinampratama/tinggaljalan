@@ -56,6 +56,11 @@ try {
         $rows = $pdo->query('SELECT * FROM '.$table.' ORDER BY id')->fetchAll();
         $result['public_content'][$table] = ['count' => count($rows), 'sha256' => hash('sha256', json_encode($rows, JSON_THROW_ON_ERROR))];
     }
+    $result['production_public_content'] = [];
+    foreach (['site_settings', 'hero_slides', 'reviews', 'tour_packages', 'news_articles', 'destinations', 'about_pages'] as $table) {
+        $rows = $live->query('SELECT * FROM '.$table.' ORDER BY id')->fetchAll();
+        $result['production_public_content'][$table] = ['count' => count($rows), 'sha256' => hash('sha256', json_encode($rows, JSON_THROW_ON_ERROR))];
+    }
     $result['logo_url'] = $pdo->query('SELECT logo_url FROM site_settings ORDER BY id LIMIT 1')->fetchColumn();
     $result['production_logo_url'] = $live->query('SELECT logo_url FROM site_settings ORDER BY id LIMIT 1')->fetchColumn();
     $applied = $live->query('SELECT migration FROM migrations')->fetchAll(PDO::FETCH_COLUMN);
@@ -75,6 +80,16 @@ try {
     }
     ksort($media);
     $result['media'] = ['files' => count($media), 'sha256' => hash('sha256', json_encode($media, JSON_THROW_ON_ERROR))];
+    $media = [];
+    $directory = $productionRoot.'/deployments/shared/storage/app/public';
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)) as $file) {
+        if ($file->isFile() && ! $file->isLink()) {
+            $media[substr($file->getPathname(), strlen($directory))] = hash_file('sha256', $file->getPathname());
+        }
+    }
+    ksort($media);
+    $result['production_media'] = ['files' => count($media), 'sha256' => hash('sha256', json_encode($media, JSON_THROW_ON_ERROR))];
+    $result['production_revision'] = basename(realpath($productionRoot.'/deployments/current'));
     echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL;
 } catch (Throwable) {
     fwrite(STDERR, "Read-only preservation verification failed. Credentials and row contents were not logged.\n");

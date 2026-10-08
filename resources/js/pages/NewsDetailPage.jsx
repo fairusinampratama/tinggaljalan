@@ -40,7 +40,7 @@ export function NewsDetailPage() {
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div>
-              <header className="decorative-intro mb-8">
+              <header className="mb-8">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1.5 text-secondary">
                     <Compass className="h-3.5 w-3.5" />
