@@ -7,6 +7,10 @@ on:
         description: Review the existing preview without deploying
         type: boolean
         default: false
+      production_revision:
+        description: Optional production SHA for read-only production browser review
+        type: string
+        default: ''
       functional_checks:
         description: Submit synthetic bookings and verify admin sign-in (preview only)
         type: boolean
@@ -296,6 +300,14 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
+      - name: Review production without writes
+        if: inputs.production_revision != ''
+        env:
+          REVIEW_TARGET: production
+          REVISION: ${{ inputs.production_revision }}
+        run: |
+          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
+          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/production"
       - name: Verify public content and media stayed unchanged during review
         env:
           REVISION: ${{ inputs.revision }}
