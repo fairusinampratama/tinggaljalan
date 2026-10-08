@@ -3,11 +3,11 @@
 use App\Models\EmailGatewaySetting;
 use App\Models\NotificationSetting;
 use App\Models\PaymentSetting;
-use App\Models\SiteSetting;
 use App\Models\User;
 use App\Models\WhatsappGatewaySetting;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 ini_set('zend.exception_ignore_args', '1');
@@ -53,6 +53,14 @@ if (config('app.env') !== 'staging' || config('database.connections.mysql.databa
 }
 // Seed curated example content without DatabaseSeeder's default admin/integrations.
 if (! file_exists($shared.'/.seeded')) {
+    // A missing marker must never authorize replacing refreshed or edited content.
+    foreach (['destinations', 'route_filters', 'tour_packages', 'news_articles', 'faqs',
+        'trust_stats', 'why_choose_items', 'hero_slides', 'vouchers', 'package_availabilities', 'platform_links', 'site_settings',
+        'reviews', 'about_pages', 'team_members', 'company_milestones'] as $table) {
+        if (DB::table($table)->exists()) {
+            throw new StagingConfigurationException('Preview content exists but its initialization marker is missing; refusing to reseed.');
+        }
+    }
     foreach (['DestinationSeeder', 'RouteFilterSeeder', 'TourPackageSeeder', 'NewsSeeder', 'FaqSeeder',
         'HomeContentSeeder', 'HeroSlideSeeder', 'BookingOptionSeeder', 'PlatformLinkSeeder', 'SiteSettingSeeder',
         'ReviewSeeder', 'AboutPageSeeder', 'TeamMemberSeeder', 'CompanyMilestoneSeeder'] as $seeder) {
@@ -66,7 +74,7 @@ NotificationSetting::current()->update(['is_enabled' => false, 'email_enabled' =
 PaymentSetting::midtrans()->update(['is_enabled' => false, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null]);
 PaymentSetting::doku()->update(['is_enabled' => false, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null]);
 PaymentSetting::query()->update(['is_enabled' => false, 'mode' => 'sandbox', 'public_key' => null, 'secret_key' => null]);
-SiteSetting::query()->update(['logo_url' => '/images/logo-tj.png']);
+// Preserve existing public branding. The frontend supplies its own fallback.
 $admin = User::firstOrNew(['email' => 'preview-admin@tinggaljalan.test']);
 $admin->forceFill(['name' => 'Preview Admin', 'password' => Hash::make($input['admin_password']), 'is_admin' => true])->save();
 if (User::where('email', 'admin@tinggaljalan.test')->exists()) {

@@ -18,6 +18,35 @@ SHA = "a" * 40
 
 
 class StagingTransactionTest(unittest.TestCase):
+    def test_redeployment_preserves_refreshed_public_branding(self):
+        source = (SOURCE / 'scripts/deployment/configure-staging.php').read_text()
+        self.assertNotIn("SiteSetting::query()->update", source)
+        self.assertNotIn("'logo_url' => '/images/logo-tj.png'", source)
+        self.assertIn("PaymentSetting::query()->update(['is_enabled' => false", source)
+        self.assertIn("'email_enabled' => false, 'whatsapp_enabled' => false", source)
+
+    def test_missing_marker_refuses_any_existing_public_content(self):
+        source = (SOURCE / 'scripts/deployment/configure-staging.php').read_text()
+        guard = source.split('// A missing marker must never authorize replacing refreshed or edited content.')[1].split("foreach (['DestinationSeeder'")[0]
+        tables = re.findall(r"'([a-z_]+)'", guard.split('as $table')[0])
+        schema = '\n'.join(path.read_text() for path in (SOURCE / 'database/migrations').glob('*.php'))
+        for table in tables:
+            self.assertIn("Schema::create('" + table + "'", schema)
+        harness = '''
+class StagingConfigurationException extends Exception {}
+class DB {
+    private static string $table;
+    public static function table($table) { self::$table = $table; return new self; }
+    public function exists() { return self::$table === getenv('EXISTING_CONTENT_TABLE'); }
+}
+'''
+        for table in ['', *tables]:
+            result = subprocess.run([shutil.which('php'), '-r', harness + guard],
+                                    env={**os.environ, 'EXISTING_CONTENT_TABLE': table}, capture_output=True)
+            self.assertEqual(result.returncode == 0, table == '', table)
+            if table:
+                self.assertIn(b'refusing to reseed', result.stderr)
+
     def test_real_curl_receives_exact_password_from_private_config(self):
         password = 'fixture spaces "quotes" \\ slash $value #tag:colon'
         expected = 'Basic ' + base64.b64encode(('reviewer:' + password).encode()).decode()
@@ -65,6 +94,9 @@ class StagingTransactionTest(unittest.TestCase):
             releases = root / "deployments/releases"
             for directory in [public, shared, incoming, releases]:
                 directory.mkdir(parents=True, exist_ok=True)
+            hero = shared / 'storage/app/public/admin/hero/hero-bromo.jpg'
+            hero.parent.mkdir(parents=True)
+            hero.write_text('existing-custom-hero')
             (root / ".tinggaljalan-staging").write_text("preview.tinggaljalan.com\n")
             (public / "index.php").write_text("previous-wrapper")
             if previous:
@@ -119,6 +151,7 @@ class StagingTransactionTest(unittest.TestCase):
                                     env=environment, capture_output=True, text=True)
             self.assertEqual(result.returncode == 0, not fail, result.stderr)
             self.assertFalse(config.exists(), "Transferred secret must be removed")
+            self.assertEqual(hero.read_text(), 'existing-custom-hero', 'Existing public media must survive deployment')
             self.assertEqual((shared / ".env").stat().st_mode & 0o077, 0)
             self.assertTrue(shared.stat().st_mode & 0o001, "Web server must traverse to auth file")
             self.assertFalse(shared.stat().st_mode & 0o004, "Shared directory must not be world-listable")

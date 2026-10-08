@@ -19,6 +19,7 @@ import { getLocalized, getRegionConfig, localizeDuration, localizeList } from '.
 import { cardHoverClass, iconSize, primaryButtonClass, secondaryButtonClass } from '../ui/styles';
 import { RatingDisplay } from '../ui/RatingDisplay';
 import { RouteGallery } from '../ui/RouteGallery';
+import { DecorativeDivider } from '../decorative/DecorativeBackdrop';
 
 function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIcon: BulletIcon }) {
   const visibleItems = localizeList(items, language);
@@ -79,6 +80,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
       <section id="route-detail" className="scroll-mt-24 bg-canvas px-4 pb-28 pt-28 sm:px-8 sm:pt-32 lg:px-10 lg:pb-10">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
           <article>
+            <div className="route-detail-intro">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.routeDetailEyebrow}</p>
               <span className="rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold text-secondary">
@@ -105,6 +107,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               <MetaPill icon={MapPin}>{getLocalized(selectedArticle.destinationName, language)}</MetaPill>
             </div>
 
+            </div>
             {activeClosure ? (
               <div className="mt-8 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-900" role="alert">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden="true" />
@@ -128,6 +131,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               }}
             />
 
+            <DecorativeDivider />
             <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-8">
               <h2 className="font-display text-3xl font-normal leading-[1.08] text-primary">{t.routeHighlights}</h2>
               <div className="mt-6 flex flex-wrap items-center gap-3">

@@ -165,3 +165,118 @@ button,
 label {
     overflow-wrap: anywhere;
 }
+
+/* Section-relative SVG compositions from the approved source illustrations.
+   All dimensions are bounded; no artwork scales with page/content height. */
+.decorative-canvas {
+    position: relative;
+    isolation: isolate;
+    background: var(--color-canvas);
+}
+.decorative-backdrop {
+    position: absolute;
+    inset: 0;
+    overflow: clip;
+    pointer-events: none;
+    user-select: none;
+    z-index: -1;
+}
+.decorative-backdrop > span,
+.decorative-divider {
+    display: block;
+    mask-image: var(--motif);
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    background: var(--color-secondary);
+    opacity: .24;
+    pointer-events: none;
+}
+.decorative-backdrop > span { position: absolute; }
+.decorative-backdrop__orangutan,
+.decorative-backdrop__flow { display: none !important; }
+.decorative-backdrop__mobile {
+    width: 7rem;
+    aspect-ratio: 1670 / 422;
+    top: .5rem;
+    right: .5rem;
+}
+.decorative-backdrop__band {
+    bottom: .25rem;
+    left: 1rem;
+    right: 1rem;
+    height: 1.5rem;
+    mask-position: center;
+}
+.decorative-divider {
+    height: 2rem;
+    margin-top: 1rem;
+    mask-position: center;
+    opacity: .22;
+}
+[data-backdrop="home"],
+[data-backdrop="continuation"] { padding-bottom: 2.5rem; }
+[data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__mobile,
+[data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__mobile,
+[data-backdrop="transaction"] > .decorative-backdrop > .decorative-backdrop__mobile { top: 5rem; }
+[data-backdrop="transaction"] > .decorative-backdrop > .decorative-backdrop__mobile { opacity: .16; }
+/* Preserve opaque cards, photos, and deliberately tinted content groups. */
+.decorative-canvas__content > section.bg-white,
+.decorative-canvas__content > section.bg-canvas,
+.decorative-canvas__content > article.bg-canvas,
+.decorative-canvas__content > .about-page > section.bg-white,
+.home-page .decorative-canvas #destination,
+.home-page .decorative-canvas #articles { background-color: transparent; }
+@media (min-width: 768px) {
+    .decorative-backdrop__mobile { width: 10rem; right: 1rem; }
+    .decorative-backdrop__band { height: 3rem; left: 3rem; right: 3rem; }
+    .decorative-divider { height: 3rem; }
+}
+@media (min-width: 1280px) {
+    .route-detail-intro,
+    [data-backdrop="public"] .decorative-intro {
+        padding-left: clamp(7rem, calc(52rem - 50vw), 10rem);
+    }
+    .decorative-backdrop__mobile { display: none !important; }
+    .decorative-backdrop__orangutan {
+        display: block !important;
+        left: max(1rem, calc(50% - 44rem));
+        top: 1rem;
+        width: 10.5rem;
+        aspect-ratio: 708 / 1513;
+    }
+    .decorative-backdrop__flow {
+        display: block !important;
+        right: max(1rem, calc(50% - 44rem));
+        top: .5rem;
+        width: 13.75rem;
+        aspect-ratio: 833 / 1523;
+    }
+    .decorative-backdrop__band {
+        left: max(4rem, calc(50% - 38rem));
+        right: max(4rem, calc(50% - 38rem));
+        height: 4.5rem;
+    }
+    [data-backdrop="home"],
+    [data-backdrop="continuation"] { padding-bottom: 4rem; }
+    [data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__orangutan,
+    [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__orangutan { top: 6rem; }
+    [data-backdrop="detail"] > .decorative-backdrop > .decorative-backdrop__flow,
+    [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__flow { top: 6rem; }
+    [data-backdrop="public"] > .decorative-backdrop > .decorative-backdrop__band { height: 3rem; }
+    .decorative-canvas--story-imaged > .decorative-backdrop > .decorative-backdrop__flow {
+        left: max(1rem, calc(50% - 44rem));
+        right: auto;
+    }
+    [data-backdrop="transaction"] > .decorative-backdrop > .decorative-backdrop__mobile { display: block !important; }
+}
+
+/* Readable initial HTML until React replaces #app, including failed JS loads. */
+.server-seo-content { max-width: 72rem; margin: 0 auto; padding: 1.5rem; overflow-wrap: anywhere; }
+.server-seo-content img { max-width: 100%; height: auto; }
+.server-seo-content h1 { font-size: 2rem; }
+.server-seo-content h2 { font-size: 1.5rem; margin-top: 1.5rem; }
+.server-seo-content h3 { font-size: 1.2rem; margin-top: 1rem; }
+.server-seo-content p { margin: 0.75rem 0; }
+.server-seo-content ul { list-style: disc; padding-left: 1.5rem; }
+.server-seo-content ol { list-style: decimal; padding-left: 1.5rem; }
+.server-seo-content a { text-decoration: underline; }

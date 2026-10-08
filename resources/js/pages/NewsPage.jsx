@@ -72,7 +72,7 @@ export function NewsPage() {
       <section className="px-4 pb-16 pt-28 sm:px-8 sm:pt-32 lg:px-10">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 grid gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.55fr)] lg:items-end">
-            <div>
+            <div className="decorative-intro">
               <p className="mb-3 text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.newsEyebrow}</p>
               <h1 className="font-display text-3xl font-normal leading-tight text-primary sm:text-5xl">
                 {t.newsTitle}

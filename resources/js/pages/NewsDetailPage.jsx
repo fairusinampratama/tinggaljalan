@@ -1,3 +1,5 @@
+import { TextParagraphs } from '../components/ui/TextParagraphs';
+import { articleSectionId } from '../utils/text';
 import { usePage } from '@inertiajs/react';
 import { CalendarDays, ChevronRight, Clock, Compass, MessageCircle, Route as RouteIcon } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
@@ -38,7 +40,7 @@ export function NewsDetailPage() {
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div>
-              <header className="mb-8">
+              <header className="decorative-intro mb-8">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-ink">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary/10 px-3 py-1.5 text-secondary">
                     <Compass className="h-3.5 w-3.5" />
@@ -77,12 +79,12 @@ export function NewsDetailPage() {
 
               <div className="max-w-3xl">
                 {article.sections.map((section) => {
-                  const id = getLocalized(section.heading, 'us').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                  const id = articleSectionId(getLocalized(section.heading, 'us'));
 
                   return (
                     <section key={id} id={id} className="scroll-mt-28 mb-10">
                       <h2 className="text-balance font-display text-2xl font-normal leading-[1.12] text-primary sm:text-3xl">{getLocalized(section.heading, language)}</h2>
-                      <p className="mt-4 whitespace-pre-line text-pretty text-base font-medium leading-8 text-muted sm:text-lg">{getLocalized(section.body, language)}</p>
+                      <TextParagraphs text={getLocalized(section.body, language)} className="mt-4 text-pretty text-base font-medium leading-8 text-muted sm:text-lg" />
                     </section>
                   );
                 })}
@@ -127,7 +129,7 @@ export function NewsDetailPage() {
                 <ul className="mt-4 grid gap-3 text-sm font-bold text-muted">
                   {article.sections.map((section) => (
                     <li key={getLocalized(section.heading, language)}>
-                      <a href={`#${getLocalized(section.heading, 'us').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} className="block rounded-lg -mx-2 px-2 py-2 transition hover:bg-surface hover:text-secondary">
+                      <a href={`#${articleSectionId(getLocalized(section.heading, 'us'))}`} className="block rounded-lg -mx-2 px-2 py-2 transition hover:bg-surface hover:text-secondary">
                         {getLocalized(section.heading, language)}
                       </a>
                     </li>

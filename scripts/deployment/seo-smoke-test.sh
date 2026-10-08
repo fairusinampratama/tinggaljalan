@@ -220,6 +220,9 @@ while IFS= read -r url; do
         }
         file_put_contents($argv[3], $argv[2]."\t".strtolower($title)."\n", FILE_APPEND);
     ' "$WORK/sitemap-url-$url_number.body" "$url" "$PAGE_METADATA" || fail "$url failed public-page SEO validation"
+    if [[ "$url" =~ /news/[^/]+$ ]]; then
+        "$PHP_BIN" "$(dirname "$0")/assert-article-html.php" "$WORK/sitemap-url-$url_number.body" || fail "$url failed article semantic validation"
+    fi
 done < "$SITEMAP_URLS"
 
 "$PHP_BIN" -r '
