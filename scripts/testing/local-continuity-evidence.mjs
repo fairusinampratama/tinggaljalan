@@ -19,8 +19,8 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   page.on('pageerror',error=>console.log('TJ_ERROR:'+name+':'+error.message));
   await page.addInitScript(()=>{window.__stageImages=[];new MutationObserver(()=>{const stage=document.querySelector('[data-initial-stage]');if(stage)window.__stageImages=[...stage.querySelectorAll('nav img,section[id] img')].slice(0,5).map(i=>({src:i.src,current:i.currentSrc,complete:i.complete,width:i.naturalWidth}));}).observe(document,{subtree:true,childList:true,attributes:true});});
   await page.route('https://assets.zyrosite.com/**',route=>route.fulfill({path:cwd+'/public/images/logo-tj.png',contentType:'image/png'}));
-  await page.route('**/routes/bromo-sunrise',async route=>{
-   const r=await route.fetch();const html=(await r.text()).replace(/(<script data-page="app" type="application\/json">)([\s\S]*?)(<\/script>)/,(_,a,json,b)=>{const p=JSON.parse(json);p.props.route.gallery=Array.from({length:7},(_,i)=>p.props.route.image+'?photo='+i);p.props.route.why={us:'**Best For** Nature lovers, adventure seekers and photographers.'};return a+JSON.stringify(p).replace(/</g,'\\u003c')+b;});
+  await page.route('**/routes/bromo-sunrise*',async route=>{
+   const r=await route.fetch();const body=await r.text();console.log('TJ_PAYLOAD:'+name+':'+body.slice(body.indexOf('data-page')-40,body.indexOf('data-page')+180));const html=body.replace(/(<script data-page="app" type="application\/json">)([\s\S]*?)(<\/script>)/,(_,a,json,b)=>{const p=JSON.parse(json);p.props.route.gallery=Array.from({length:7},(_,i)=>p.props.route.image+'?photo='+i);p.props.route.why={us:'**Best For** Nature lovers, adventure seekers and photographers.'};return a+JSON.stringify(p).replace(/</g,'\\u003c')+b;});
    await route.fulfill({response:r,body:html});
   });
   await page.goto('/routes/bromo-sunrise',{waitUntil:'networkidle'});
