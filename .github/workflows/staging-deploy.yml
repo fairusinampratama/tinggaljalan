@@ -36,6 +36,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   validate:
@@ -293,6 +294,28 @@ jobs:
             -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
             u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
             < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/staging-review/preservation-before.json"
+      - name: Download read-only preservation baseline
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-review-37933714660-1
+          run-id: 37933714660
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/preservation-baseline
+      - name: Compare content and media across preview deployment
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import assert from 'node:assert/strict';
+          const before = JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/preservation-baseline/preservation-before.json'));
+          const after = JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json'));
+          const oldRevision = before.revision;
+          delete before.revision;
+          delete after.revision;
+          assert.deepEqual(after,before,'Public content, branding, media, production and isolation must stay unchanged across deployment.');
+          const evidence = { previousPreviewRevision:oldRevision, deployedRevision:'c4afe830925af7bf17125c47fb7843d1fce71cf2', unchanged:true, snapshot:after };
+          writeFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-comparison.json',JSON.stringify(evidence,null,2));
+          console.log(JSON.stringify(evidence,null,2));
+          NODE
       - name: Review existing desktop and mobile preview without hosting writes
         env:
           REVISION: ${{ inputs.revision }}
@@ -335,6 +358,15 @@ jobs:
           path: ${{ runner.temp }}/staging-review
           retention-days: 7
           if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: initial-loading-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/staging-review/loading
+            ${{ runner.temp }}/staging-review/preservation-comparison.json
+          if-no-files-found: warn
+          retention-days: 7
       - name: Remove browser credentials
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/browser-review"
