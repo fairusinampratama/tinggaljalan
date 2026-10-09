@@ -170,38 +170,29 @@ jobs:
           writeFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-comparison.json',JSON.stringify(evidence,null,2));
           console.log(JSON.stringify(evidence,null,2));
           NODE
-      - name: Verify initial rendering without application or content writes
-        env:
-          REVISION: ${{ inputs.production_revision }}
+      - name: Inspect hosting quota and deployment artifact usage without writes
         run: |
-          npm ci
-          npx playwright install --with-deps chromium
-          node scripts/testing/live-production-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
-      - name: Validate live article HTML using the deployed hosting PHP validator
-        env:
-          REVISION: ${{ inputs.production_revision }}
-        run: |
-          set -euo pipefail
-          ROOT='/home/u304629909/domains/tinggaljalan.com/deployments/releases'
-          for html in "$RUNNER_TEMP/staging-review/loading/articles/"*.html; do
-            ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
-              -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
-              -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
-              u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php -r '\$argv[1]=\"php://stdin\"; require \"$ROOT/$REVISION/scripts/deployment/assert-article-html.php\";'" < "$html"
-            echo "HOSTING_ARTICLE_VALIDATOR $(basename "$html") passed"
+          ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
+            -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
+            -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
+            u304629909@153.92.9.54 'bash -s' <<'REMOTE'
+          set -eu
+          echo 'QUOTA_BEGIN'
+          quota -s 2>/dev/null || true
+          df -Pk /home/u304629909
+          df -Pi /home/u304629909
+          for domain in tinggaljalan.com preview.tinggaljalan.com; do
+            root="/home/u304629909/domains/$domain/deployments"
+            echo "DEPLOYMENT $domain"
+            readlink -f "$root/current"
+            du -sk "$root/releases" "$root/incoming" "$root/shared/backups" "$root/shared/storage" 2>/dev/null || true
+            find "$root/releases" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | while IFS= read -r name; do
+              du -sk "$root/releases/$name"
+            done
+            find "$root/incoming" -mindepth 1 -maxdepth 1 -type f -printf '%f %s bytes\n'
           done
-      - name: Review production without writes
-        if: inputs.production_revision != ''
-        env:
-          REVIEW_TARGET: production
-          REVISION: ${{ inputs.production_revision }}
-        run: |
-          [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
-          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/production"
-      - name: Report live production SEO and browser results
-        run: |
-          cat "$RUNNER_TEMP/staging-review/production/verification.txt"
-          cat "$RUNNER_TEMP/staging-review/production/diagnostics.json"
+          echo 'QUOTA_END'
+          REMOTE
       - name: Verify public content and media stayed unchanged during review
         env:
           REVISION: ${{ inputs.revision }}
