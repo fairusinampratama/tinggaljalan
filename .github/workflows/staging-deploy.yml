@@ -170,28 +170,55 @@ jobs:
           writeFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-comparison.json',JSON.stringify(evidence,null,2));
           console.log(JSON.stringify(evidence,null,2));
           NODE
-      - name: Inspect hosting quota and deployment artifact usage without writes
+      - name: Remove only six explicitly approved inactive production artifacts
         run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import assert from 'node:assert/strict';
+          const snapshot = JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json'));
+          assert.equal(snapshot.production_revision,'a777cb7b8608ed3028f5709fad50fe3bbc801d9a');
+          assert.equal(snapshot.revision,'05a12039b72a7035e8990dfe4793fd6bf51dbc7a');
+          NODE
           ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
             -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
             -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
-            u304629909@153.92.9.54 'bash -s' <<'REMOTE'
-          set -eu
-          echo 'QUOTA_BEGIN'
-          quota -s 2>/dev/null || true
-          df -Pk /home/u304629909
-          df -Pi /home/u304629909
-          for domain in tinggaljalan.com preview.tinggaljalan.com; do
-            root="/home/u304629909/domains/$domain/deployments"
-            echo "DEPLOYMENT $domain"
-            readlink -f "$root/current"
-            du -sk "$root/releases" "$root/incoming" "$root/shared/backups" "$root/shared/storage" 2>/dev/null || true
-            find "$root/releases" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | while IFS= read -r name; do
-              du -sk "$root/releases/$name"
-            done
-            find "$root/incoming" -mindepth 1 -maxdepth 1 -type f -printf '%f %s bytes\n'
+            u304629909@153.92.9.54 'bash -s' <<'REMOTE' | tee "$RUNNER_TEMP/staging-review/approved-cleanup.txt"
+          set -euo pipefail
+          root=/home/u304629909/domains/tinggaljalan.com/deployments
+          current=a777cb7b8608ed3028f5709fad50fe3bbc801d9a
+          inactive=d87bf649b8894c08c9e1302f2fe2e7f5d516d0cb
+          new=627978e8114683c284c394499bbf1cdc2bcced26
+          [[ "$(readlink -f "$root/current")" == "$root/releases/$current" ]]
+          [[ -d "$root/releases/$inactive" && ! -L "$root/releases/$inactive" ]]
+          [[ "$(realpath "$root/releases/$inactive")" == "$root/releases/$inactive" ]]
+          [[ "$(realpath "$root/releases")" == "$root/releases" ]]
+          [[ "$(realpath "$root/incoming")" == "$root/incoming" ]]
+          [[ -f "$root/incoming/release-$new.tar.gz" && ! -L "$root/incoming/release-$new.tar.gz" ]]
+          [[ "$(stat -c %s "$root/incoming/release-$new.tar.gz")" == 86216649 ]]
+          names=(5fe47ad36b032d328f85693e407016db494c887f d87bf649b8894c08c9e1302f2fe2e7f5d516d0cb 593d56541f9c0b5b5e2df024e32c9bbcc29c78cb 2195c4563bbb7b0805c7673ff89374e3f4294f6f d168bb0e64e1e2cb45735cadd36f09247d832fe1)
+          sizes=(30780519 86217191 26870685 30780387 86188602)
+          for i in "${!names[@]}"; do
+            file="$root/incoming/release-${names[$i]}.tar.gz"
+            [[ -f "$file" && ! -L "$file" ]]
+            [[ "$(stat -c %s "$file")" == "${sizes[$i]}" ]]
+            [[ "$(realpath "$file")" == "$file" ]]
           done
-          echo 'QUOTA_END'
+          before_releases=$(find "$root/releases" -mindepth 1 -maxdepth 1 -type d ! -name "$inactive" -printf '%f\n' | sort)
+          before_archives=$(find "$root/incoming" -mindepth 1 -maxdepth 1 -type f -printf '%f\n' | sort)
+          echo "APPROVED_CLEANUP_BEGIN active=$current keep_new_archive=$new"
+          du -sk "$root/releases/$inactive"
+          # rm unlinks symlinks inside the inactive release; it does not traverse shared storage.
+          rm -rf --one-file-system -- "$root/releases/$inactive"
+          for i in "${!names[@]}"; do
+            rm -- "$root/incoming/release-${names[$i]}.tar.gz"
+            echo "REMOVED release-${names[$i]}.tar.gz ${sizes[$i]} bytes"
+          done
+          [[ ! -e "$root/releases/$inactive" ]]
+          [[ "$(readlink -f "$root/current")" == "$root/releases/$current" ]]
+          [[ -f "$root/incoming/release-$new.tar.gz" ]]
+          [[ "$before_releases" == "$(find "$root/releases" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)" ]]
+          echo "REMOVED inactive release $inactive"
+          echo 'APPROVED_CLEANUP_END'
           REMOTE
       - name: Verify public content and media stayed unchanged during review
         env:
@@ -228,3 +255,4 @@ jobs:
       - name: Remove browser credentials
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/browser-review"
+
