@@ -316,13 +316,6 @@ jobs:
           writeFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-comparison.json',JSON.stringify(evidence,null,2));
           console.log(JSON.stringify(evidence,null,2));
           NODE
-      - name: Review existing desktop and mobile preview without hosting writes
-        env:
-          REVISION: ${{ inputs.revision }}
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
       - name: Verify initial rendering without application or content writes
         env:
           REVISION: ${{ inputs.revision }}

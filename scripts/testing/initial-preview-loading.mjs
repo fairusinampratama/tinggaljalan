@@ -40,7 +40,10 @@ try {
         window.__firstCopy = { incomplete:false, ready:null };
         new MutationObserver(() => {
           const payload = document.querySelector('script[data-page="app"]');
-          if (payload) window.__expectedCopy ??= JSON.parse(payload.textContent).props.translations.searchTitle;
+          if (payload && !window.__expectedCopy) {
+            try { window.__expectedCopy = JSON.parse(payload.textContent).props.translations.searchTitle; }
+            catch { /* The streamed JSON element is not complete yet. */ }
+          }
           if (!document.querySelector('.server-seo-content') && document.querySelector('#home')) {
             if (!document.querySelector('#home').textContent.includes(window.__expectedCopy)) window.__firstCopy.incomplete = true;
             window.__firstCopy.ready ??= performance.now();
