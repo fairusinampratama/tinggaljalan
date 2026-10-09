@@ -11,8 +11,8 @@ test.beforeEach(async ({ page }) => {
   }
 });
 
-// Unlike FontFaceSet.ready, explicit face loads do not wait for the held
-// entry module / document load in Firefox and WebKit. Keep geometry checks.
+// Load the rendered faces explicitly before measuring geometry. The lazy
+// page module stays held until after the initial screenshot.
 async function settleVisibleFonts(page) {
   await page.evaluate(async () => {
     const fonts = new Set([...document.querySelectorAll('.server-seo-content h2, .server-seo-content h3, .server-seo-content p, .server-seo-content label, .server-seo-content select, .server-seo-content a')].map((element) => {
@@ -24,14 +24,16 @@ async function settleVisibleFonts(page) {
   });
 }
 
-// Hold the entry module so the browser really paints the server document.
+// Hold the lazy homepage module: bootstrap and document loading can finish,
+// but React cannot replace the server document. This reproduces the actual
+// asynchronous page-resolution transition across browser engines.
 for (const language of ['us', 'id', 'cn']) {
   test(`initial ${language} homepage keeps its hero geometry and complete copy`, async ({ page }, testInfo) => {
     const browserErrors = [];
     page.on('pageerror', (error) => browserErrors.push(error.message));
     let release;
     const gate = new Promise((resolve) => { release = resolve; });
-    await page.route('**/build/assets/app-*.js', async (route) => { await gate; await route.continue(); });
+    await page.route('**/build/assets/HomePage-*.js', async (route) => { await gate; await route.continue(); });
     await page.addInitScript(() => {
       window.__initialRender = { incomplete: false, ready: null };
       new MutationObserver(() => {
@@ -66,7 +68,7 @@ for (const language of ['us', 'id', 'cn']) {
 test('destination fragment exists before JS and stays aligned after mount', async ({ page }, testInfo) => {
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
-  await page.route('**/build/assets/app-*.js', async (route) => { await gate; await route.continue(); });
+  await page.route('**/build/assets/HomePage-*.js', async (route) => { await gate; await route.continue(); });
   try {
     await page.goto('/#destination', { waitUntil: 'commit' });
     await expect(page.locator('.server-seo-content')).toBeVisible();
