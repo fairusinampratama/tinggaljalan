@@ -149,8 +149,8 @@ jobs:
       - name: Download read-only preservation baseline
         uses: actions/download-artifact@v4
         with:
-          name: staging-review-37996425588-1
-          run-id: 37996425588
+          name: staging-review-38001811945-1
+          run-id: 38001811945
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/preservation-baseline
       - name: Compare content and media across preview deployment
@@ -163,24 +163,26 @@ jobs:
           const oldRevision = before.revision;
           delete before.revision;
           delete after.revision;
-          assert.deepEqual(after,before,'Public content, branding, media, production and isolation must stay unchanged across deployment.');
-          const evidence = { previousPreviewRevision:oldRevision, deployedRevision:JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json')).revision, unchanged:true, snapshot:after };
+          delete before.production_revision;
+          delete after.production_revision;
+          assert.deepEqual(after,before,'Public content, branding, media and isolation must stay unchanged across deployment.');
+          const evidence = { previousPreviewRevision:oldRevision, productionRevision:JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json')).production_revision, deployedRevision:JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json')).revision, unchanged:true, snapshot:after };
           writeFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-comparison.json',JSON.stringify(evidence,null,2));
           console.log(JSON.stringify(evidence,null,2));
           NODE
       - name: Verify initial rendering without application or content writes
         env:
-          REVISION: ${{ inputs.revision }}
+          REVISION: ${{ inputs.production_revision }}
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          node scripts/testing/live-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
+          node scripts/testing/live-production-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
       - name: Validate live article HTML using the deployed hosting PHP validator
         env:
-          REVISION: ${{ inputs.revision }}
+          REVISION: ${{ inputs.production_revision }}
         run: |
           set -euo pipefail
-          ROOT='/home/u304629909/domains/preview.tinggaljalan.com/deployments/releases'
+          ROOT='/home/u304629909/domains/tinggaljalan.com/deployments/releases'
           for html in "$RUNNER_TEMP/staging-review/loading/articles/"*.html; do
             ssh -p 65002 -i "$RUNNER_TEMP/browser-review/key" \
               -o UserKnownHostsFile="$RUNNER_TEMP/browser-review/known_hosts" \
@@ -188,17 +190,6 @@ jobs:
               u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php -r '\$argv[1]=\"php://stdin\"; require \"$ROOT/$REVISION/scripts/deployment/assert-article-html.php\";'" < "$html"
             echo "HOSTING_ARTICLE_VALIDATOR $(basename "$html") passed"
           done
-      - name: Reuse successful deployment SEO and browser evidence
-        uses: actions/download-artifact@v4
-        with:
-          name: staging-review-05a12039b72a7035e8990dfe4793fd6bf51dbc7a-1
-          run-id: 37998521758
-          github-token: ${{ github.token }}
-          path: ${{ runner.temp }}/staging-review/semantic
-      - name: Report verified SEO and browser results
-        run: |
-          cat "$RUNNER_TEMP/staging-review/semantic/verification.txt"
-          cat "$RUNNER_TEMP/staging-review/semantic/diagnostics.json"
       - name: Review production without writes
         if: inputs.production_revision != ''
         env:
@@ -207,6 +198,10 @@ jobs:
         run: |
           [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/production"
+      - name: Report live production SEO and browser results
+        run: |
+          cat "$RUNNER_TEMP/staging-review/production/verification.txt"
+          cat "$RUNNER_TEMP/staging-review/production/diagnostics.json"
       - name: Verify public content and media stayed unchanged during review
         env:
           REVISION: ${{ inputs.revision }}
