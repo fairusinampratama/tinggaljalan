@@ -23,10 +23,16 @@ jobs:
       - run: npm ci
       - uses: actions/download-artifact@v4
         with:
-          name: initial-loading-review-37935716462
-          run-id: 37935716462
+          name: initial-loading-review-37937499311
+          run-id: 37937499311
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/review
+      - uses: actions/download-artifact@v4
+        with:
+          name: staging-review-37935716462-1
+          run-id: 37935716462
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/public-pages
       - name: Publish compact public-page review evidence
         run: |
           node --input-type=module <<'NODE'
@@ -39,6 +45,10 @@ jobs:
           const preservation=JSON.parse(readFileSync(root+'/preservation-comparison.json'));
           console.log('TJ_REVIEW_JSON:'+JSON.stringify({metrics,preservation}));
           writeFileSync(output+'/preview-verification.json',JSON.stringify({metrics,preservation},null,2));
+          const publicRoot=process.env.RUNNER_TEMP+'/public-pages';
+          const verification=readFileSync(publicRoot+'/verification.txt','utf8');
+          console.log('TJ_SEO_TEXT:'+JSON.stringify(verification));
+          writeFileSync(output+'/seo-verification.txt',verification);
           const shots=['desktop-us-initial','desktop-us-react','mobile-us-initial','mobile-us-react'];
           const sheets=[];
           for(let i=0;i<shots.length;i++){
@@ -50,6 +60,25 @@ jobs:
           writeFileSync(output+'/preview-loading-comparison.jpg',jpg);
           const b64=jpg.toString('base64');
           for(let i=0;i<b64.length;i+=3000) console.log('TJ_REVIEW_IMAGE:'+b64.slice(i,i+3000));
+          for(const profile of ['desktop','mobile']){
+            const labels=['bromo-article','ijen-article','bukit-lawang-article','bromo-route','home','routes','news','about','privacy'];
+            const tiles=[];
+            const width=profile==='desktop'?300:195;
+            const tileHeight=profile==='desktop'?233:446;
+            for(let i=0;i<labels.length;i++){
+              for(let scroll=0;scroll<4;scroll++){
+                const index=i*4+scroll;
+                const image=await sharp(publicRoot+'/'+profile+'-'+labels[i]+'-scroll-'+scroll+'.png').resize({width}).toBuffer();
+                tiles.push({input:image,left:scroll*width,top:i*tileHeight+24});
+                const label='<svg width="'+width+'" height="24"><rect width="100%" height="100%" fill="white"/><text x="5" y="17" font-size="12">'+labels[i]+' / '+scroll+'</text></svg>';
+                tiles.push({input:Buffer.from(label),left:scroll*width,top:i*tileHeight});
+              }
+            }
+            const image=await sharp({create:{width:4*width,height:9*tileHeight,channels:3,background:'#eeeeee'}}).composite(tiles).jpeg({quality:65}).toBuffer();
+            writeFileSync(output+'/'+profile+'-public-pages.jpg',image);
+            const encoded=image.toString('base64');
+            for(let i=0;i<encoded.length;i+=3000) console.log('TJ_'+profile.toUpperCase()+'_IMAGE:'+encoded.slice(i,i+3000));
+          }
           NODE
       - uses: actions/upload-artifact@v4
         with:
