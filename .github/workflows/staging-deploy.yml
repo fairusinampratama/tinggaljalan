@@ -21,7 +21,11 @@ jobs:
           path: before
       - uses: actions/checkout@v4
         with:
+          ref: 2c9f8ef7cfedbcb1102c0a96e4ddc554122884b8
           path: after
+      - uses: actions/checkout@v4
+        with:
+          path: review
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -53,12 +57,17 @@ jobs:
           path: before/public
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-92155edefdbe427e78e9dbca5676ff8edc18c766
-          run-id: 37957829637
+          name: frontend-5bb17807d8cbbeae2acad3303f54d7e354231bf0
+          run-id: 37960880371
           github-token: ${{ github.token }}
           path: after/public
       - name: Capture same-data before and after
-        run: node after/scripts/testing/local-continuity-evidence.mjs
+        run: |
+          cp review/scripts/testing/local-continuity-evidence.mjs after/scripts/testing/local-continuity-evidence.mjs
+          node after/scripts/testing/local-continuity-evidence.mjs
+      - name: Run focused regressions
+        working-directory: after
+        run: npx playwright test tests/Browser/initial-media-handoff.spec.js tests/Browser/route-gallery-overflow.spec.js --project=android-chromium --retries=0 --reporter=line
       - uses: actions/upload-artifact@v4
         if: always()
         with:

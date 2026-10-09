@@ -25,7 +25,7 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   });
   await page.goto('/routes/bromo-sunrise',{waitUntil:'networkidle'});
   await page.waitForFunction(()=>!document.querySelector('.server-seo-content'));
-  const dims=await page.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,x:scrollX}));
+  const dims=await page.evaluate(()=>({viewport:innerWidth,client:document.documentElement.clientWidth,width:document.documentElement.scrollWidth,x:scrollX,overflow:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>394&&e.getBoundingClientRect().width).slice(0,12).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width}))}));
   results.push({name,...dims}); console.log("TJ_DIMENSIONS:"+JSON.stringify({name,...dims}));
   await page.evaluate(()=>scrollTo({left:0,top:0,behavior:'instant'}));
   await page.screenshot({path:output+'/'+name+'-package.jpg',fullPage:true,type:'jpeg',quality:65});
