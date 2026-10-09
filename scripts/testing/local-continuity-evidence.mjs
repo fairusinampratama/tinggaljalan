@@ -9,7 +9,7 @@ const browser=await chromium.launch();
 const results=[];
 for(const [name,port] of [['before',4173],['after',4174]]) {
  const cwd=root+'/'+name;
- const server=spawn('php',['-S',`127.0.0.1:${port}`,'-t','public','vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php'],{cwd,env:{...process.env,APP_ENV:'testing',APP_URL:`http://127.0.0.1:${port}`,CACHE_STORE:'array',DB_CONNECTION:'sqlite',DB_DATABASE:cwd+'/storage/framework/testing/browser.sqlite',MAIL_MAILER:'array',QUEUE_CONNECTION:'sync',SESSION_DRIVER:'database'},stdio:'ignore'});
+ const server=spawn('php',['artisan','serve','--host=127.0.0.1',`--port=${port}`,'--no-reload'],{cwd,env:{...process.env,APP_ENV:'testing',APP_URL:`http://127.0.0.1:${port}`,CACHE_STORE:'array',DB_CONNECTION:'sqlite',DB_DATABASE:cwd+'/storage/framework/testing/browser.sqlite',MAIL_MAILER:'array',QUEUE_CONNECTION:'sync',SESSION_DRIVER:'database'},stdio:'ignore',detached:true});
  try {
   const base=`http://127.0.0.1:${port}`;
   for(let i=0;i<80;i++){try{if((await fetch(base+'/up')).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
@@ -40,7 +40,7 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([document.querySelector('nav img'),document.querySelector('#home img')].filter(Boolean).map(i=>i.decode().catch(()=>{})));});
   await page.screenshot({path:output+'/'+name+'-ready.jpg',type:'jpeg',quality:65});
   await ctx.close();
- } finally {server.kill('SIGTERM');}
+ } finally {process.kill(-server.pid,'SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}
 }
 await browser.close();
 console.log('TJ_DIMENSIONS:'+JSON.stringify(results));
