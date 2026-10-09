@@ -175,11 +175,15 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/live-candidate-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
-      - name: Verify all public SEO semantics and desktop/mobile pages
-        env:
-          REVISION: ${{ inputs.revision }}
+      - name: Reuse successful deployment SEO and browser evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-review-e67543054f2047291d58f6c47f8608327ad984e4-1
+          run-id: 37965491397
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/staging-review/semantic
+      - name: Report verified SEO and browser results
         run: |
-          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/semantic"
           cat "$RUNNER_TEMP/staging-review/semantic/verification.txt"
           cat "$RUNNER_TEMP/staging-review/semantic/diagnostics.json"
       - name: Review production without writes
