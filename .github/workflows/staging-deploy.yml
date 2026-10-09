@@ -149,11 +149,13 @@ jobs:
       - name: Download read-only preservation baseline
         uses: actions/download-artifact@v4
         with:
-          name: staging-review-37965335820-1
-          run-id: 37965335820
+          name: staging-review-37994417901-1
+          run-id: 37994417901
           github-token: ${{ github.token }}
           path: ${{ runner.temp }}/preservation-baseline
-      - name: Compare content and media across preview deployment
+      - name: Compare content and media across approved production deployment
+        env:
+          EXPECTED_PRODUCTION_REVISION: ${{ inputs.production_revision }}
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync, writeFileSync } from 'node:fs';
@@ -161,7 +163,7 @@ jobs:
           const before = JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/preservation-baseline/preservation-before.json'));
           const after = JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json'));
           const oldRevision = before.revision;
-          delete before.revision;
+          assert.equal(after.production_revision,process.env.EXPECTED_PRODUCTION_REVISION);\n          delete before.production_revision;\n          delete after.production_revision;\n          delete before.revision;
           delete after.revision;
           assert.deepEqual(after,before,'Public content, branding, media, production and isolation must stay unchanged across deployment.');
           const evidence = { previousPreviewRevision:oldRevision, deployedRevision:JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-review/preservation-before.json')).revision, unchanged:true, snapshot:after };
@@ -174,7 +176,7 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          node scripts/testing/live-candidate-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
+          node scripts/testing/live-production-review.mjs "$RUNNER_TEMP/browser-review/config.json" "${{ inputs.production_revision }}" "$RUNNER_TEMP/staging-review/loading"
       - name: Reuse successful deployment SEO and browser evidence
         uses: actions/download-artifact@v4
         with:
