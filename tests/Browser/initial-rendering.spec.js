@@ -51,13 +51,13 @@ for (const language of ['us', 'id', 'cn']) {
       const initial = await page.evaluate(() => { const box = document.querySelector('.server-seo-content #home')?.getBoundingClientRect(); return box ? { height: box.height } : null; });
       const copy = JSON.parse(readFileSync(new URL(`../../resources/js/data/translations/${language}.json`, import.meta.url))).searchTitle;
       await page.evaluate((title) => { window.__expectedSearchTitle = title; }, copy);
-      // Firefox/WebKit screenshot capture can wait for held module requests.
-      // Keep all DOM/geometry assertions there; Chromium captures both frames.
+      // Capture evidence in Chromium; all five profiles still run every
+      // content, geometry, translation and browser-error assertion.
       if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('initial.png') });
       release();
       await expect(page.locator('.server-seo-content')).toHaveCount(0);
       await expect(page.locator('#home')).toContainText(copy || 'Find a Trip');
-      await page.screenshot({ path: testInfo.outputPath('react.png') });
+      if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('react.png') });
       expect(initial, 'server hero must use the existing layout').not.toBeNull();
       const mounted = await page.locator('#home').boundingBox();
       expect(Math.abs(initial.height - mounted.height)).toBeLessThan(8);
@@ -85,7 +85,7 @@ test('destination fragment exists before JS and stays aligned after mount', asyn
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const after = await page.locator('#destination').boundingBox();
     expect(Math.abs(before.y - after.y)).toBeLessThan(8);
-    await page.screenshot({ path: testInfo.outputPath('fragment-react.png') });
+    if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('fragment-react.png') });
   } finally { release(); }
 });
 
