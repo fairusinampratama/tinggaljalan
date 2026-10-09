@@ -47,13 +47,13 @@ jobs:
           npx playwright install --with-deps chromium
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-92e09992bc5075ee118ebd53f9a748b61e887f79
+          name: frontend-f95710125c848dedd5aff9ff39d3ae4bf00518fb
           run-id: 37936300938
           github-token: ${{ github.token }}
           path: before/public
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-1449a00fb497d4ea94c5346542e2d1e02c6b5073
+          name: frontend-92155edefdbe427e78e9dbca5676ff8edc18c766
           run-id: 37957829637
           github-token: ${{ github.token }}
           path: after/public
