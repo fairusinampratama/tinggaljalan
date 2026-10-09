@@ -15,7 +15,7 @@
             <p>{{ $serverContent['eyebrow'] }}</p>
         @endif
         <h1>{{ $serverContent['h1'] }}</h1>
-        @include('partials.plain-text', ['text' => $serverContent['intro']])
+        @include('partials.plain-text', ['text' => $serverContent['intro'], 'inlineStrong' => ($page['component'] ?? '') === 'RouteDetailPage'])
         @if ($serverContent['image'])
             <img src="{{ $serverContent['image']['src'] }}" alt="{{ $serverContent['image']['alt'] }}" loading="eager" width="1200" height="800">
         @endif

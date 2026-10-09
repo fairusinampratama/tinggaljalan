@@ -104,7 +104,16 @@ export function RouteGallery({ images, alt, labels }) {
 
   useEffect(() => {
     [desktopThumbnailRefs, mobileThumbnailRefs, lightboxThumbnailRefs].forEach((collection) => {
-      collection.current[activeIndex]?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      const thumbnail = collection.current[activeIndex];
+      const strip = thumbnail?.parentElement;
+      if (!strip?.clientWidth || !strip.clientHeight) return;
+      const item = thumbnail.getBoundingClientRect();
+      const bounds = strip.getBoundingClientRect();
+      // Scroll this strip only. scrollIntoView also moves the document,
+      // which can shift the visitor away from the package content.
+      const left = item.left < bounds.left ? item.left - bounds.left : Math.max(0, item.right - bounds.right);
+      const top = item.top < bounds.top ? item.top - bounds.top : Math.max(0, item.bottom - bounds.bottom);
+      strip.scrollBy({ left, top, behavior: 'smooth' });
     });
   }, [activeIndex]);
 
@@ -221,7 +230,7 @@ export function RouteGallery({ images, alt, labels }) {
 
   return (
     <>
-      <div className="mt-8 grid items-start gap-3 md:grid-cols-[112px_minmax(0,1fr)]">
+      <div className="mt-8 grid min-w-0 grid-cols-1 items-start gap-3 md:grid-cols-[112px_minmax(0,1fr)]">
         {hasMultiple ? (
           <div className="hidden max-h-[520px] flex-col gap-3 overflow-y-auto pr-1 md:flex">
             {safeImages.map((image, index) => (
@@ -267,7 +276,7 @@ export function RouteGallery({ images, alt, labels }) {
           ) : null}
         </div>
         {hasMultiple ? (
-          <div className="flex gap-2 overflow-x-auto pb-1 md:hidden">
+          <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 md:hidden">
             {safeImages.map((image, index) => (
               <Thumbnail key={`${image}-${index}`} {...thumbnailProps(image, index, mobileThumbnailRefs)} />
             ))}

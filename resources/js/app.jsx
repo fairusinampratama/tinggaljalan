@@ -4,22 +4,14 @@ import { createRoot } from 'react-dom/client';
 import { useLayoutEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { BookingProvider } from './context/BookingContext';
+import { prepareInitialHandoff, revealInitialApp } from './utils/initialHandoff';
 
 const pages = import.meta.glob('./pages/**/*.jsx');
 
-function InitialApp({ App, props, anchor }) {
+function InitialApp({ App, props, handoff, onFailure }) {
   useLayoutEffect(() => {
-    if (!anchor) return;
-    const target = document.getElementById(anchor.id);
-    if (target) {
-      // Keep the native fragment's visible position through DOM replacement,
-      // before paint. Do not animate a second trip down the page.
-      window.scrollBy({ top: target.getBoundingClientRect().top - anchor.top, behavior: 'instant' });
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        document.documentElement.removeAttribute('data-initial-fragment');
-      }));
-    }
-  }, [anchor]);
+    if (handoff) return revealInitialApp(handoff, onFailure);
+  }, [handoff, onFailure]);
   return <App {...props} />;
 }
 
@@ -63,10 +55,14 @@ createInertiaApp({
     if (!props.initialPage.props.translations?.searchTitle) {
       throw new Error('Initial translations unavailable; keeping server content.');
     }
-    let target;
-    try { target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); } catch { /* malformed fragment */ }
-    const anchor = target ? { id: target.id, top: target.getBoundingClientRect().top } : null;
-    createRoot(el).render(<InitialApp App={App} props={props} anchor={anchor} />);
+    const handoff = prepareInitialHandoff(el);
+    const root = createRoot(handoff?.stage ?? el, { onUncaughtError: () => onFailure() });
+    const onFailure = () => {
+      // The original document remains readable on media failure or timeout.
+      root.unmount();
+      handoff?.stage.remove();
+    };
+    root.render(<InitialApp App={App} props={props} handoff={handoff} onFailure={onFailure} />);
   },
   progress: {
     color: '#B99A5E',
