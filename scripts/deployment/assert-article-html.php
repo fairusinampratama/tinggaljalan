@@ -34,7 +34,7 @@ if (! $main) {
     fwrite(STDERR, "Article fallback missing.\n");
     exit(1);
 }
-$sections = $xpath->query('./section[@id]', $main);
+$sections = $xpath->query('.//section[@id]', $main);
 $expected = $page['props']['article']['sections'] ?? [];
 if ($sections->length !== count($expected)) {
     fwrite(STDERR, "Article section count mismatch.\n");
