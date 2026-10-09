@@ -18,7 +18,7 @@ test('seven-photo CMS gallery scrolls locally without expanding the package page
   await expect(gallery).toBeVisible();
   await expect(page.locator('#route-detail strong').first()).toHaveText('Best For');
   await expect(page.locator('#route-detail')).toContainText('<script>literal</script>');
-  const width = await page.evaluate(() => innerWidth);
+  const width = page.viewportSize().width;
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1);
   const decline = page.getByTestId('consent-decline');
   if (await decline.isVisible()) await decline.click();

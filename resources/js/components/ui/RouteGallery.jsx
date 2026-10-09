@@ -33,7 +33,7 @@ function Thumbnail({ image, index, activeIndex, alt, label, onSelect, imageRef, 
       aria-label={`${label} ${index + 1}`}
       aria-current={selected ? 'true' : undefined}
       onClick={() => onSelect(index)}
-      className={`shrink-0 overflow-hidden rounded-lg border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+      className={`relative shrink-0 overflow-hidden rounded-lg border-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
         selected ? 'border-accent shadow-md' : dark ? 'border-white/20 opacity-65 hover:opacity-100' : 'border-transparent opacity-75 hover:border-line hover:opacity-100'
       }`}
     >

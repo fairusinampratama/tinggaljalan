@@ -35,7 +35,7 @@ for (const fail of [false, true]) {
       await expect(page.locator('.server-seo-content')).toHaveCount(0);
       await expect(page.locator('[data-initial-stage]')).toHaveCount(0);
       await expect(page.locator('#home')).toContainText('Find a Trip');
-      await expect(page.locator('#destination a').first()).toBeVisible();
+      await expect(page.locator('#destination button').first()).toBeVisible();
       if (!fail) {
         expect(await page.locator('nav img, #home img').evaluateAll(images => images.slice(0, 2).every(img => img.complete && img.naturalWidth > 0))).toBe(true);
       }
