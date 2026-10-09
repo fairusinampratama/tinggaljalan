@@ -21,7 +21,7 @@ jobs:
           path: before
       - uses: actions/checkout@v4
         with:
-          ref: 2c9f8ef7cfedbcb1102c0a96e4ddc554122884b8
+          ref: e67543054f2047291d58f6c47f8608327ad984e4
           path: after
       - uses: actions/checkout@v4
         with:
@@ -57,8 +57,8 @@ jobs:
           path: before/public
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-5bb17807d8cbbeae2acad3303f54d7e354231bf0
-          run-id: 37960880371
+          name: frontend-f81e0c6da783e05b9d461e7d46f321a5f3fdbc50
+          run-id: 37962559067
           github-token: ${{ github.token }}
           path: after/public
       - name: Capture same-data before and after
@@ -67,7 +67,7 @@ jobs:
           node after/scripts/testing/local-continuity-evidence.mjs
       - name: Run focused regressions
         working-directory: after
-        run: npx playwright test tests/Browser/initial-media-handoff.spec.js tests/Browser/route-gallery-overflow.spec.js --project=android-chromium --retries=0 --reporter=line
+        run: npx playwright test tests/Browser/initial-media-handoff.spec.js tests/Browser/route-gallery-overflow.spec.js tests/Browser/google-ads-consent.spec.js --project=android-chromium --retries=0 --reporter=line
       - uses: actions/upload-artifact@v4
         if: always()
         with:
