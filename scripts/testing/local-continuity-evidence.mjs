@@ -9,7 +9,7 @@ const browser=await chromium.launch();
 const results=[];
 for(const [name,port] of [['before',4173],['after',4174]]) {
  const cwd=root+'/'+name;
- const server=spawn('php',['artisan','serve','--host=127.0.0.1',`--port=${port}`,'--no-reload'],{cwd,env:{...process.env,APP_ENV:'testing',APP_URL:`http://127.0.0.1:${port}`,CACHE_STORE:'array',DB_CONNECTION:'sqlite',DB_DATABASE:cwd+'/storage/framework/testing/browser.sqlite',MAIL_MAILER:'array',QUEUE_CONNECTION:'sync',SESSION_DRIVER:'database'},stdio:'ignore'});
+ const server=spawn('php',['-S',`127.0.0.1:${port}`,'-t','public','vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php'],{cwd,env:{...process.env,APP_ENV:'testing',APP_URL:`http://127.0.0.1:${port}`,CACHE_STORE:'array',DB_CONNECTION:'sqlite',DB_DATABASE:cwd+'/storage/framework/testing/browser.sqlite',MAIL_MAILER:'array',QUEUE_CONNECTION:'sync',SESSION_DRIVER:'database'},stdio:'ignore'});
  try {
   const base=`http://127.0.0.1:${port}`;
   for(let i=0;i<80;i++){try{if((await fetch(base+'/up')).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
@@ -25,7 +25,7 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   });
   await page.goto('/routes/bromo-sunrise',{waitUntil:'networkidle'});
   await page.waitForFunction(()=>!document.querySelector('.server-seo-content'));
-  const dims=await page.evaluate(()=>({viewport:innerWidth,client:document.documentElement.clientWidth,width:document.documentElement.scrollWidth,x:scrollX,overflow:[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>394&&e.getBoundingClientRect().width).slice(0,12).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width}))}));
+  const dims=await page.evaluate(()=>({viewport:innerWidth,client:document.documentElement.clientWidth,width:document.documentElement.scrollWidth,x:scrollX,strong:document.querySelector('#route-detail strong')?.textContent,containers:[...document.querySelectorAll('#route-detail .grid,#route-detail .overflow-x-auto')].slice(0,6).map(e=>({cls:e.className,width:e.getBoundingClientRect().width,scroll:e.scrollWidth,overflow:getComputedStyle(e).overflowX,columns:getComputedStyle(e).gridTemplateColumns}))}));
   results.push({name,...dims}); console.log("TJ_DIMENSIONS:"+JSON.stringify({name,...dims}));
   await page.evaluate(()=>scrollTo({left:0,top:0,behavior:'instant'}));
   await page.screenshot({path:output+'/'+name+'-package.jpg',fullPage:true,type:'jpeg',quality:65});
