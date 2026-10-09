@@ -10,7 +10,7 @@ const pages = import.meta.glob('./pages/**/*.jsx');
 
 function InitialApp({ App, props, handoff, onFailure }) {
   useLayoutEffect(() => {
-    if (handoff) return revealInitialApp(handoff, onFailure);
+    if (handoff) return revealInitialApp(handoff);
   }, [handoff, onFailure]);
   return <App {...props} />;
 }
@@ -56,9 +56,9 @@ createInertiaApp({
       throw new Error('Initial translations unavailable; keeping server content.');
     }
     const handoff = prepareInitialHandoff(el);
-    const root = createRoot(handoff?.stage ?? el, { onUncaughtError: () => onFailure() });
+    const root = createRoot(handoff?.stage ?? el, { onUncaughtError: (error) => { console.error('TinggalJalan application startup failed.', error); onFailure(); } });
     const onFailure = () => {
-      // The original document remains readable on media failure or timeout.
+      // Runtime startup failure retains the original readable document.
       root.unmount();
       handoff?.stage.remove();
     };

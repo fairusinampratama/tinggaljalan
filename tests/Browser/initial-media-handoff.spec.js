@@ -32,17 +32,14 @@ for (const fail of [false, true]) {
       await expect(page.locator('[data-initial-stage]')).toHaveAttribute('aria-hidden', 'true');
       await page.screenshot({ path: testInfo.outputPath('media-pending.png') });
       release();
-      if (fail) {
-        await expect(page.locator('[data-initial-stage]')).toHaveCount(0);
-        await expect(page.locator('.server-seo-content')).toBeVisible();
-        await expect(page.locator('#destination a').first()).toBeVisible();
-      } else {
-        await expect(page.locator('.server-seo-content')).toHaveCount(0);
-        await expect(page.locator('[data-initial-stage]')).toHaveCount(0);
+      await expect(page.locator('.server-seo-content')).toHaveCount(0);
+      await expect(page.locator('[data-initial-stage]')).toHaveCount(0);
+      await expect(page.locator('#home')).toContainText('Find a Trip');
+      await expect(page.locator('#destination a').first()).toBeVisible();
+      if (!fail) {
         expect(await page.locator('nav img, #home img').evaluateAll(images => images.slice(0, 2).every(img => img.complete && img.naturalWidth > 0))).toBe(true);
-        await expect(page.locator('#home')).toContainText('Find a Trip');
-        await page.screenshot({ path: testInfo.outputPath('media-ready.png') });
       }
+      await page.screenshot({ path: testInfo.outputPath('media-ready.png') });
     } finally { release(); }
   });
 }

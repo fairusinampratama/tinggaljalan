@@ -13,14 +13,24 @@ export function prepareInitialHandoff(el) {
 }
 
 function imageReady(image) {
-  if (image.complete) return image.naturalWidth ? image.decode().then(() => true, () => false) : Promise.resolve(false);
   return new Promise(resolve => {
-    image.addEventListener('load', () => image.decode().then(() => resolve(true), () => resolve(false)), { once: true });
-    image.addEventListener('error', () => resolve(false), { once: true });
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      image.removeEventListener('load', finish);
+      image.removeEventListener('error', finish);
+      if (image.naturalWidth) image.decode().then(resolve, resolve);
+      else resolve();
+    };
+    image.addEventListener('load', finish);
+    image.addEventListener('error', finish);
+    // A new picture can report complete before source selection starts.
+    requestAnimationFrame(() => { if (image.complete) finish(); });
   });
 }
 
-export function revealInitialApp({ server, stage }, onFailure) {
+export function revealInitialApp({ server, stage }) {
   const images = [stage.querySelector('nav img'), stage.querySelector('#home img')].filter(Boolean);
   // IDs must stay unique while the server view is interactive. Restore them
   // only after removing that view, before showing the prepared application.
@@ -29,10 +39,11 @@ export function revealInitialApp({ server, stage }, onFailure) {
   let cancelled = false;
   let timer;
   const timeout = new Promise(resolve => { timer = setTimeout(() => resolve(false), 15000); });
-  Promise.race([Promise.all(images.map(imageReady)).then(states => states.every(Boolean)), timeout]).then(ready => {
+  // Image errors must not disable navigation or booking. Wait for loaded
+  // media to decode, but reveal the usable app when requests settle or time out.
+  Promise.race([Promise.all(images.map(imageReady)), timeout]).then(() => {
     clearTimeout(timer);
     if (cancelled) return;
-    if (!ready) { onFailure(); return; }
     let id;
     try { id = decodeURIComponent(location.hash.slice(1)); } catch { /* malformed fragment */ }
     const oldTarget = id ? [...server.querySelectorAll('[id]')].find(node => node.id === id) : null;
