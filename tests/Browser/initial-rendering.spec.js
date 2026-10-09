@@ -28,7 +28,7 @@ async function settleVisibleFonts(page) {
 // but React cannot replace the server document. This reproduces the actual
 // asynchronous page-resolution transition across browser engines.
 for (const language of ['us', 'id', 'cn']) {
-  test(`initial ${language} homepage keeps its hero geometry and complete copy`, async ({ page }, testInfo) => {
+  test(`initial ${language} homepage keeps its hero geometry and complete copy`, async ({ page, browserName }, testInfo) => {
     const browserErrors = [];
     page.on('pageerror', (error) => browserErrors.push(error.message));
     let release;
@@ -51,7 +51,9 @@ for (const language of ['us', 'id', 'cn']) {
       const initial = await page.evaluate(() => { const box = document.querySelector('.server-seo-content #home')?.getBoundingClientRect(); return box ? { height: box.height } : null; });
       const copy = JSON.parse(readFileSync(new URL(`../../resources/js/data/translations/${language}.json`, import.meta.url))).searchTitle;
       await page.evaluate((title) => { window.__expectedSearchTitle = title; }, copy);
-      await page.screenshot({ path: testInfo.outputPath('initial.png') });
+      // Firefox/WebKit screenshot capture can wait for held module requests.
+      // Keep all DOM/geometry assertions there; Chromium captures both frames.
+      if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('initial.png') });
       release();
       await expect(page.locator('.server-seo-content')).toHaveCount(0);
       await expect(page.locator('#home')).toContainText(copy || 'Find a Trip');
@@ -65,7 +67,7 @@ for (const language of ['us', 'id', 'cn']) {
   });
 }
 
-test('destination fragment exists before JS and stays aligned after mount', async ({ page }, testInfo) => {
+test('destination fragment exists before JS and stays aligned after mount', async ({ page, browserName }, testInfo) => {
   let release;
   const gate = new Promise((resolve) => { release = resolve; });
   await page.route('**/build/assets/HomePage-*.js', async (route) => { await gate; await route.continue(); });
@@ -75,7 +77,7 @@ test('destination fragment exists before JS and stays aligned after mount', asyn
     await expect(page.locator('#destination')).toHaveCount(1);
     await expect(page.locator('#destination')).toBeInViewport();
     await settleVisibleFonts(page);
-    await page.screenshot({ path: testInfo.outputPath('fragment-initial.png') });
+    if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('fragment-initial.png') });
     const before = await page.locator('#destination').boundingBox();
     release();
     await expect(page.locator('.server-seo-content')).toHaveCount(0);
