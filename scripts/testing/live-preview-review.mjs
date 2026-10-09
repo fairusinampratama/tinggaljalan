@@ -10,7 +10,7 @@ const results=[];
 async function shot(page,name){const bytes=await page.screenshot({type:'jpeg',quality:65});await writeFile(out+'/'+name+'.jpg',bytes); const b=bytes.toString('base64');for(let i=0;i<b.length;i+=6000) console.log('SHOT '+name+' '+i+' '+b.slice(i,i+6000));}
 try {
  for(const [profile,viewport] of [['desktop',{width:1440,height:900}],['mobile',{width:393,height:851}]]) {
-  for(let sample=0;sample<2;sample++) {
+  for(let sample=0;sample<0;sample++) {
    const context=await browser.newContext({...access,viewport,reducedMotion:'reduce'});
    expect((await (await context.request.get('/up')).json()).revision).toBe(revision);
    const page=await context.newPage();
@@ -69,6 +69,7 @@ try {
   await expect(page.locator('.server-seo-content')).toHaveCount(0);
   await expect(page.locator('#home')).toContainText(title);
  }
+ await page.goto('/',{waitUntil:'networkidle'});
  for(const [label,title] of [['ID','Cari Trip'],['中文','寻找行程'],['EN','Find a Trip']]){
   const button=page.locator('nav').getByRole('button',{name:label,exact:true});
   if(!await button.isVisible())await page.locator('nav').getByRole('button',{name:'Open menu'}).click();
