@@ -74,5 +74,16 @@ try {
  expect(errors).toEqual([]);
  console.log('LIVE_EXTRA '+JSON.stringify({href,geometry,thumbnails:n,fragment,errors}));
  await ctx.close();
+ const slow=await browser.newContext({baseURL:base,httpCredentials:{username:'reviewer',password:config.review_password,origin:base},viewport:{width:393,height:851},isMobile:true,reducedMotion:'reduce'});
+ const sp=await slow.newPage();const cdp=await slow.newCDPSession(sp);
+ await cdp.send('Network.enable');await cdp.send('Network.emulateNetworkConditions',{offline:false,latency:150,downloadThroughput:187500,uploadThroughput:93750});
+ let open;const blocked=new Promise(r=>open=r);await sp.route('**/build/assets/*.js',async route=>{await blocked;await route.continue()});
+ await sp.goto('/',{waitUntil:'commit'});await expect(sp.locator('.server-seo-content')).toBeVisible();
+ await sp.waitForFunction(()=>[document.querySelector('nav img'),document.querySelector('#home img')].every(e=>e?.complete&&e.naturalWidth));
+ await shot(sp,'mobile-slow-initial');open();
+ await expect(sp.locator('.server-seo-content')).toHaveCount(0,{timeout:45000});
+ const ready=await sp.evaluate(()=>({width:document.documentElement.scrollWidth,client:document.documentElement.clientWidth,images:[document.querySelector('nav img'),document.querySelector('#home img')].map(e=>({ready:e?.complete&&e?.naturalWidth>0}))}));
+ expect(ready.images.every(e=>e.ready)).toBeTruthy();expect(ready.width).toBeLessThanOrEqual(ready.client+1);await shot(sp,'mobile-slow-ready');
+ console.log('SLOW_NETWORK '+JSON.stringify({latencyMs:150,downloadMbps:1.5,ready}));await slow.close();
  await writeFile(out+'/media-handoff.json',JSON.stringify({revision,results},null,2));
 } finally {await browser.close();}
