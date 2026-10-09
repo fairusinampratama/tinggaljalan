@@ -167,12 +167,23 @@ label {
 }
 
 /* Readable initial HTML until React replaces #app, including failed JS loads. */
-.server-seo-content { max-width: 72rem; margin: 0 auto; padding: 1.5rem; overflow-wrap: anywhere; }
-.server-seo-content img { max-width: 100%; height: auto; }
-.server-seo-content h1 { font-size: 2rem; }
-.server-seo-content h2 { font-size: 1.5rem; margin-top: 1.5rem; }
-.server-seo-content h3 { font-size: 1.2rem; margin-top: 1rem; }
-.server-seo-content p { margin: 0.75rem 0; }
-.server-seo-content ul { list-style: disc; padding-left: 1.5rem; }
-.server-seo-content ol { list-style: decimal; padding-left: 1.5rem; }
-.server-seo-content a { text-decoration: underline; }
+.server-document { max-width: 72rem; margin: 0 auto; padding: 6rem 1.5rem 1.5rem; overflow-wrap: anywhere; }
+.server-document img { max-width: 100%; height: auto; }
+.server-document h1 { font-size: 2rem; }
+.server-document h2 { font-size: 1.5rem; margin-top: 1.5rem; }
+.server-document h3 { font-size: 1.2rem; margin-top: 1rem; }
+.server-document p { margin: 0.75rem 0; }
+.server-document ul { list-style: disc; padding-left: 1.5rem; }
+.server-document ol { list-style: decimal; padding-left: 1.5rem; }
+.server-document a { text-decoration: underline; }
+
+/* Same fixed-navigation offset in Blade and React; no delayed hash scrolling. */
+#destination, #contact { scroll-margin-top: 80px; }
+@media (min-width: 640px) { #destination, #contact { scroll-margin-top: 88px; } }
+.server-document h1, .server-document h2, .server-document h3 { font-family: var(--font-display); color: var(--color-primary); }
+.server-native-carousel { scrollbar-width: thin; scroll-snap-type: x mandatory; }
+.server-native-carousel > section { scroll-snap-align: start; }
+
+.server-seo-content { min-height: 100vh; width: 100%; background: var(--color-canvas); color: var(--color-ink); }
+html[data-initial-fragment] { scroll-behavior: auto; }
+html[data-initial-fragment] #app { overflow-anchor: none; }

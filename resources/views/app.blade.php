@@ -38,6 +38,23 @@
             <div id="app">
                 @include('partials.server-page-content')
             </div>
+            @if (data_get($page, 'component') === 'HomePage')
+                <script>
+                    // Module scripts delay the browser's native initial fragment
+                    // scroll. The target already exists, so align it before paint.
+                    try {
+                        const id = decodeURIComponent(window.location.hash.slice(1));
+                        if (id === 'destination' || id === 'contact') {
+                            document.documentElement.dataset.initialFragment = id;
+                            const align = () => document.getElementById(id)?.scrollIntoView({ behavior: 'instant' });
+                            requestAnimationFrame(align);
+                            document.fonts.ready.then(() => {
+                                if (document.querySelector('.server-seo-content')) align();
+                            });
+                        }
+                    } catch { /* An invalid fragment must not affect readability. */ }
+                </script>
+            @endif
         @endif
     </body>
 </html>

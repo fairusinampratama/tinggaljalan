@@ -1,11 +1,6 @@
-﻿import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { loadCopy } from '../data/translations';
 import { getRegionConfig, normalizeRegion } from '../utils/localization';
-
-const fallbackCopy = {
-  nav: ['Home', 'Destination', 'Routes', 'News & Guides', 'Booking', 'Contact'],
-};
 
 const BookingContext = createContext(null);
 
@@ -76,14 +71,12 @@ export function BookingProvider({ children }) {
   const fallbackRoute = availableRoutes[0] ?? null;
   const initialRouteId = pageBooking.route ?? props.route?.id ?? fallbackRoute?.id;
   const initialBookingState = normalizeDraft(pageBooking, bookingDefaults);
-  const [languageState, setLanguageState] = useState(props.language ?? publicData.language ?? 'us');
+  const language = normalizeRegion(props.language ?? publicData.language ?? 'us');
   const [selectedRouteId, setSelectedRouteId] = useState(initialRouteId);
   const [voucherCode, setVoucherCode] = useState(pageBooking.voucher ?? '');
   const [appliedVoucher, setAppliedVoucher] = useState(pageBooking.voucher ?? '');
   const [bookingCode] = useState(props.savedBooking?.code ?? '');
   const [booking, setBooking] = useState(initialBookingState);
-  const [currentCopy, setCurrentCopy] = useState(fallbackCopy);
-  const language = normalizeRegion(languageState);
   const regionConfig = getRegionConfig(language);
 
   useEffect(() => {
@@ -97,22 +90,8 @@ export function BookingProvider({ children }) {
     }
   }, [JSON.stringify(pageBooking), JSON.stringify(bookingDefaults), props.route?.id, fallbackRoute?.id]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    loadCopy(language).then((nextCopy) => {
-      if (isMounted) {
-        setCurrentCopy(nextCopy ?? fallbackCopy);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [language]);
-
   const selectedRoute = availableRoutes.find((route) => route.id === selectedRouteId || route.slug === selectedRouteId) ?? fallbackRoute;
-  const t = { ...currentCopy, regionId: language };
+  const t = { ...props.translations, regionId: language };
   const bookingSummary = props.booking?.summary ?? emptySummary(booking.currency);
   const dateAvailability = normalizeAvailability(props.booking?.availability);
   const bookingBlock = {
@@ -125,7 +104,6 @@ export function BookingProvider({ children }) {
     const normalizedLanguage = normalizeRegion(nextLanguage);
     const nextRegionConfig = getRegionConfig(normalizedLanguage);
 
-    setLanguageState(normalizedLanguage);
     router.visit(`/language/${normalizedLanguage}`, {
       preserveScroll: true,
       preserveState: true,
