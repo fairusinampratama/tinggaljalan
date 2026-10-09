@@ -174,7 +174,7 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          node scripts/testing/live-candidate-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
+          node scripts/testing/live-validator-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/loading"
       - name: Reuse successful deployment SEO and browser evidence
         uses: actions/download-artifact@v4
         with:
