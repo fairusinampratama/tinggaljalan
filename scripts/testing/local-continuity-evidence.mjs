@@ -15,6 +15,9 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   for(let i=0;i<80;i++){try{if((await fetch(base+'/up')).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
   const ctx=await browser.newContext({baseURL:base,viewport:{width:393,height:851},isMobile:true,reducedMotion:'reduce'});
   const page=await ctx.newPage();
+  page.on('console',msg=>{if(msg.type()==='error')console.log('TJ_CONSOLE:'+name+':'+msg.text());});
+  page.on('pageerror',error=>console.log('TJ_ERROR:'+name+':'+error.message));
+  await page.addInitScript(()=>{window.__stageImages=[];new MutationObserver(()=>{const stage=document.querySelector('[data-initial-stage]');if(stage)window.__stageImages=[...stage.querySelectorAll('nav img,section[id] img')].slice(0,5).map(i=>({src:i.src,current:i.currentSrc,complete:i.complete,width:i.naturalWidth}));}).observe(document,{subtree:true,childList:true,attributes:true});});
   await page.route('https://assets.zyrosite.com/**',route=>route.fulfill({path:cwd+'/public/images/logo-tj.png',contentType:'image/png'}));
   await page.route('**/routes/bromo-sunrise',async route=>{
    const r=await route.fetch();const html=(await r.text()).replace(/(<script data-page="app" type="application\/json">)([\s\S]*?)(<\/script>)/,(_,a,json,b)=>{const p=JSON.parse(json);p.props.route.gallery=Array.from({length:7},(_,i)=>p.props.route.image+'?photo='+i);p.props.route.why={us:'**Best For** Nature lovers, adventure seekers and photographers.'};return a+JSON.stringify(p).replace(/</g,'\\u003c')+b;});
@@ -23,7 +26,7 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   await page.goto('/routes/bromo-sunrise',{waitUntil:'networkidle'});
   await page.waitForFunction(()=>!document.querySelector('.server-seo-content'));
   const dims=await page.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth,x:scrollX}));
-  results.push({name,...dims});
+  results.push({name,...dims}); console.log("TJ_DIMENSIONS:"+JSON.stringify({name,...dims}));
   await page.evaluate(()=>scrollTo({left:0,top:0,behavior:'instant'}));
   await page.screenshot({path:output+'/'+name+'-package.jpg',fullPage:true,type:'jpeg',quality:65});
   let release;const gate=new Promise(r=>release=r);
@@ -33,7 +36,7 @@ for(const [name,port] of [['before',4173],['after',4174]]) {
   await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.querySelectorAll('nav img,#home img')].filter(i=>i.loading!=='lazy').map(i=>i.decode().catch(()=>{})));});
   await page.screenshot({path:output+'/'+name+'-initial.jpg',type:'jpeg',quality:65});
   release();
-  await page.waitForFunction(()=>!document.querySelector('.server-seo-content'));
+  try{await page.waitForFunction(()=>!document.querySelector('.server-seo-content'),null,{timeout:18000});}catch(error){console.log('TJ_HANDOFF:'+name+':'+JSON.stringify(await page.evaluate(()=>({images:window.__stageImages,stage:!!document.querySelector('[data-initial-stage]'),html:document.querySelector('#app')?.innerHTML.slice(-800)}))));}
   await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([document.querySelector('nav img'),document.querySelector('#home img')].filter(Boolean).map(i=>i.decode().catch(()=>{})));});
   await page.screenshot({path:output+'/'+name+'-ready.jpg',type:'jpeg',quality:65});
   await ctx.close();
