@@ -82,6 +82,7 @@ test.describe('Google Ads consent', () => {
     const requests = await mockGoogleTag(page);
 
     await page.goto('/');
+    await expect(page.getByTestId('consent-banner')).toBeVisible();
     await page.getByTestId('consent-allow').focus();
     await expect(page.getByTestId('consent-allow')).toBeFocused();
     await page.keyboard.press('Enter');

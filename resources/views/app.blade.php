@@ -38,6 +38,30 @@
             <div id="app">
                 @include('partials.server-page-content')
             </div>
+            @if (data_get($page, 'component') === 'HomePage')
+                <script>
+                    // Module scripts delay the browser's native initial fragment
+                    // scroll. The target already exists, so align it before paint.
+                    try {
+                        const id = decodeURIComponent(window.location.hash.slice(1));
+                        if (id === 'destination' || id === 'contact') {
+                            document.documentElement.dataset.initialFragment = id;
+                            const align = () => document.getElementById(id)?.scrollIntoView({ behavior: 'instant' });
+                            requestAnimationFrame(align);
+                            // FontFaceSet.ready can wait for this deliberately delayed
+                            // document's module scripts in Firefox and WebKit. Load
+                            // the fonts used here independently of document readiness.
+                            const fonts = new Set([...document.querySelectorAll('.server-seo-content h2, .server-seo-content h3, .server-seo-content p, .server-seo-content label, .server-seo-content select, .server-seo-content a')].map((element) => {
+                                const style = getComputedStyle(element);
+                                return `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+                            }));
+                            Promise.all([...fonts].map((font) => document.fonts.load(font))).then(() => {
+                                if (document.querySelector('.server-seo-content')) requestAnimationFrame(align);
+                            }).catch(() => { /* Failed fonts retain the initial native alignment. */ });
+                        }
+                    } catch { /* An invalid fragment must not affect readability. */ }
+                </script>
+            @endif
         @endif
     </body>
 </html>

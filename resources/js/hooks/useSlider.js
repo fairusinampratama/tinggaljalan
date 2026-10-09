@@ -78,7 +78,10 @@ export function useSlider({
   useEffect(() => {
     if (!autoplay || !hasMultiple || autoplayPaused) return undefined;
 
-    const timer = window.setInterval(showNext, autoplayInterval);
+    const timer = window.setInterval(() => {
+      // Preserve the first prepared slide until its images can be revealed.
+      if (!document.querySelector('[data-initial-stage]')) showNext();
+    }, autoplayInterval);
     return () => window.clearInterval(timer);
   }, [activeIndex, autoplay, autoplayInterval, autoplayPaused, hasMultiple, showNext]);
 

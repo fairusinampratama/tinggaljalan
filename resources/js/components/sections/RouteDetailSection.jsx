@@ -19,6 +19,7 @@ import { getLocalized, getRegionConfig, localizeDuration, localizeList } from '.
 import { cardHoverClass, iconSize, primaryButtonClass, secondaryButtonClass } from '../ui/styles';
 import { RatingDisplay } from '../ui/RatingDisplay';
 import { RouteGallery } from '../ui/RouteGallery';
+import { InlineStrong } from '../ui/InlineStrong';
 
 function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIcon: BulletIcon }) {
   const visibleItems = localizeList(items, language);
@@ -78,7 +79,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
     <>
       <section id="route-detail" className="scroll-mt-24 bg-canvas px-4 pb-28 pt-28 sm:px-8 sm:pt-32 lg:px-10 lg:pb-10">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <article>
+          <article className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.routeDetailEyebrow}</p>
               <span className="rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold text-secondary">
@@ -90,7 +91,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               {localizedTitle}
             </h1>
             <p className="mt-5 max-w-3xl text-sm font-semibold leading-7 text-muted sm:text-base">
-              {getLocalized(selectedArticle.why, language)}
+              <InlineStrong text={getLocalized(selectedArticle.why, language)} />
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">

@@ -71,7 +71,7 @@ class ServerPageContent
         ];
     }
 
-    private static function copy(string $language): array
+    public static function copy(string $language): array
     {
         // The browser and Blade read the same translation source.
         $language = in_array($language, PublicSite::LANGUAGES, true) ? $language : 'us';
@@ -131,7 +131,8 @@ class ServerPageContent
             'text' => self::localized($item['copy'] ?? null, $language),
             'image' => self::image($item['image'] ?? null, $item['name'] ?? ''),
             'headingLevel' => 3,
-        ])->all()) + ['text' => $t['destinationText']];
+            'url' => '/routes?destination='.rawurlencode($item['slug'] ?? $item['id'] ?? $item['name'] ?? ''),
+        ])->all()) + ['text' => $t['destinationText'], 'id' => 'destination'];
         $sections[] = self::section($t['packagesTitle'], self::cards($props['featuredRoutes'] ?? [], 'routes', $language)) + ['text' => $t['packagesText']];
         $sections[] = self::section($t['whyTitle'], collect($home['whyChooseItems'] ?? [])->map(fn ($item) => [
             'title' => self::localized($item['title'] ?? null, $language),
@@ -145,7 +146,7 @@ class ServerPageContent
         $sections[] = self::section($t['guidesTitle'], self::cards($props['latestArticles'] ?? [], 'news', $language)) + ['text' => $t['guidesText']];
         $sections[] = self::questions($t['faqTitle'], $props['faqs'] ?? [], $language);
         $sections[] = self::section($t['availableOnTitle'], collect($public['platformLinks'] ?? [])->map(fn ($item) => ['title' => $item['name'], 'url' => $item['url']])->all());
-        $sections[] = ['title' => $t['ctaTitle'], 'text' => $t['ctaText'], 'items' => []];
+        $sections[] = ['title' => $t['ctaTitle'], 'text' => $t['ctaText'], 'items' => [], 'id' => 'contact'];
 
         return ['h1' => $t['heroTitle'], 'sections' => $sections, 'links' => []];
     }

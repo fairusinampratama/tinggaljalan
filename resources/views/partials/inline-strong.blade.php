@@ -1,0 +1,1 @@
+@foreach (preg_split('/(\*\*[^*\n]+\*\*)/', (string) ($text ?? ''), -1, PREG_SPLIT_DELIM_CAPTURE) as $part)@if (preg_match('/^\*\*[^*\n]+\*\*$/', $part))<strong>{{ substr($part, 2, -2) }}</strong>@else{{ $part }}@endif@endforeach

@@ -46,14 +46,14 @@ class SeoInfrastructureTest extends TestCase
 
         $main = $this->serverMain($response->getContent());
 
-        $this->assertSame(1, substr_count($main, '<h1>'));
+        $this->assertSame(1, preg_match_all('/<h1(?:\s[^>]*)?>/', $main));
         $this->assertGreaterThanOrEqual(250, $this->wordCount($main));
-        $this->assertGreaterThanOrEqual(2, substr_count($main, '<h2>'));
-        $this->assertGreaterThan(0, substr_count($main, '<h3>'));
+        $this->assertGreaterThanOrEqual(2, preg_match_all('/<h2(?:\s[^>]*)?>/', $main));
+        $this->assertGreaterThan(0, preg_match_all('/<h3(?:\s[^>]*)?>/', $main));
         $this->assertStringContainsString('<a href="/routes"', $main);
         $this->assertStringContainsString('<a href="/news"', $main);
         $this->assertStringContainsString('<a href="/about-us"', $main);
-        $this->assertStringNotContainsString('?destination=', $main);
+        $this->assertStringContainsString('/routes?destination=', $main);
         $this->assertStringContainsString('<a href="https://wa.me/62811388330', $main);
         $this->assertStringContainsString('<img', $main);
         $this->assertStringContainsString('alt="', $main);

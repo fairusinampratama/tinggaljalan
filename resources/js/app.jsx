@@ -1,10 +1,19 @@
 import '../css/app.css';
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import { useLayoutEffect } from 'react';
 import { AppLayout } from './components/layout/AppLayout';
 import { BookingProvider } from './context/BookingContext';
+import { prepareInitialHandoff, revealInitialApp } from './utils/initialHandoff';
 
 const pages = import.meta.glob('./pages/**/*.jsx');
+
+function InitialApp({ App, props, handoff, onFailure }) {
+  useLayoutEffect(() => {
+    if (handoff) return revealInitialApp(handoff);
+  }, [handoff, onFailure]);
+  return <App {...props} />;
+}
 
 createInertiaApp({
   title: (title) => {
@@ -43,9 +52,22 @@ createInertiaApp({
     return component;
   },
   setup({ el, App, props }) {
-    createRoot(el).render(<App {...props} />);
+    if (!props.initialPage.props.translations?.searchTitle) {
+      throw new Error('Initial translations unavailable; keeping server content.');
+    }
+    const handoff = prepareInitialHandoff(el);
+    const root = createRoot(handoff?.stage ?? el, { onUncaughtError: (error) => { console.error('TinggalJalan application startup failed.', error); onFailure(); } });
+    const onFailure = () => {
+      // Runtime startup failure retains the original readable document.
+      root.unmount();
+      handoff?.stage.remove();
+    };
+    root.render(<InitialApp App={App} props={props} handoff={handoff} onFailure={onFailure} />);
   },
   progress: {
     color: '#B99A5E',
   },
+}).catch((error) => {
+  // Page/chunk failures must leave the readable server document in place.
+  console.error('TinggalJalan could not start; server content remains available.', error);
 });
