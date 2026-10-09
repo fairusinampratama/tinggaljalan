@@ -135,7 +135,7 @@ try {
                 canonical: [...document.querySelectorAll('link[rel="canonical"]')].map(link => link.href),
                 robots: [...document.querySelectorAll('meta[name="robots"]')].map(meta => meta.content),
                 links: [...document.querySelectorAll('.server-seo-content a[href]')].map(link => ({ href: link.getAttribute('href'), text: link.textContent.trim() })),
-                sections: [...document.querySelectorAll('.server-seo-content > section[id]')].map(section => ({
+                sections: [...document.querySelectorAll('.server-seo-content > section[id], .server-seo-content > .server-document > section[id]')].map(section => ({
                 id: section.id, heading: section.querySelector(':scope > h2')?.textContent,
                 paragraphs: [...section.querySelectorAll(':scope > p')].map(p => ({ text: p.textContent, breaks: p.querySelectorAll('br').length })),
             })) };
