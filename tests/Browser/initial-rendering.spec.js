@@ -11,6 +11,19 @@ test.beforeEach(async ({ page }) => {
   }
 });
 
+// Unlike FontFaceSet.ready, explicit face loads do not wait for the held
+// entry module / document load in Firefox and WebKit. Keep geometry checks.
+async function settleVisibleFonts(page) {
+  await page.evaluate(async () => {
+    const fonts = new Set([...document.querySelectorAll('.server-seo-content h2, .server-seo-content h3, .server-seo-content p, .server-seo-content label, .server-seo-content select, .server-seo-content a')].map((element) => {
+      const style = getComputedStyle(element);
+      return `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    }));
+    await Promise.all([...fonts].map((font) => document.fonts.load(font)));
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
 // Hold the entry module so the browser really paints the server document.
 for (const language of ['us', 'id', 'cn']) {
   test(`initial ${language} homepage keeps its hero geometry and complete copy`, async ({ page }, testInfo) => {
@@ -32,7 +45,7 @@ for (const language of ['us', 'id', 'cn']) {
     try {
       await page.goto(`/?lang=${language}`, { waitUntil: 'commit' });
       await expect(page.locator('.server-seo-content')).toBeVisible();
-      await page.evaluate(async () => { await document.fonts.ready; });
+      await settleVisibleFonts(page);
       const initial = await page.evaluate(() => { const box = document.querySelector('.server-seo-content #home')?.getBoundingClientRect(); return box ? { height: box.height } : null; });
       const copy = JSON.parse(readFileSync(new URL(`../../resources/js/data/translations/${language}.json`, import.meta.url))).searchTitle;
       await page.evaluate((title) => { window.__expectedSearchTitle = title; }, copy);
@@ -59,7 +72,7 @@ test('destination fragment exists before JS and stays aligned after mount', asyn
     await expect(page.locator('.server-seo-content')).toBeVisible();
     await expect(page.locator('#destination')).toHaveCount(1);
     await expect(page.locator('#destination')).toBeInViewport();
-    await page.evaluate(async () => { await document.fonts.ready; });
+    await settleVisibleFonts(page);
     await page.screenshot({ path: testInfo.outputPath('fragment-initial.png') });
     const before = await page.locator('#destination').boundingBox();
     release();
