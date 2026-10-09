@@ -55,6 +55,8 @@ try {
 
  const ctx=await browser.newContext({baseURL:base,httpCredentials:{username:'reviewer',password:config.review_password,origin:base},viewport:{width:393,height:851},isMobile:true});
  const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('/',{waitUntil:'networkidle'});await expect(page.locator('.server-seo-content')).toHaveCount(0);
+ for(const [label,title] of [['ID','Cari Trip'],['中文','寻找行程'],['EN','Find a Trip']]){const button=page.locator('nav').getByRole('button',{name:label,exact:true});if(!await button.isVisible())await page.locator('nav').getByRole('button',{name:'Open menu'}).click();await button.click();await expect(page.locator('#home')).toContainText(title,{timeout:15000});}console.log('LIVE_LANGUAGES Indonesian, Chinese, English switching passed');
  await page.goto('/routes',{waitUntil:'networkidle'});
  const href=await page.getByRole('link').filter({hasText:/Tumpak Sewu/i}).first().getAttribute('href');
  expect(href).toMatch(/^\/routes\//);
