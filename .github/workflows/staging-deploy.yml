@@ -196,6 +196,8 @@ jobs:
         run: |
           [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/production"
+          cat "$RUNNER_TEMP/staging-review/production/verification.txt"
+          cat "$RUNNER_TEMP/staging-review/production/diagnostics.json"
       - name: Verify public content and media stayed unchanged during review
         env:
           REVISION: ${{ inputs.revision }}

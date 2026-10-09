@@ -55,6 +55,19 @@ try {
 
  const ctx=await browser.newContext({baseURL:base,viewport:{width:393,height:851},isMobile:true});
  const page=await ctx.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route(/\/build\/assets\/(?:us|id|cn)-[^/]+\.js$/,route=>route.abort());
+ for(const [lang,title] of [['id','Cari Trip'],['cn','寻找行程'],['us','Find a Trip']]) {
+  await page.goto('/?lang='+lang,{waitUntil:'networkidle'});
+  await expect(page.locator('.server-seo-content')).toHaveCount(0);
+  await expect(page.locator('#home')).toContainText(title);
+ }
+ for(const [label,title] of [['ID','Cari Trip'],['中文','寻找行程'],['EN','Find a Trip']]){
+  const button=page.locator('nav').getByRole('button',{name:label,exact:true});
+  if(!await button.isVisible())await page.locator('nav').getByRole('button',{name:'Open menu'}).click();
+  await button.click();await expect(page.locator('#home')).toContainText(title);
+ }
+ console.log('PRODUCTION_LOCALES complete initial dictionaries and language switching passed');
+
 
  await page.goto('/routes',{waitUntil:'networkidle'});
  const card=page.locator('article[role="link"]').filter({hasText:/Tumpak Sewu/i}).first();
