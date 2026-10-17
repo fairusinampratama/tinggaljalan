@@ -35,4 +35,5 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/incident-ssh/known_hosts"
           SSH=(ssh -i "$RUNNER_TEMP/incident-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/incident-ssh/known_hosts" -o ConnectTimeout=20 "$SSH_USER@$SSH_HOST")
           "${SSH[@]}" 'date -u; df -Pk /home/u304629909/domains/tinggaljalan.com; df -Pi /home/u304629909/domains/tinggaljalan.com; uptime; quota -s 2>/dev/null || true'
+          "${SSH[@]}" 'du -x -m --max-depth=2 /home/u304629909/domains/tinggaljalan.com/deployments /home/u304629909/domains/preview.tinggaljalan.com/deployments 2>/dev/null | sort -nr | head -35; du -x --inodes --max-depth=3 /home/u304629909/domains/tinggaljalan.com/deployments /home/u304629909/domains/preview.tinggaljalan.com/deployments 2>/dev/null | sort -nr | head -40; command -v quota || true'
           "${SSH[@]}" '/opt/alt/php84/usr/bin/php /dev/stdin' < scripts/deployment/incident-diagnose.php

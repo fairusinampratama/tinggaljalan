@@ -13,7 +13,7 @@ try {
     echo 'Current release: '.(realpath($current) ?: 'missing')."\n";
     echo 'Revision: '.(is_file($current.'/REVISION') ? trim(file_get_contents($current.'/REVISION')) : 'missing')."\n";
     foreach (['.env' => $shared.'/.env', 'config-cache' => $current.'/bootstrap/cache/config.php', 'vendor' => $current.'/vendor/autoload.php', 'maintenance' => $shared.'/storage/framework/down'] as $label => $file) {
-        echo $label.': '.json_encode(['exists' => is_file($file), 'readable' => is_readable($file), 'mode' => file_exists($file) ? substr(sprintf('%o', fileperms($file)), -4) : null, 'mtime' => is_file($file) ? gmdate('c', filemtime($file)) : null, 'sha256' => is_file($file) ? hash_file('sha256', $file) : null])."\n";
+        echo $label.': '.json_encode(['exists' => is_file($file), 'readable' => is_readable($file), 'mode' => file_exists($file) ? substr(sprintf('%o', fileperms($file)), -4) : null, 'mtime' => is_file($file) ? gmdate('c', filemtime($file)) : null])."\n";
     }
     foreach (['logs', 'framework/cache/data', 'framework/sessions', 'framework/views', 'app/public'] as $directory) {
         $path = $shared.'/storage/'.$directory;
@@ -33,6 +33,11 @@ try {
                 continue;
             }
             $categories = [];
+            foreach (['framework/sessions', 'framework/views', 'framework/cache', 'storage/logs', 'bootstrap/cache'] as $directory) {
+                if (str_contains($line, $directory)) {
+                    $categories[] = 'write-directory:'.$directory;
+                }
+            }
             foreach (['Permission denied', 'No space left on device', 'Disk quota exceeded', 'Failed opening required', 'Composer detected issues', 'requires a PHP version', 'Vite manifest not found', 'could not find driver', 'No application encryption key', 'Access denied for user', 'Connection refused', 'Too many connections', 'server has gone away', 'Unknown database', 'No such file or directory', 'Allowed memory size', 'Call to undefined function', 'SQLSTATE', 'Base table or view not found', 'syntax error', 'not found', 'read-only file system'] as $reason) {
                 if (stripos($line, $reason) !== false) {
                     $categories[] = $reason;
