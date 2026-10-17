@@ -5,9 +5,9 @@ permissions:
   contents: read
 jobs:
   diagnose-production:
-    name: Read-only production incident diagnostics
+    name: Recover account quota using archived inactive preview dependencies
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     environment: staging
     concurrency:
       group: production
@@ -19,8 +19,8 @@ jobs:
           php-version: '8.4'
       - name: Validate diagnostic PHP syntax
         run: php -l scripts/deployment/incident-diagnose.php
-      - name: Inspect runtime without changing hosting
-        env:
+      - name: Archive inactive preview dependency copy before cleanup
+        env: &ssh_credentials
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
           SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
           SSH_USER: ${{ secrets.STAGING_SSH_USER }}
@@ -29,11 +29,42 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          mkdir -p "$RUNNER_TEMP/incident-ssh"
-          trap 'rm -rf -- "$RUNNER_TEMP/incident-ssh"' EXIT
+          mkdir -p "$RUNNER_TEMP/incident-ssh" "$RUNNER_TEMP/dependency-backup"
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/incident-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/incident-ssh/known_hosts"
           SSH=(ssh -i "$RUNNER_TEMP/incident-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/incident-ssh/known_hosts" -o ConnectTimeout=20 "$SSH_USER@$SSH_HOST")
-          "${SSH[@]}" 'date -u; df -Pk /home/u304629909/domains/tinggaljalan.com; df -Pi /home/u304629909/domains/tinggaljalan.com; uptime; quota -s 2>/dev/null || true'
-          "${SSH[@]}" 'du -x -m --max-depth=2 /home/u304629909/domains/tinggaljalan.com/deployments /home/u304629909/domains/preview.tinggaljalan.com/deployments 2>/dev/null | sort -nr | head -35; du -x --inodes --max-depth=3 /home/u304629909/domains/tinggaljalan.com/deployments /home/u304629909/domains/preview.tinggaljalan.com/deployments 2>/dev/null | sort -nr | head -40; command -v quota || true'
+          "${SSH[@]}" 'bash -s -- archive' < scripts/deployment/incident-free-quota.sh > "$RUNNER_TEMP/dependency-backup/preview-39d3072-vendor.tar.gz"
+          gzip -t "$RUNNER_TEMP/dependency-backup/preview-39d3072-vendor.tar.gz"
+          python3 - <<'PYCODE'
+          import os, tarfile
+          p=os.path.join(os.environ['RUNNER_TEMP'],'dependency-backup','preview-39d3072-vendor.tar.gz')
+          with tarfile.open(p) as archive:
+              entries=archive.getmembers()
+              assert len(entries)>10000
+              assert all(x.name=='vendor' or x.name.startswith('vendor/') for x in entries)
+              assert all('..' not in x.name.split('/') and not x.isdev() for x in entries)
+              names={x.name for x in entries}
+              assert 'vendor/autoload.php' in names and 'vendor/composer/installed.php' in names
+              print('Recoverable inactive preview dependency archive verified:',len(entries),'entries')
+          PYCODE
+          sha256sum "$RUNNER_TEMP/dependency-backup/preview-39d3072-vendor.tar.gz"
+      - name: Preserve verified recovery archive before freeing quota
+        uses: actions/upload-artifact@v4
+        with:
+          name: inactive-preview-dependencies-${{ github.run_id }}
+          path: ${{ runner.temp }}/dependency-backup/preview-39d3072-vendor.tar.gz
+          retention-days: 30
+          if-no-files-found: error
+      - name: Reclaim quota from the archived inactive dependency copy
+        env: *ssh_credentials
+        run: |
+          set -euo pipefail
+          SSH=(ssh -i "$RUNNER_TEMP/incident-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/incident-ssh/known_hosts" -o ConnectTimeout=20 "$SSH_USER@$SSH_HOST")
+          "${SSH[@]}" 'bash -s -- reclaim archived-and-verified' < scripts/deployment/incident-free-quota.sh
+          "${SSH[@]}" 'du -x --inodes --max-depth=1 /home/u304629909 2>/dev/null | sort -nr | head -12'
           "${SSH[@]}" '/opt/alt/php84/usr/bin/php /dev/stdin' < scripts/deployment/incident-diagnose.php
+      - name: Run existing production smoke test without deployment
+        run: bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com 627978e8114683c284c394499bbf1cdc2bcced26 "$RUNNER_TEMP/production-smoke"
+      - name: Remove temporary runner credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/incident-ssh"
