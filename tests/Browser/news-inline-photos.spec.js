@@ -48,8 +48,19 @@ test('inline photographs match initial HTML after React mount, including transla
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', await server.locator('link[rel="canonical"]').getAttribute('href'));
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex,follow');
   expect(errors).toEqual([]);
-  await page.locator('#morning-on-the-mountain').scrollIntoViewIfNeeded();
+  if (await page.getByTestId('consent-decline').isVisible()) await page.getByTestId('consent-decline').click();
+  await page.goto(story + '?lang=us');
+  await expect(page.locator('.server-seo-content')).toHaveCount(0);
+  for (const figure of await page.locator(photoSelector).all()) {
+    await figure.scrollIntoViewIfNeeded();
+    await expect.poll(() => figure.locator('img').evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: testInfo.outputPath('inline-photos.png'), fullPage: true });
+  await page.locator('#morning-on-the-mountain').evaluate(section => window.scrollTo(0, section.getBoundingClientRect().top + window.scrollY - 110));
+  await page.screenshot({ path: testInfo.outputPath('inline-section.png') });
+  await page.locator(photoSelector).nth(1).evaluate(figure => window.scrollTo(0, figure.getBoundingClientRect().top + window.scrollY - 110));
+  await page.screenshot({ path: testInfo.outputPath('portrait-photo.png') });
   await serverContext.close();
 });
 
@@ -75,16 +86,17 @@ test('admin can preview and save existing nested photographs without losing them
     await page.getByRole('button', { name: 'Next', exact: true }).click();
   }
   await expect(page.getByText('Section photographs', { exact: true }).first()).toBeVisible();
-  await expect(page.getByLabel(/^Alt description/).first()).toHaveValue('Morning light over Mount Bromo');
-  const caption = page.getByLabel('Caption', { exact: true }).first();
+  await expect(page.locator('input[id$=".alt.us"]').first()).toHaveValue('Morning light over Mount Bromo');
+  const caption = page.locator('textarea[id$=".caption.us"]').first();
   await expect(caption).toHaveValue('The landscape opens up as the morning light reaches the caldera.');
   await caption.fill('The landscape opens up as the morning light reaches the caldera.');
-  await page.screenshot({ path: testInfo.outputPath('admin-section-photos.png'), fullPage: true });
+  await page.locator('input[id$=".alt.us"]').first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: testInfo.outputPath('admin-section-photos.png') });
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await page.reload();
   if (!(await page.getByText('Section photographs', { exact: true }).first().isVisible())) {
     await page.getByRole('button', { name: 'Next', exact: true }).click();
   }
-  await expect(page.getByLabel(/^Alt description/).first()).toHaveValue('Morning light over Mount Bromo');
+  await expect(page.locator('input[id$=".alt.us"]').first()).toHaveValue('Morning light over Mount Bromo');
 });
