@@ -71,9 +71,11 @@ test('admin can preview and save existing nested photographs without losing them
   await page.goto('/admin/news-articles');
   const row = page.getByRole('row').filter({ hasText: 'From mountain light to a green valley' });
   await row.getByRole('link', { name: 'Edit', exact: true }).click();
-  await page.getByText('Article content', { exact: true }).click();
+  if (!(await page.getByText('Section photographs', { exact: true }).first().isVisible())) {
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+  }
   await expect(page.getByText('Section photographs', { exact: true }).first()).toBeVisible();
-  await expect(page.getByLabel('Alt description', { exact: true }).first()).toHaveValue('Morning light over Mount Bromo');
+  await expect(page.getByLabel(/^Alt description/).first()).toHaveValue('Morning light over Mount Bromo');
   const caption = page.getByLabel('Caption', { exact: true }).first();
   await expect(caption).toHaveValue('The landscape opens up as the morning light reaches the caldera.');
   await caption.fill('The landscape opens up as the morning light reaches the caldera.');
@@ -81,6 +83,8 @@ test('admin can preview and save existing nested photographs without losing them
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
   await page.reload();
-  await page.getByText('Article content', { exact: true }).click();
-  await expect(page.getByLabel('Alt description', { exact: true }).first()).toHaveValue('Morning light over Mount Bromo');
+  if (!(await page.getByText('Section photographs', { exact: true }).first().isVisible())) {
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+  }
+  await expect(page.getByLabel(/^Alt description/).first()).toHaveValue('Morning light over Mount Bromo');
 });
