@@ -1,0 +1,40 @@
+name: News photograph review (temporary)
+on:
+  pull_request:
+    branches: [feat/news-inline-editorial-photos]
+permissions:
+  contents: read
+jobs:
+  review:
+    if: github.head_ref == 'qa/news-inline-photo-review'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, dom, curl, zip, pdo_sqlite, sqlite3, gd
+          coverage: none
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+          cp .env.example .env
+          php artisan key:generate
+          php artisan storage:link
+          npm run build:performance
+          npm run test:browser:prepare
+          npx playwright install --with-deps chromium firefox webkit
+      - name: Render editorial and legacy articles in five browser profiles
+        run: npx playwright test news-inline-photos public-html-parity seo-metadata --workers=1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: news-editorial-photo-review
+          path: test-results
+          retention-days: 7
