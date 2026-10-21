@@ -61,3 +61,26 @@ test('older articles have no inline figures and keep their cover', async ({ page
   await expect(page.locator('article section[id]').first()).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('older-article.png') });
 });
+
+test('admin can preview and save existing nested photographs without losing them', async ({ page }, testInfo) => {
+  await page.goto('/admin/login');
+  await page.locator('input[type="email"]').fill('admin@tinggaljalan.test');
+  await page.locator('input[type="password"]').fill('password');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/?$/);
+  await page.goto('/admin/news-articles');
+  const row = page.getByRole('row').filter({ hasText: 'From mountain light to a green valley' });
+  await row.getByRole('link', { name: 'Edit', exact: true }).click();
+  await page.getByText('Article content', { exact: true }).click();
+  await expect(page.getByText('Section photographs', { exact: true }).first()).toBeVisible();
+  await expect(page.getByLabel('Alt description', { exact: true }).first()).toHaveValue('Morning light over Mount Bromo');
+  const caption = page.getByLabel('Caption', { exact: true }).first();
+  await expect(caption).toHaveValue('The landscape opens up as the morning light reaches the caldera.');
+  await caption.fill('The landscape opens up as the morning light reaches the caldera.');
+  await page.screenshot({ path: testInfo.outputPath('admin-section-photos.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.getByText('Article content', { exact: true }).click();
+  await expect(page.getByLabel('Alt description', { exact: true }).first()).toHaveValue('Morning light over Mount Bromo');
+});
