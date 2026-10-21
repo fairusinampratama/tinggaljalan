@@ -85,6 +85,26 @@ export function NewsDetailPage() {
                     <section key={id} id={id} className="scroll-mt-28 mb-10">
                       <h2 className="text-balance font-display text-2xl font-normal leading-[1.12] text-primary sm:text-3xl">{getLocalized(section.heading, language)}</h2>
                       <TextParagraphs text={getLocalized(section.body, language)} className="mt-4 text-pretty text-base font-medium leading-8 text-muted sm:text-lg" />
+                      {section.images?.length > 0 ? (
+                        <div className="mt-6 space-y-6">
+                          {section.images.map((image, index) => (
+                            <figure key={`${image.src}-${index}`} className="news-section-photo m-0">
+                              <ResponsiveImage
+                                src={image.src}
+                                alt={getLocalized(image.alt, language)}
+                                className="block h-auto max-h-[48rem] w-full rounded-2xl border border-line bg-canvas object-contain shadow-soft"
+                                sizes="(min-width: 1280px) 768px, (min-width: 1024px) calc(100vw - 452px), calc(100vw - 32px)"
+                                width={image.width ?? undefined}
+                                height={image.height ?? undefined}
+                                loading="lazy"
+                              />
+                              {getLocalized(image.caption, language) ? (
+                                <figcaption className="mt-3 break-words text-sm font-medium leading-6 text-muted">{getLocalized(image.caption, language)}</figcaption>
+                              ) : null}
+                            </figure>
+                          ))}
+                        </div>
+                      ) : null}
                     </section>
                   );
                 })}

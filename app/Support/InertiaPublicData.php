@@ -289,7 +289,7 @@ class InertiaPublicData
         return $packages->map(fn (TourPackage $package) => self::routeCard($package))->values()->all();
     }
 
-    public static function article(NewsArticle $article): array
+    public static function article(NewsArticle $article, bool $includeSections = true): array
     {
         return [
             'id' => $article->slug,
@@ -306,7 +306,7 @@ class InertiaPublicData
             'coverAlt' => self::localizedArray($article->cover_alt),
             'tags' => self::articleTags($article->tags),
             'seo' => self::localizedObject($article->seo),
-            'sections' => self::articleSections($article->sections),
+            'sections' => $includeSections ? self::articleSections($article->sections) : [],
             'relatedRouteIds' => $article->tourPackages->pluck('slug')->values()->all(),
             'isFeatured' => (bool) $article->is_featured,
             'publishedTime' => optional($article->published_at)->toIso8601String(),
@@ -321,7 +321,7 @@ class InertiaPublicData
 
     public static function articleCard(NewsArticle $article): array
     {
-        return array_intersect_key(self::article($article), array_flip(['id', 'slug', 'title', 'excerpt', 'category', 'destinationId', 'destinationName', 'publishedDate', 'updatedDate', 'readingTime', 'coverImage', 'coverAlt', 'tags', 'relatedRouteIds', 'isFeatured', 'publishedTime', 'modifiedTime']));
+        return array_intersect_key(self::article($article, includeSections: false), array_flip(['id', 'slug', 'title', 'excerpt', 'category', 'destinationId', 'destinationName', 'publishedDate', 'updatedDate', 'readingTime', 'coverImage', 'coverAlt', 'tags', 'relatedRouteIds', 'isFeatured', 'publishedTime', 'modifiedTime']));
     }
 
     public static function articleCards(Collection $articles): array
@@ -517,12 +517,54 @@ class InertiaPublicData
                 return [
                     'heading' => $heading,
                     'body' => $body,
+                    'images' => self::articleImages($section['images'] ?? []),
                 ];
             })
             ->filter(fn (?array $section): bool => is_array($section)
                 && (filled($section['heading']['us'] ?? null) || filled($section['body']['us'] ?? null)))
             ->values()
             ->all();
+    }
+
+    private static function articleImages(mixed $images): array
+    {
+        if (! is_array($images)) {
+            return [];
+        }
+
+        return collect($images)->map(function ($image): ?array {
+            if (! is_array($image) || ! is_string($image['path'] ?? null)) {
+                return null;
+            }
+
+            $path = trim($image['path']);
+            // Inline photos use the existing local public asset/storage conventions.
+            if (! preg_match('~^/?(?:admin/|storage/|images/)[a-zA-Z0-9_./-]+\.(?:jpe?g|png|webp)$~i', $path)
+                || in_array('..', explode('/', $path), true)) {
+                return null;
+            }
+
+            $text = fn ($value): array => self::localizedPlainArray(is_array($value)
+                ? array_filter($value, 'is_string') : (is_string($value) ? $value : []));
+            $alt = $text($image['alt'] ?? []);
+            if (! filled($alt['us'] ?? null)) {
+                return null;
+            }
+
+            $src = self::assetPath($path);
+            $file = str_starts_with($src, '/storage/')
+                ? storage_path('app/public/'.substr($src, strlen('/storage/')))
+                : public_path(ltrim($src, '/'));
+            $dimensions = is_file($file) ? @getimagesize($file) : false;
+
+            return [
+                'src' => $src,
+                'alt' => $alt,
+                'caption' => $text($image['caption'] ?? []),
+                'width' => $dimensions ? $dimensions[0] : null,
+                'height' => $dimensions ? $dimensions[1] : null,
+            ];
+        })->filter()->values()->all();
     }
 
     private static function localizedPlainArray(mixed $value): array

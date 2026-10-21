@@ -10,6 +10,17 @@
                     @endif
                 @endif
                 @include('partials.plain-text', ['text' => $section['text'] ?? ''])
+                @foreach ($section['images'] ?? [] as $photo)
+                    <figure class="news-section-photo">
+                        @include('partials.server-responsive-image', [
+                            'src' => $photo['src'], 'desktopSrc' => $photo['src'], 'alt' => $photo['alt'],
+                            'imageClass' => 'news-inline-photo', 'width' => $photo['width'], 'height' => $photo['height'],
+                            'sizes' => '(min-width: 1280px) 768px, (min-width: 1024px) calc(100vw - 452px), calc(100vw - 32px)',
+                            'loading' => 'lazy', 'priority' => 'auto',
+                        ])
+                        @if (filled($photo['caption']))<figcaption>{{ $photo['caption'] }}</figcaption>@endif
+                    </figure>
+                @endforeach
                 @if (! empty($section['image']))
                     <img src="{{ $section['image']['src'] }}" alt="{{ $section['image']['alt'] }}" loading="lazy" width="800" height="600">
                 @endif
