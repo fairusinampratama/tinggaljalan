@@ -92,7 +92,7 @@ export function NewsDetailPage() {
                               <ResponsiveImage
                                 src={image.src}
                                 alt={getLocalized(image.alt, language)}
-                                className="block h-auto max-h-[48rem] w-full rounded-2xl border border-line bg-canvas object-contain shadow-soft"
+                                className="block h-auto max-h-[48rem] max-w-full w-auto rounded-2xl border border-line bg-canvas object-contain shadow-soft"
                                 sizes="(min-width: 1280px) 768px, (min-width: 1024px) calc(100vw - 452px), calc(100vw - 32px)"
                                 width={image.width ?? undefined}
                                 height={image.height ?? undefined}
