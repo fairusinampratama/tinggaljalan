@@ -289,7 +289,7 @@ class SeoInfrastructureTest extends TestCase
                 ->component('NewsPage')
                 ->where('seo.robots', 'noindex,follow'));
 
-        foreach (['/routes?destination=malang', '/routes?style=family', '/routes?page=1', '/routes?page=2'] as $path) {
+        foreach (['/routes?destination=malang', '/routes?style=family', '/routes?search=bromo&page=2'] as $path) {
             $this->get($path)
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page
@@ -298,7 +298,7 @@ class SeoInfrastructureTest extends TestCase
                     ->where('seo.canonical', 'http://localhost:8000/routes'));
         }
 
-        foreach (['/news?category=travel-guides', '/news?destination=malang', '/news?page=1', '/news?page=2'] as $path) {
+        foreach (['/news?category=travel-guides', '/news?destination=malang', '/news?search=bromo&page=2'] as $path) {
             $this->get($path)
                 ->assertOk()
                 ->assertInertia(fn (Assert $page) => $page

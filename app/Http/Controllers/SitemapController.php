@@ -7,6 +7,7 @@ use App\Models\CompanyMilestone;
 use App\Models\NewsArticle;
 use App\Models\TeamMember;
 use App\Models\TourPackage;
+use App\Support\ArticleUrl;
 use App\Support\Seo;
 use Illuminate\Http\Response;
 
@@ -80,7 +81,7 @@ class SitemapController extends Controller
             }
 
             $urls->push([
-                'loc' => Seo::canonical('/news/'.$slug),
+                'loc' => Seo::canonical(ArticleUrl::path((string) $article->slug)),
                 'lastmod' => optional($article->content_updated_at ?? $article->updated_at)->toAtomString(),
                 'changefreq' => 'monthly',
                 'priority' => $article->is_featured ? '0.75' : '0.7',

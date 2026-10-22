@@ -4,6 +4,7 @@ namespace App\Filament\Resources\NewsArticles\Schemas;
 
 use App\Filament\Support\AdminForm;
 use App\Filament\Support\NewsArticleReadiness;
+use App\Models\NewsArticle;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -61,7 +62,23 @@ class NewsArticleForm
             TextInput::make('slug')
                 ->helperText('URL text for this article, for example mount-bromo-guide. Keep it lowercase with hyphens.')
                 ->required()
-                ->dehydrateStateUsing(fn ($state): string => trim((string) $state))
+                ->dehydrateStateUsing(fn ($state, ?NewsArticle $record): string => $record && $state === $record->slug ? $state : trim((string) $state))
+                ->rules([
+                    fn (?NewsArticle $record): \Closure => function (string $attribute, mixed $value, \Closure $fail) use ($record): void {
+                        $unchanged = $record && $value === $record->slug;
+                        $slug = $unchanged ? (string) $value : trim((string) $value);
+
+                        if (! $unchanged && ! preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/', $slug)) {
+                            $fail('Use lowercase letters, numbers, and single hyphens for a new or changed article URL.');
+                        }
+
+                        if (NewsArticle::query()->where('slug', $slug)
+                            ->when($record, fn ($query) => $query->whereKeyNot($record->getKey()))
+                            ->exists()) {
+                            $fail('This article URL is already in use.');
+                        }
+                    },
+                ])
                 ->maxLength(255)
                 ->columnSpanFull(),
             AdminForm::imageUpload('cover_image', 'Cover image', 'admin/news/covers')

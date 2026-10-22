@@ -86,7 +86,7 @@ class ServerPageContent
         return collect($items)->map(fn ($item) => [
             'title' => self::localized($item['title'] ?? null, $language),
             'text' => self::localized($kind === 'news' ? ($item['excerpt'] ?? null) : ($item['intro'] ?? null), $language),
-            'url' => '/'.$kind.'/'.($item['slug'] ?? $item['id']),
+            'url' => $kind === 'news' ? ArticleUrl::path((string) ($item['slug'] ?? $item['id'])) : '/'.$kind.'/'.($item['slug'] ?? $item['id']),
             'image' => self::image($item[$kind === 'news' ? 'coverImage' : 'image'] ?? null, self::localized($item[$kind === 'news' ? 'coverAlt' : 'imageAlt'] ?? $item['title'] ?? null, $language)),
             'headingLevel' => 3,
             'meta' => $kind === 'routes' ? self::words([

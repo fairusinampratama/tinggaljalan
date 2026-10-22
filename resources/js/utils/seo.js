@@ -1,4 +1,5 @@
 import { getLocalized, getRegionConfig, localizeDuration } from './localization';
+import { articlePath } from './article-url';
 
 export const siteBaseUrl = 'https://tinggaljalan.com';
 export const defaultOgImage = '/images/hero-bromo.jpg';
@@ -76,7 +77,7 @@ export function getNewsSeo(article, language = 'us') {
   return {
     title,
     description,
-    path: `/news/${article.slug}`,
+    path: articlePath(article.slug),
     image: article.coverImage,
     type: 'article',
     publishedTime: article.publishedDate,
@@ -109,7 +110,7 @@ export function buildNewsArticleJsonLd(article, language = 'us') {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': absoluteUrl(`/news/${article.slug}`),
+      '@id': absoluteUrl(articlePath(article.slug)),
     },
   };
 }
