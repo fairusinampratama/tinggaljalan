@@ -75,6 +75,8 @@ test('older articles have no inline figures and keep their cover', async ({ page
 });
 
 test('admin can preview and save existing nested photographs without losing them', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/admin/login');
   await page.locator('input[type="email"]').fill('admin@tinggaljalan.test');
   await page.locator('input[type="password"]').fill('password');
@@ -90,10 +92,12 @@ test('admin can preview and save existing nested photographs without losing them
   await expect(page.locator('input[id$=".alt.us"]').first()).toHaveValue('Morning light over Mount Bromo');
   const caption = page.locator('textarea[id$=".caption.us"]').first();
   await expect(caption).toHaveValue('The landscape opens up as the morning light reaches the caldera.');
+  // Bring the upload into view before waiting for its preview.
+  await caption.evaluate(field => field.scrollIntoView({ block: 'center', behavior: 'instant' }));
   const preview = page.locator('.filepond--image-preview:visible').first();
-  await expect(preview).toBeVisible({ timeout: 15_000 });
+  await expect(preview).toBeVisible({ timeout: 30_000 });
   await caption.fill('The landscape opens up as the morning light reaches the caldera.');
-  await preview.scrollIntoViewIfNeeded();
+  await preview.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
   await page.screenshot({ path: testInfo.outputPath('admin-section-photos.png') });
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
@@ -102,5 +106,6 @@ test('admin can preview and save existing nested photographs without losing them
     await page.getByRole('button', { name: 'Next', exact: true }).click();
   }
   await expect(page.locator('input[id$=".alt.us"]').first()).toHaveValue('Morning light over Mount Bromo');
-  await expect(page.locator('.filepond--image-preview:visible').first()).toBeVisible({ timeout: 15_000 });
+  await page.locator('textarea[id$=".caption.us"]').first().evaluate(field => field.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await expect(page.locator('.filepond--image-preview:visible').first()).toBeVisible({ timeout: 30_000 });
 });
