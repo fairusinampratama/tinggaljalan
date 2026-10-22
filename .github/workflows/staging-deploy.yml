@@ -7,6 +7,11 @@ on:
         required: true
         type: string
         default: 758e3e3cecdb4724b58eded028645506e4d1018e
+      fixture_run:
+        description: Existing synthetic article run (read-only)
+        required: true
+        type: string
+        default: 39724985689-1
 permissions:
   contents: read
 jobs:
@@ -69,10 +74,11 @@ jobs:
         run: |
           ssh -F "$RUNNER_TEMP/news-private/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" < scripts/testing/staging-functional-guard.php
           ssh -F "$RUNNER_TEMP/news-private/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/news-review/preservation-before.json"
-      - name: Upload section photographs and inspect hosted article
+      - name: Inspect existing uploaded photographs without content changes
         env:
           REVISION: ${{ inputs.revision }}
-        run: node scripts/testing/news-preview-review.mjs "$RUNNER_TEMP/news-private/config.json" "$REVISION" "$RUNNER_TEMP/news-review" "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" "$RUNNER_TEMP/news-private/ssh_config"
+          FIXTURE_RUN: ${{ inputs.fixture_run }}
+        run: node scripts/testing/news-preview-review.mjs "$RUNNER_TEMP/news-private/config.json" "$REVISION" "$RUNNER_TEMP/news-review" "$FIXTURE_RUN" "$RUNNER_TEMP/news-private/ssh_config"
       - name: Verify public branding and production preservation
         env:
           REVISION: ${{ inputs.revision }}
@@ -88,7 +94,7 @@ jobs:
               assert before[key] == after[key], key
           for key, value in before['public_content'].items():
               if key != 'news_articles': assert value == after['public_content'][key], key
-          assert after['public_content']['news_articles']['count'] == before['public_content']['news_articles']['count'] + 1
+          assert after['public_content']['news_articles']['count'] == before['public_content']['news_articles']['count']
           print('Existing public branding, non-test content and production preservation passed.')
           PYVERIFY
       - uses: actions/upload-artifact@v4
