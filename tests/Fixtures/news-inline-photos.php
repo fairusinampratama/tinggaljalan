@@ -3,6 +3,7 @@
 use App\Models\NewsArticle;
 use App\Support\ResponsiveImageGenerator;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 
 // Browser-test fixture only. Never run against preview or production.
@@ -13,6 +14,10 @@ if (! app()->environment('testing') || config('database.default') !== 'sqlite'
     || realpath(config('database.connections.sqlite.database')) !== realpath(storage_path('framework/testing/browser.sqlite'))) {
     throw new RuntimeException('Inline-photo fixtures require the disposable browser test database.');
 }
+
+// Fresh CI checkouts need the same public-disk link as a running installation.
+// The guard above confines this setup to the disposable browser environment.
+Artisan::call('storage:link');
 
 $photos = [
     ['source' => 'images/hero-bromo.jpg', 'name' => 'testing-mountain.jpg', 'alt' => 'Morning light over Mount Bromo', 'caption' => 'The landscape opens up as the morning light reaches the caldera.'],

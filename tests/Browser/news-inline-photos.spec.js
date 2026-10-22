@@ -51,6 +51,7 @@ test('inline photographs match initial HTML after React mount, including transla
   if (await page.getByTestId('consent-decline').isVisible()) await page.getByTestId('consent-decline').click();
   await page.goto(story + '?lang=us');
   await expect(page.locator('.server-seo-content')).toHaveCount(0);
+  await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' });
   for (const figure of await page.locator(photoSelector).all()) {
     await figure.scrollIntoViewIfNeeded();
     await expect.poll(() => figure.locator('img').evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
