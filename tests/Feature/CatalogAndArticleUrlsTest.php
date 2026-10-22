@@ -35,8 +35,8 @@ class CatalogAndArticleUrlsTest extends TestCase
                         ->where('seo.robots', 'index,follow'));
             }
 
-            $this->get('/'.$catalog)->assertSee('page=2', false);
-            $this->get('/'.$catalog.'?page=2')->assertSee('page=1', false);
+            $this->assertPaginationLink($this->get('/'.$catalog)->getContent(), $catalog, 2);
+            $this->assertPaginationLink($this->get('/'.$catalog.'?page=2')->getContent(), $catalog, 1);
             $this->get('/'.$catalog.'?page=2&lang=id')->assertInertia(fn (Assert $page) => $page
                 ->where('seo.canonical', 'http://localhost:8000/'.$catalog.'?page=2')
                 ->where('seo.robots', 'noindex,follow'));
@@ -76,5 +76,14 @@ class CatalogAndArticleUrlsTest extends TestCase
                     ->where('seo.json_ld.0.mainEntity.itemListElement', fn ($items) => collect($items)->contains('url', $canonical)));
             $this->assertSame($slug, $article->fresh()->slug);
         }
+    }
+
+    private function assertPaginationLink(string $html, string $catalog, int $page): void
+    {
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+
+        $this->assertGreaterThan(0, $xpath->query('//main[contains(@class,"server-seo-content")]//a[contains(@href,"/'.$catalog.'?page='.$page.'")]')->length);
     }
 }

@@ -30,7 +30,8 @@ test('legacy article card navigation and direct reload keep the encoded URL and 
   expect(await initial.text()).toContain(`href="${path}"`);
   await page.goto('/news');
   await expect(page.locator('.server-seo-content')).toHaveCount(0);
-  const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: 'Legacy URL compatibility story', exact: true }) });
+  // The latest panel and catalog both show this story; use its catalog card.
+  const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: 'Legacy URL compatibility story', exact: true }) }).last();
   await card.press('Enter');
   await expect(page).toHaveURL(`${baseURL}${path}`);
   await expect(page.getByRole('heading', { name: 'Legacy URL compatibility story', exact: true, level: 1 })).toBeVisible();
