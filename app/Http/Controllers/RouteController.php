@@ -86,7 +86,7 @@ class RouteController extends Controller
         return Inertia::render('RouteDetailPage', [
             'language' => $language,
             'route' => InertiaPublicData::route($package),
-            'relatedArticles' => InertiaPublicData::articles(PublicSite::relatedArticles($package)),
+            'relatedArticles' => InertiaPublicData::articleCards(PublicSite::relatedArticles($package)),
             'faqs' => Faq::query()
                 ->active()
 
