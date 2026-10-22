@@ -14,7 +14,7 @@ const browser = await chromium.launch();
 const results = [];
 const diagnostics = [];
 const priorityRoutes = [
-    ['bromo-article', '/news/Bromo-wildfire'],
+    ['bromo-article', '/news/paket-wisata-bromo-dari-malang'],
     ['ijen-article', '/news/trip-ijen-creater'],
     ['bukit-lawang-article', '/news/bukit-lawang-jungle-trekking-orangutan-guide'],
     ['bromo-route', '/routes/BROMO'], ['home', '/'], ['routes', '/routes'],
