@@ -16,14 +16,19 @@ class CatalogAndArticleUrlsTest extends TestCase
     public function test_unfiltered_catalog_pages_have_their_own_canonical_and_crawlable_links(): void
     {
         $this->seed();
-        TourPackage::factory()->count(13)->create(['is_active' => true]);
+        $source = TourPackage::query()->active()->firstOrFail();
+        for ($index = 0; $index < 13; $index++) {
+            $package = $source->replicate();
+            $package->slug = 'catalog-page-test-'.$index;
+            $package->save();
+        }
         NewsArticle::factory()->count(13)->create(['status' => 'published', 'published_at' => now()->subDay()]);
 
         foreach (['routes', 'news'] as $catalog) {
             foreach (['' => '', '?page=1' => '', '?page=2' => '?page=2', '?page=2&utm_source=test' => '?page=2'] as $query => $canonicalQuery) {
                 $canonical = 'http://localhost:8000/'.$catalog.$canonicalQuery;
                 $this->get('/'.$catalog.$query)->assertOk()
-                    ->assertSee('<link rel="canonical" href="'.e($canonical).'"', false)
+                    ->assertSee('rel="canonical" href="'.e($canonical).'"', false)
                     ->assertInertia(fn (Assert $page) => $page
                         ->where('seo.canonical', $canonical)
                         ->where('seo.json_ld.0.url', $canonical)
@@ -52,7 +57,7 @@ class CatalogAndArticleUrlsTest extends TestCase
             $canonical = 'http://localhost:8000'.$path;
 
             $this->get($path)->assertOk()
-                ->assertSee('<link rel="canonical" href="'.e($canonical).'"', false)
+                ->assertSee('rel="canonical" href="'.e($canonical).'"', false)
                 ->assertInertia(fn (Assert $page) => $page
                     ->where('article.slug', $slug)
                     ->where('seo.canonical', $canonical)

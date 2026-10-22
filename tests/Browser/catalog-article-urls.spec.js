@@ -29,6 +29,7 @@ test('legacy article card navigation and direct reload keep the encoded URL and 
   const initial = await request.get('/news');
   expect(await initial.text()).toContain(`href="${path}"`);
   await page.goto('/news');
+  await expect(page.locator('.server-seo-content')).toHaveCount(0);
   const card = page.getByRole('link').filter({ has: page.getByRole('heading', { name: 'Legacy URL compatibility story', exact: true }) });
   await card.press('Enter');
   await expect(page).toHaveURL(`${baseURL}${path}`);
