@@ -90,8 +90,10 @@ test('admin can preview and save existing nested photographs without losing them
   await expect(page.locator('input[id$=".alt.us"]').first()).toHaveValue('Morning light over Mount Bromo');
   const caption = page.locator('textarea[id$=".caption.us"]').first();
   await expect(caption).toHaveValue('The landscape opens up as the morning light reaches the caldera.');
+  const preview = page.locator('.filepond--image-preview:visible').first();
+  await expect(preview).toBeVisible({ timeout: 15_000 });
   await caption.fill('The landscape opens up as the morning light reaches the caldera.');
-  await page.locator('input[id$=".alt.us"]').first().scrollIntoViewIfNeeded();
+  await preview.scrollIntoViewIfNeeded();
   await page.screenshot({ path: testInfo.outputPath('admin-section-photos.png') });
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await expect(page.getByText('Saved', { exact: true })).toBeVisible();
@@ -100,4 +102,5 @@ test('admin can preview and save existing nested photographs without losing them
     await page.getByRole('button', { name: 'Next', exact: true }).click();
   }
   await expect(page.locator('input[id$=".alt.us"]').first()).toHaveValue('Morning light over Mount Bromo');
+  await expect(page.locator('.filepond--image-preview:visible').first()).toBeVisible({ timeout: 15_000 });
 });
