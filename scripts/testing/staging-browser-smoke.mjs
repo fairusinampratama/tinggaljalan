@@ -149,7 +149,14 @@ try {
         });
         const baseline = tags(productionRaw);
         const metadata = tags(raw);
-        if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0].replace(base, 'https://tinggaljalan.com') !== baseline.canonical[0] || JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots) || JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new Error(`Canonical/robots parity failed for ${route}.`);
+        // This existing preview article is absent in production CMS. Comparing
+        // its canonical to the redirected production listing is not meaningful.
+        const knownCmsDifference = !productionReview && route === '/news/Bromo-wildfire'
+            && new URL(production.url()).pathname === '/news';
+        const expectedCanonical = knownCmsDifference
+            ? base + route : baseline.canonical[0]?.replace('https://tinggaljalan.com', base);
+        if (knownCmsDifference) results.push('CMS difference: Bromo Wildfire remains in preview; production redirects to /news. No production metadata parity claimed.');
+        if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0] !== expectedCanonical || (knownCmsDifference ? metadata.robots[0] !== 'index,follow' : JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots)) || JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new Error(`Canonical/robots parity failed for ${route}.`);
         if (!expected.links.length || expected.links.some(link => /^javascript:/i.test(link.href))) throw new Error(`Crawlable fallback links failed for ${route}.`);
         await visitor.goto(target, { waitUntil: 'networkidle' });
         await visitor.locator('.server-seo-content').waitFor({ state: 'detached' });
@@ -177,7 +184,7 @@ try {
             }
             results.push(`article: ${route} ${cms.length} exact CMS H2 sections, complete ordered paragraphs/BRs, visitor parity and fragment links passed`);
         }
-        observations.push({ route, metadata, baseline, crawlableLinks: expected.links.length });
+        observations.push({ route, metadata, baseline, productionMetadataComparable: !knownCmsDifference, crawlableLinks: expected.links.length });
         results.push(`semantic: ${route} initial HTML, Googlebot parity, no-JS, visitor H1 and no duplicate fallback passed`);
     }
     if (!articleRoute) throw new Error('No deployed article was available for semantic verification.');
