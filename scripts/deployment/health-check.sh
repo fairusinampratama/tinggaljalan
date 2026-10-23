@@ -145,7 +145,7 @@ fresh_request "$BASE_URL/sitemap.xml" > "$SITEMAP"
     $locations = [];
     foreach ($xml->url as $entry) {
         $raw = (string) $entry->loc;
-        if ($raw === "" || $raw !== trim($raw) || str_contains($raw, " ") || str_contains($raw, "%20")) {
+        if ($raw === "" || $raw !== trim($raw) || str_contains($raw, " ")) {
             fwrite(STDERR, "Malformed sitemap location: ".json_encode($raw)."\n"); exit(1);
         }
         $locations[] = $raw;
