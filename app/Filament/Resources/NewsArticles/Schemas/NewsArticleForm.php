@@ -89,6 +89,32 @@ class NewsArticleForm
                         ->helperText('Subtitle for this section of the article.'),
                     AdminForm::primaryLocalizedField('body', 'Body', required: true, textarea: true)
                         ->helperText('Main content for this section. Add one main topic per section.'),
+                    Repeater::make('images')
+                        ->label('Section photographs')
+                        ->helperText('Optional photos shown after this section. Removing a photo only removes its reference; stored files are kept.')
+                        ->schema([
+                            AdminForm::imageUpload('path', 'Photograph', 'admin/news/sections')
+                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                                ->live(),
+                            AdminForm::primaryLocalizedField('alt', 'Alt description')
+                                ->required(fn (Get $get): bool => filled($get('path')))
+                                ->maxLength(500)
+                                ->helperText('Describe what the photograph shows. Required when a photograph is uploaded.'),
+                            AdminForm::primaryLocalizedField('caption', 'Caption', textarea: true),
+                            Section::make('Photo translations')
+                                ->schema([
+                                    ...AdminForm::translationFields('alt', 'Alt description'),
+                                    ...AdminForm::translationFields('caption', 'Caption', textarea: true),
+                                ])
+                                ->columns(2)
+                                ->collapsed()
+                                ->collapsible(),
+                        ])
+                        ->defaultItems(0)
+                        ->addActionLabel('Add photograph')
+                        ->reorderable()
+                        ->reorderableWithButtons()
+                        ->columnSpanFull(),
                     Section::make('Translations')
                         ->description('Optional Indonesian and Chinese adaptations. Keep the meaning, but write naturally for each reader.')
                         ->schema([

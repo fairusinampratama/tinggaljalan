@@ -278,6 +278,13 @@ class ServerPageContent
             'title' => self::localized($item['heading'] ?? null, $language),
             'text' => self::localized($item['body'] ?? null, $language),
             'id' => preg_replace('/[^a-z0-9]+/', '-', strtolower(self::localized($item['heading'] ?? null, 'us'))),
+            'images' => collect($item['images'] ?? [])->map(fn ($image) => [
+                'src' => $image['src'],
+                'alt' => self::localized($image['alt'], $language),
+                'caption' => self::localized($image['caption'], $language),
+                'width' => $image['width'],
+                'height' => $image['height'],
+            ])->all(),
             'items' => [],
         ])->all();
         $relatedRoutes = collect($props['relatedRoutes'] ?? [])->map(fn ($item) => [
