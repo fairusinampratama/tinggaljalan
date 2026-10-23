@@ -300,6 +300,10 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
+      - name: Verify approved SEO corrections and preserved photographs without writes
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: node scripts/testing/seo-preview-readonly.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/seo"
       - name: Review production without writes
         if: inputs.production_revision != ''
         env:
