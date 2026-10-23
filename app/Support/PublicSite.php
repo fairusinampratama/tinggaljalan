@@ -266,7 +266,7 @@ class PublicSite
             'image' => self::image($article->cover_image),
             'datePublished' => optional($article->published_at)->toIso8601String(),
             'dateModified' => optional($article->content_updated_at ?? $article->updated_at)->toIso8601String(),
-            'url' => route('news.show', $article->slug),
+            'url' => Seo::canonical(ArticleUrl::path((string) $article->slug)),
         ];
     }
 

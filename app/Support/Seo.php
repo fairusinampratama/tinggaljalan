@@ -144,15 +144,22 @@ class Seo
         ]);
     }
 
-    public static function routesIndex(Collection $packages, bool $hasFilters, Request $request): array
+    private static function catalogPath(string $path, bool $hasFilters, int $currentPage): string
     {
+        return ! $hasFilters && $currentPage > 1 ? $path.'?page='.$currentPage : $path;
+    }
+
+    public static function routesIndex(Collection $packages, bool $hasFilters, Request $request, int $currentPage = 1): array
+    {
+        $path = self::catalogPath('/routes', $hasFilters, $currentPage);
+
         return self::page([
             'title' => 'Indonesia Tour Packages | Tinggal Jalan',
             'description' => 'Compare private Indonesia tour packages for Bromo, Tumpak Sewu, Jogja, and Medan with clear itineraries, pickup options, prices, and traveler reviews.',
-            'canonical' => self::canonical('/routes'),
+            'canonical' => self::canonical($path),
             'robots' => self::robotsForRequest($request, $hasFilters ? 'noindex,follow' : 'index,follow'),
             'json_ld' => [
-                self::collectionJsonLd('Indonesia Tour Packages', '/routes', $packages->map(fn (TourPackage $package) => [
+                self::collectionJsonLd('Indonesia Tour Packages', $path, $packages->map(fn (TourPackage $package) => [
                     '@type' => 'ListItem',
                     'position' => $packages->search($package) + 1,
                     'url' => self::canonical('/routes/'.trim((string) $package->slug)),
@@ -182,8 +189,10 @@ class Seo
         ]);
     }
 
-    public static function newsIndex(Collection $articles, bool $hasFilters, string $language, Request $request): array
+    public static function newsIndex(Collection $articles, bool $hasFilters, string $language, Request $request, int $currentPage = 1): array
     {
+        $path = self::catalogPath('/news', $hasFilters, $currentPage);
+
         $title = match ($language) {
             'id' => 'Berita & Panduan Wisata | Tinggal Jalan',
             'cn' => '旅游攻略与动态 | Tinggal Jalan',
@@ -198,13 +207,13 @@ class Seo
         return self::page([
             'title' => $title,
             'description' => $description,
-            'canonical' => self::canonical('/news'),
+            'canonical' => self::canonical($path),
             'robots' => self::robotsForRequest($request, $hasFilters ? 'noindex,follow' : 'index,follow'),
             'json_ld' => [
-                self::collectionJsonLd($title, '/news', $articles->map(fn (NewsArticle $article) => [
+                self::collectionJsonLd($title, $path, $articles->map(fn (NewsArticle $article) => [
                     '@type' => 'ListItem',
                     'position' => $articles->search($article) + 1,
-                    'url' => self::canonical('/news/'.trim((string) $article->slug)),
+                    'url' => self::canonical(ArticleUrl::path((string) $article->slug)),
                     'name' => PublicSite::localized($article->title, $language),
                 ])->values()->all(), 'Blog'),
             ],
@@ -221,7 +230,7 @@ class Seo
         return self::page([
             'title' => $title,
             'description' => $description,
-            'canonical' => self::canonical('/news/'.trim((string) $article->slug)),
+            'canonical' => self::canonical(ArticleUrl::path((string) $article->slug)),
             'robots' => self::robotsForRequest($request),
             'og_type' => 'article',
             'image' => self::assetUrl($article->cover_image),
@@ -391,7 +400,7 @@ class Seo
             ],
             'mainEntityOfPage' => [
                 '@type' => 'WebPage',
-                '@id' => self::canonical('/news/'.trim((string) $article->slug)),
+                '@id' => self::canonical(ArticleUrl::path((string) $article->slug)),
             ],
         ];
     }

@@ -47,8 +47,8 @@ class NewsController extends Controller
         $featuredModel = (clone $query)->where('is_featured', true)->first() ?? (clone $query)->first();
 
         $articles = $query->paginate(12)->withQueryString();
-        $hasFilters = $request->hasAny(['search', 'category', 'destination', 'page']);
-        $seo = Seo::newsIndex($articles->getCollection(), $hasFilters, $language, $request);
+        $hasFilters = $request->hasAny(['search', 'category', 'destination']);
+        $seo = Seo::newsIndex($articles->getCollection(), $hasFilters, $language, $request, $articles->currentPage());
 
         $articles->getCollection()->transform(fn ($article) => InertiaPublicData::articleCard($article));
 

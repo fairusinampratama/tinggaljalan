@@ -31,3 +31,18 @@ const result = spawnSync(
 if (result.status !== 0) {
     process.exit(result.status ?? 1);
 }
+
+const articleUrlFixture = spawnSync('php', ['tests/Fixtures/article-url.php'], {
+    env: {
+        ...process.env,
+        APP_ENV: 'testing',
+        DB_CONNECTION: 'sqlite',
+        DB_DATABASE: databasePath,
+        CACHE_STORE: 'array',
+    },
+    stdio: 'inherit',
+});
+
+if (articleUrlFixture.status !== 0) {
+    process.exit(articleUrlFixture.status ?? 1);
+}

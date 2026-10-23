@@ -2,6 +2,7 @@ import { CalendarDays, ChevronRight, Clock, Compass, MessageCircle, Newspaper, R
 import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { getLocalized } from '../../utils/localization';
+import { articlePath } from '../../utils/article-url';
 import { iconSize, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 import { SectionHeader } from '../ui/SectionHeader';
 import { ResponsiveImage } from '../ui/ResponsiveImage';
@@ -111,7 +112,7 @@ export function NewsCard({ article, language = 'id', variant = 'standard' }) {
       : 'mt-4 flex flex-wrap items-start gap-2 overflow-hidden md:h-7';
 
   function openArticle() {
-    navigate(`/news/${article.slug}`);
+    navigate(articlePath(article.slug));
   }
 
   return (

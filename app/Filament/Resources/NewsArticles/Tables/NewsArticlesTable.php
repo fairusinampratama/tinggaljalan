@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\NewsArticles\Tables;
 
 use App\Filament\Support\NewsArticleReadiness;
+use App\Support\ArticleUrl;
+use App\Support\Seo;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -65,7 +67,7 @@ class NewsArticlesTable
                 Action::make('view_site')
                     ->label('View on site')
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn ($record): string => route('news.show', $record->slug))
+                    ->url(fn ($record): string => Seo::canonical(ArticleUrl::path((string) $record->slug)))
                     ->visible(fn ($record): bool => $record->status === 'published')
                     ->openUrlInNewTab(),
             ])
