@@ -68,7 +68,8 @@ class NewsArticleSlugTest extends TestCase
         foreach (['Legacy Article With Spaces', 'Bromo-wildfire', ' Legacy edge spaces '] as $slug) {
             $article->update(['slug' => $slug]);
             $cover = $article->cover_image;
-            $sections = $article->sections;
+            // The photo feature can persist an absent optional image list as [].
+            $sections = array_map(fn (array $section): array => ['images' => [], ...$section], $article->sections);
             Livewire::test(EditNewsArticle::class, ['record' => $article->id])
                 ->fillForm(['is_featured' => ! $article->is_featured])
                 ->call('save')->assertHasNoFormErrors();
@@ -76,7 +77,7 @@ class NewsArticleSlugTest extends TestCase
             $article->refresh();
             $this->assertSame($slug, $article->slug);
             $this->assertSame($cover, $article->cover_image);
-            $this->assertSame($sections, $article->sections);
+            $this->assertSame($sections, array_map(fn (array $section): array => ['images' => [], ...$section], $article->sections));
         }
     }
 }
