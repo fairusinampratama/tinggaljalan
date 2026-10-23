@@ -77,9 +77,9 @@ try {
   for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mobile', { width: 390, height: 844 }]]) {
     const page = await context.newPage();
     await page.setViewportSize(viewport);
-    await page.goto(base + '/routes?page=2', { waitUntil: 'networkidle' });
+    await page.goto(base + '/news?page=2', { waitUntil: 'networkidle' });
     await page.locator('.server-seo-content').waitFor({ state: 'detached' });
-    assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'), base + '/routes?page=2');
+    assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'), base + '/news?page=2');
     await page.screenshot({ path: path.join(output, name + '-catalog-page-2.png'), fullPage: true, animations: 'disabled', timeout: 30000 });
     await page.goto(base + photoStory, { waitUntil: 'networkidle' });
     await page.locator('.server-seo-content').waitFor({ state: 'detached' });
@@ -92,7 +92,7 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2));
     await page.screenshot({ path: path.join(output, name + '-preserved-section-photos.png'), fullPage: true, animations: 'disabled', timeout: 30000 });
     await page.close();
-    checks.push({ viewport: name, catalogCanonicalAfterHydration: true, sectionPhotos: 3, loadedPhotos: true });
+    checks.push({ viewport: name, catalog: 'news', catalogCanonicalAfterHydration: true, sectionPhotos: 3, loadedPhotos: true });
   }
   await writeFile(path.join(output, 'seo-verification.json'), JSON.stringify({ revision, checks, passed: true }, null, 2));
   console.log('Read-only SEO and preserved-photo verification passed for ' + revision);
