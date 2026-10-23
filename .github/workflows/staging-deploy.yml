@@ -1,10 +1,10 @@
-name: Read-only preview capacity inspection
+name: Approved inactive preview release cleanup
 on:
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  inspect:
+  cleanup:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: staging
@@ -12,7 +12,7 @@ jobs:
       group: staging
       cancel-in-progress: false
     steps:
-      - name: Inspect account quota and preview release artifacts without hosting writes
+      - name: Remove only the two owner-approved inactive preview release copies
         env:
           PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
@@ -33,23 +33,46 @@ jobs:
           [[ "$(readlink -f "$root")" == "$root" ]]
           [[ "$(cat "$root/.tinggaljalan-staging")" == preview.tinggaljalan.com ]]
           [[ ! -L "$deploy/releases" && ! -L "$deploy/incoming" ]]
-          echo QUOTA
-          quota -s 2>/dev/null || true
-          df -Pk "$root"
-          df -Pi "$root"
-          echo CURRENT_PREVIEW
-          readlink -f "$deploy/current"
-          echo PREVIEW_TOTALS_KIB
-          du -sk "$deploy/releases" "$deploy/incoming" "$deploy/shared/storage" "$deploy/shared/backups" 2>/dev/null || true
-          echo PREVIEW_RELEASES_KIB_FILES
-          find "$deploy/releases" -mindepth 1 -maxdepth 1 -type d -print | sort | while IFS= read -r directory; do
-            du -sk "$directory"
-            printf 'FILES %s ' "$(basename "$directory")"
-            find "$directory" -xdev -type f | wc -l
+          exec 9>"$deploy/.lock"
+          flock -w 60 9
+          releases="$deploy/releases"
+          [[ "$(readlink -f "$releases")" == "$releases" ]]
+          before_current="$(readlink -f "$deploy/current")"
+          [[ "$before_current" == "$releases/627978e8114683c284c394499bbf1cdc2bcced26" ]]
+          [[ -d "$releases/758e3e3cecdb4724b58eded028645506e4d1018e" ]]
+          targets=(05a12039b72a7035e8990dfe4793fd6bf51dbc7a 089299c7d5765572e5b056bf468ab51f8bd41a1b)
+          for sha in "${targets[@]}"; do
+            directory="$releases/$sha"
+            [[ -d "$directory" && ! -L "$directory" ]]
+            [[ "$(readlink -f "$directory")" == "$directory" ]]
+            [[ "$directory" != "$before_current" ]]
+            [[ -L "$directory/.env" && -L "$directory/storage" ]]
+            [[ "$(readlink -f "$directory/.env")" == "$deploy/shared/.env" ]]
+            [[ "$(readlink -f "$directory/storage")" == "$deploy/shared/storage" ]]
           done
-          echo PREVIEW_INCOMING_FILES
-          find "$deploy/incoming" -mindepth 1 -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
-          echo PUBLIC_ENTRY_FILES
-          find "$root/public_html" -mindepth 1 -maxdepth 1 -type f -name 'index-*.php' -printf '%f\n' | sort
-          echo READ_ONLY_INSPECTION_COMPLETE
+          before_kib="$(du -sk "$releases" | cut -f1)"
+          before_files="$(find "$releases" -xdev -type f | wc -l)"
+          before_env="$(sha256sum "$deploy/shared/.env")"
+          media_digest() {
+            find "$deploy/shared/storage/app/public" -xdev -type f -print0 | sort -z | xargs -0 -r sha256sum | sha256sum
+          }
+          before_media="$(media_digest)"
+          other_releases() {
+            find "$releases" -mindepth 1 -maxdepth 1 -type d ! -name "${targets[0]}" ! -name "${targets[1]}" -printf '%f\n' | sort
+          }
+          before_others="$(other_releases)"
+          for sha in "${targets[@]}"; do
+            [[ "$(readlink -f "$deploy/current")" == "$before_current" ]]
+            rm -rf --one-file-system -- "$releases/$sha"
+            [[ ! -e "$releases/$sha" && ! -L "$releases/$sha" ]]
+          done
+          [[ "$(readlink -f "$deploy/current")" == "$before_current" ]]
+          [[ -d "$before_current" && -d "$releases/758e3e3cecdb4724b58eded028645506e4d1018e" ]]
+          [[ "$(sha256sum "$deploy/shared/.env")" == "$before_env" ]]
+          [[ "$(media_digest)" == "$before_media" ]]
+          [[ "$(other_releases)" == "$before_others" ]]
+          after_kib="$(du -sk "$releases" | cut -f1)"
+          after_files="$(find "$releases" -xdev -type f | wc -l)"
+          printf 'APPROVED_CLEANUP_COMPLETE removed_releases=2 reclaimed_KiB=%s removed_files=%s\n' "$((before_kib-after_kib))" "$((before_files-after_files))"
+          echo CURRENT_PHOTO_RELEASES_OTHER_RELEASES_CONFIG_AND_MEDIA_PRESERVED
           REMOTE
