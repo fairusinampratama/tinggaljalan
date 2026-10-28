@@ -2,6 +2,8 @@ import { expect, test } from '@playwright/test';
 
 for (const total of [1, 2, 10, 20]) {
   test(`structured timeline and ${total}-photo gallery remain readable and navigable`, async ({ page }, testInfo) => {
+    const originalGalleryRequests = [];
+    page.on('request', request => { if (request.url().includes('?gallery=')) originalGalleryRequests.push(request.url()); });
     await page.route('**/routes/bromo-sunrise', async route => {
       const response = await route.fetch();
       const html = (await response.text()).replace(/(<script data-page="app" type="application\/json">)([\s\S]*?)(<\/script>)/,
@@ -41,12 +43,21 @@ for (const total of [1, 2, 10, 20]) {
       })).toBe(true);
     }
     await page.screenshot({ path: testInfo.outputPath('gallery.png') });
+    expect(originalGalleryRequests).toHaveLength(0);
     await gallery.click();
     const dialog = page.getByRole('dialog', { name: 'Trip photo gallery' });
     await expect(dialog).toBeVisible();
     if (total > 1) {
       await page.keyboard.press('ArrowRight');
       await expect(dialog).toContainText(`1 / ${total}`);
+      await dialog.evaluate(element => {
+        for (const [type, x] of [['touchstart', 250], ['touchend', 100]]) {
+          const event = new Event(type, { bubbles: true });
+          Object.defineProperty(event, 'changedTouches', { value: [{ clientX: x }] });
+          element.querySelector('div').dispatchEvent(event);
+        }
+      });
+      await expect(dialog).toContainText(`2 / ${total}`);
     }
     await page.screenshot({ path: testInfo.outputPath('fullscreen.png') });
     await page.keyboard.press('Escape');
