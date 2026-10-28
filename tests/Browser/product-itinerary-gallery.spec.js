@@ -49,6 +49,8 @@ for (const total of [1, 2, 10, 20]) {
     await gallery.click();
     const dialog = page.getByRole('dialog', { name: 'Trip photo gallery' });
     await expect(dialog).toBeVisible();
+    // The portal is visible before its focus/keyboard effect has finished.
+    await expect(dialog.getByRole('button', { name: 'Close gallery' })).toBeFocused();
     if (total > 1) {
       await page.keyboard.press('ArrowRight');
       await expect(dialog).toContainText(`1 / ${total}`);
