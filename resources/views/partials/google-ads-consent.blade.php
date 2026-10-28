@@ -1,7 +1,13 @@
 @php($googleAdsId = trim((string) config('services.google_ads.id')))
-@if (config('services.google_ads.consent_enabled') && $googleAdsId !== '')
-    <script data-google-ads-consent="{{ $googleAdsId }}">
-        (function (window, document, adsId) {
+@php
+    $googleAdsId = config('services.google_ads.consent_enabled') ? $googleAdsId : '';
+    $gtmId = config('services.google_tag_manager.enabled')
+        ? trim((string) config('services.google_tag_manager.id')) : '';
+    $gtmId = preg_match('/^GTM-[A-Z0-9]+$/', $gtmId) ? $gtmId : '';
+@endphp
+@if ($googleAdsId !== '' || $gtmId !== '')
+    <script data-google-ads-consent="{{ $googleAdsId }}" data-google-tag-manager="{{ $gtmId }}">
+        (function (window, document, adsId, gtmId) {
             if (window.TinggalJalanConsent) return;
 
             var storageKey = 'tinggaljalan-consent-v1';
@@ -47,6 +53,16 @@
                 if (configured) return;
                 configured = true;
 
+                if (gtmId && !document.getElementById('tinggaljalan-gtm')) {
+                    window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+                    var container = document.createElement('script');
+                    container.async = true;
+                    container.id = 'tinggaljalan-gtm';
+                    container.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtmId);
+                    document.head.appendChild(container);
+                }
+
+                if (!adsId) return;
                 window.gtag('js', new Date());
                 window.gtag('config', adsId);
 
@@ -88,6 +104,6 @@
                 window.gtag('consent', 'update', consentValues('granted'));
                 loadGoogleTag();
             }
-        })(window, document, {{ Illuminate\Support\Js::from($googleAdsId) }});
+        })(window, document, {{ Illuminate\Support\Js::from($googleAdsId) }}, {{ Illuminate\Support\Js::from($gtmId) }});
     </script>
 @endif
