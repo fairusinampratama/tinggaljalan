@@ -1,0 +1,50 @@
+name: Product UX development review (temporary)
+on:
+  pull_request:
+    branches: [feat/product-itinerary-gallery]
+permissions:
+  contents: read
+jobs:
+  review:
+    if: github.head_ref == 'qa/product-itinerary-gallery-review'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring,intl,dom,curl,zip,pdo_sqlite,sqlite3,gd
+          coverage: none
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install disposable development app
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+          cp .env.example .env
+          php artisan key:generate
+          npm run test:browser:prepare
+          npx playwright install --with-deps chromium
+      - name: Capture current main baseline
+        run: |
+          git fetch origin babda3db8b86d95b3dff2fa634988724cd85da56
+          git restore --source=babda3db8b86d95b3dff2fa634988724cd85da56 -- app/Support/InertiaPublicData.php app/Support/ServerPageContent.php app/Filament/Resources/TourPackages/Schemas/TourPackageForm.php resources/css/app.css resources/views/partials/server-sections.blade.php resources/js/components/sections/RouteDetailSection.jsx resources/js/components/ui/RouteGallery.jsx
+          npm run build:performance
+          npx playwright test product-baseline --project=desktop-chromium --project=android-chromium --workers=1 --retries=0 --output=review-baseline
+      - name: Capture and test updated app
+        run: |
+          git restore --source=HEAD -- app/Support/InertiaPublicData.php app/Support/ServerPageContent.php app/Filament/Resources/TourPackages/Schemas/TourPackageForm.php resources/css/app.css resources/views/partials/server-sections.blade.php resources/js/components/sections/RouteDetailSection.jsx resources/js/components/ui/RouteGallery.jsx
+          npm run build
+          npx playwright test product-itinerary-gallery route-gallery-overflow --project=desktop-chromium --project=android-chromium --workers=1 --retries=0 --output=review-updated
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: product-ux-development-review
+          path: |
+            review-baseline
+            review-updated
+          retention-days: 7
