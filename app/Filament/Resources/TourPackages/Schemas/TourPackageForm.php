@@ -389,8 +389,8 @@ class TourPackageForm
         return [
             AdminForm::galleryUpload('gallery', 'Gallery images', 'admin/packages/gallery')
                 ->minFiles(2)
-                ->maxFiles(10)
-                ->helperText('Optional. Upload 2-10 route-specific images. Drag to reorder; the first image appears largest.')
+                ->maxFiles(20)
+                ->helperText('Optional. Upload 2-20 route-specific images. Drag to reorder; the first image appears largest.')
                 ->columnSpanFull(),
             AdminForm::primaryLocalizedField('cover_alt', 'Cover alt text')
                 ->helperText('Short image description for accessibility and SEO.'),

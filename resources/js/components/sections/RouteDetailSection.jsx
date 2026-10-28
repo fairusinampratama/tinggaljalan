@@ -1,3 +1,4 @@
+import { ItineraryTimeline } from '../ui/ItineraryTimeline';
 import {
   AlertTriangle,
   CalendarDays,
@@ -195,8 +196,10 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               </section>
             ) : null}
 
+            {selectedArticle.itinerarySteps?.length ? (
+              <ItineraryTimeline title={t.itinerary} items={selectedArticle.itinerarySteps} language={language} />
+            ) : <DetailList title={t.itinerary} items={selectedArticle.itinerary} language={language} icon={Clock} />}
             <div className="mt-8 grid gap-5 lg:grid-cols-2">
-              <DetailList title={t.itinerary} items={selectedArticle.itinerary} language={language} icon={Clock} />
               <DetailList title={t.pickupDetails} items={selectedArticle.pickupDetails} language={language} icon={MapPin} />
               <DetailList title={t.includes} items={selectedArticle.includes} language={language} icon={CheckCircle} bulletIcon={CheckCircle} />
               <DetailList title={t.excludes} items={selectedArticle.excludes} language={language} icon={XCircle} bulletIcon={XCircle} />

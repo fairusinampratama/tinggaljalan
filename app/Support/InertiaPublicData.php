@@ -243,6 +243,11 @@ class InertiaPublicData
             'goodToKnow' => self::localizedList($package->good_to_know),
             'pickupDetails' => self::localizedList($package->pickup_areas),
             'itinerary' => $itinerary,
+            'itinerarySteps' => $package->itineraryItems->map(fn ($item) => [
+                'id' => $item->id, 'dayNumber' => $item->day_number,
+                'timeLabel' => $item->time_label, 'title' => self::localizedArray($item->title),
+                'description' => self::localizedArray($item->description), 'displayOrder' => $item->sort_order,
+            ])->values()->all(),
             'policies' => self::localizedPolicies($package->policies),
             'testimonials' => collect($package->testimonials ?? [])->map(fn ($item) => [
                 'name' => $item['name'] ?? 'Traveler',

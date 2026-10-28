@@ -27,7 +27,23 @@
                 @if (! empty($section['quote']))
                     <figure><blockquote>{{ $section['quote'] }}</blockquote><figcaption>{{ $section['quoteAuthor'] }}</figcaption></figure>
                 @endif
-                @if (! empty($section['items']))
+                @if (! empty($section['timeline']))
+                    <ol class="itinerary-timeline mt-5 space-y-6" data-testid="server-itinerary-timeline">
+                        @foreach ($section['timeline'] as $step)
+                            <li class="relative pl-6">
+                                @if (! $loop->last)<span aria-hidden="true" class="absolute bottom-[-1.5rem] left-1 top-2 w-px bg-line"></span>@endif
+                                <span aria-hidden="true" class="absolute left-0 top-2 h-[9px] w-[9px] rounded-full bg-secondary"></span>
+                                @if (count(array_unique(array_column($section['timeline'], 'day'))) > 1 && ($loop->first || $section['timeline'][$loop->index - 1]['day'] !== $step['day']))
+                                    <p class="mb-3 text-sm font-semibold text-secondary">{{ $section['dayLabel'] }} {{ $step['day'] }}{{ $section['dayLabel'] === '第' ? ' 天' : '' }}</p>
+                                @endif
+                                <div class="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-5">
+                                    <div>@if (filled($step['time']))<span class="inline-block rounded-md bg-secondary/10 px-2.5 py-1 text-sm font-bold text-secondary">{{ $step['time'] }}</span>@endif</div>
+                                    <div class="min-w-0 break-words"><p class="font-bold text-primary">{{ $step['title'] }}</p>@include('partials.plain-text', ['text' => $step['description']])</div>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ol>
+                @elseif (! empty($section['items']))
                     @if (! empty($section['ordered']))<ol>@else<ul>@endif
                     @foreach ($section['items'] as $item)
                         <li>

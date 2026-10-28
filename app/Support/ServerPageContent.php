@@ -203,7 +203,16 @@ class ServerPageContent
             $sections[] = ['title' => '', 'items' => collect($gallery)->map(fn ($src) => ['image' => self::image($src, self::localized($route['imageAlt'] ?? $route['title'] ?? null, $language))])->all()];
         }
         foreach (['itinerary', 'pickupDetails', 'includes', 'excludes', 'goodToKnow', 'details'] as $key) {
-            $sections[] = self::section($t[$key], self::simpleItems($route[$key] ?? [], $language)) + ['headingLevel' => 3];
+            $section = self::section($t[$key], self::simpleItems($route[$key] ?? [], $language)) + ['headingLevel' => 3];
+            if ($key === 'itinerary' && ! empty($route['itinerarySteps'])) {
+                $section['timeline'] = collect($route['itinerarySteps'])->map(fn ($item) => [
+                    'day' => $item['dayNumber'], 'time' => $item['timeLabel'],
+                    'title' => self::localized($item['title'], $language),
+                    'description' => self::localized($item['description'], $language),
+                ])->all();
+                $section['dayLabel'] = ['id' => 'Hari', 'cn' => '第'][$language] ?? 'Day';
+            }
+            $sections[] = $section;
         }
         foreach (['cancellation', 'confirmation'] as $key) {
             $sections[] = self::section($t[$key.'Policy'], self::simpleItems($route['policies'][$key] ?? [], $language)) + ['headingLevel' => 3];
