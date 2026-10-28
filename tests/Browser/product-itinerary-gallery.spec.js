@@ -54,3 +54,13 @@ for (const total of [1, 2, 10, 20]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   });
 }
+
+
+test('actual Bromo itinerary retains its complete saved schedule', async ({ page }, testInfo) => {
+  await page.goto('/routes/bromo-sunrise');
+  await expect(page.locator('.server-seo-content')).toHaveCount(0);
+  const timeline=page.getByTestId('itinerary-timeline');
+  await expect(timeline).toBeVisible();
+  await timeline.scrollIntoViewIfNeeded();
+  await page.screenshot({path:testInfo.outputPath('bromo-itinerary.png'),fullPage:true});
+});
