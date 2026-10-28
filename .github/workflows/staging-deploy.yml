@@ -297,7 +297,10 @@ jobs:
         if: always()
         env:
           REVISION: ${{ inputs.revision }}
-        run: node scripts/testing/product-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/product-ux"
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          node scripts/testing/product-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/product-ux"
       - name: Review existing desktop and mobile preview without hosting writes
         env:
           REVISION: ${{ inputs.revision }}
