@@ -28,7 +28,7 @@ jobs:
           cp .env.example .env
           php artisan key:generate
           npm run test:browser:prepare
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
       - name: Capture current main baseline
         run: |
           git fetch origin babda3db8b86d95b3dff2fa634988724cd85da56
@@ -39,7 +39,7 @@ jobs:
         run: |
           git restore --source=HEAD -- app/Support/InertiaPublicData.php app/Support/ServerPageContent.php app/Filament/Resources/TourPackages/Schemas/TourPackageForm.php resources/css/app.css resources/views/partials/server-sections.blade.php resources/js/components/sections/RouteDetailSection.jsx resources/js/components/ui/RouteGallery.jsx
           npm run build
-          npx playwright test product-itinerary-gallery route-gallery-overflow --project=desktop-chromium --project=android-chromium --workers=1 --retries=0 --output=review-updated
+          npx playwright test product-itinerary-gallery route-gallery-overflow --project=desktop-chromium --project=android-chromium --project=desktop-webkit --project=iphone-webkit --workers=1 --retries=0 --output=review-updated
       - uses: actions/upload-artifact@v4
         if: always()
         with:

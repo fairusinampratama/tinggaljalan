@@ -48,7 +48,15 @@
                     @foreach ($section['items'] as $item)
                         <li>
                             @if (! empty($item['image']))
-                                <img src="{{ $item['image']['src'] }}" alt="{{ $item['image']['alt'] }}" loading="lazy" width="800" height="600">
+                                @if (! empty($item['responsiveImage']))
+                                    @include('partials.server-responsive-image', [
+                                        'src' => $item['image']['src'], 'desktopSrc' => $item['image']['src'], 'alt' => $item['image']['alt'], 'imageClass' => '',
+                                        'sizes' => '(min-width: 1024px) 800px, 100vw',
+                                        'loading' => 'lazy', 'width' => 800, 'height' => 600,
+                                    ])
+                                @else
+                                    <img src="{{ $item['image']['src'] }}" alt="{{ $item['image']['alt'] }}" loading="lazy" width="800" height="600">
+                                @endif
                             @endif
                             @php
                                 $url = $item['url'] ?? '';
