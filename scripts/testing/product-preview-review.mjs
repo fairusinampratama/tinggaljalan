@@ -17,6 +17,9 @@ try {
             httpCredentials: { username: 'reviewer', password: config.review_password, origin: base } });
         const health = await context.request.get(`${base}/up?revision=${revision}`);
         expect((await health.json()).revision).toBe(revision);
+        const visitorProbe = await context.request.get(`${base}/news/Bromo-wildfire`);
+        const botProbe = await context.request.get(`${base}/news/Bromo-wildfire`, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' } });
+        console.log(`${profile} protected HTML diagnostic: visitor=${visitorProbe.status()}, bot=${botProbe.status()}`);
         const page = await context.newPage();
         const errors = [];
         page.on('pageerror', () => errors.push('Page JavaScript error'));

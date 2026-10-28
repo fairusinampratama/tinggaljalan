@@ -293,6 +293,11 @@ jobs:
             -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 \
             u304629909@153.92.9.54 "/opt/alt/php84/usr/bin/php /dev/stdin '$REVISION'" \
             < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/staging-review/preservation-before.json"
+      - name: Verify deployed product itinerary and gallery without CMS writes
+        if: always()
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: node scripts/testing/product-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/product-ux"
       - name: Review existing desktop and mobile preview without hosting writes
         env:
           REVISION: ${{ inputs.revision }}
@@ -300,10 +305,6 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
-      - name: Verify deployed product itinerary and gallery without CMS writes
-        env:
-          REVISION: ${{ inputs.revision }}
-        run: node scripts/testing/product-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/product-ux"
       - name: Review production without writes
         if: inputs.production_revision != ''
         env:
@@ -313,6 +314,7 @@ jobs:
           [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/production"
       - name: Verify public content and media stayed unchanged during review
+        if: always()
         env:
           REVISION: ${{ inputs.revision }}
         run: |
