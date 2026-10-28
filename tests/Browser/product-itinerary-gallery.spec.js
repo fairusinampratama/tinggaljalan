@@ -28,6 +28,8 @@ for (const total of [1, 2, 10, 20]) {
     const consent = page.getByTestId('consent-decline');
     if (await consent.isVisible()) await consent.click();
     await timeline.scrollIntoViewIfNeeded();
+    await timeline.screenshot({path:testInfo.outputPath('timeline-detail.png')});
+    await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
     await page.screenshot({ path: testInfo.outputPath('long-multiday-timeline.png'), fullPage: true });
     const gallery = page.getByRole('button', { name: 'Open full-screen gallery', exact: true });
     await gallery.scrollIntoViewIfNeeded();
@@ -73,5 +75,8 @@ test('actual Bromo itinerary retains its complete saved schedule', async ({ page
   const timeline=page.getByTestId('itinerary-timeline');
   await expect(timeline).toBeVisible();
   await timeline.scrollIntoViewIfNeeded();
+  const consent=page.getByTestId('consent-decline'); if(await consent.isVisible()) await consent.click();
+  await timeline.screenshot({path:testInfo.outputPath('bromo-timeline-detail.png')});
+  await page.evaluate(()=>window.scrollTo({top:0,behavior:'instant'}));
   await page.screenshot({path:testInfo.outputPath('bromo-itinerary.png'),fullPage:true});
 });
