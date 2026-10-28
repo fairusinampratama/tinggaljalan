@@ -166,6 +166,11 @@ label {
     overflow-wrap: anywhere;
 }
 
+/* One white-card treatment for public package content, including initial HTML. */
+.route-content-card {
+    @apply min-w-0 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-6;
+}
+
 /* Readable initial HTML until React replaces #app, including failed JS loads. */
 .server-document { max-width: 72rem; margin: 0 auto; padding: 6rem 1.5rem 1.5rem; overflow-wrap: anywhere; }
 .server-document img { max-width: 100%; height: auto; }
@@ -190,3 +195,8 @@ label {
 .server-seo-content { min-height: 100vh; width: 100%; background: var(--color-canvas); color: var(--color-ink); }
 html[data-initial-fragment] { scroll-behavior: auto; }
 html[data-initial-fragment] #app { overflow-anchor: none; }
+
+.server-document ol.itinerary-timeline { list-style: none; padding-left: 0; }
+.server-document .itinerary-timeline p { margin: 0; }
+.server-document .route-content-card { margin-top: 2rem; }
+.server-document .route-content-card > :first-child { margin-top: 0; }

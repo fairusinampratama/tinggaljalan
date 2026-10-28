@@ -1,8 +1,17 @@
+import { isGeneratedVariantAvailable, responsiveImagePath, responsiveSrcSet } from '../../utils/images';
 import { ChevronLeft, ChevronRight, Expand, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const SWIPE_THRESHOLD = 45;
+
+function GalleryImage({ src, alt, sizes, loading, className, width = 1200, height = 750 }) {
+  const [originalOnly, setOriginalOnly] = useState(false);
+  return <picture>
+    {!originalOnly && responsiveSrcSet(src) ? <source type="image/webp" srcSet={responsiveSrcSet(src)} sizes={sizes} /> : null}
+    <img src={!originalOnly && isGeneratedVariantAvailable(src) ? responsiveImagePath(src, 480) : src} alt={alt} loading={loading} width={width} height={height} className={className} onError={() => setOriginalOnly(true)} />
+  </picture>;
+}
 
 function GalleryButton({ direction, label, onClick, lightbox = false }) {
   const Icon = direction === 'previous' ? ChevronLeft : ChevronRight;
@@ -37,7 +46,7 @@ function Thumbnail({ image, index, activeIndex, alt, label, onSelect, imageRef, 
         selected ? 'border-accent shadow-md' : dark ? 'border-white/20 opacity-65 hover:opacity-100' : 'border-transparent opacity-75 hover:border-line hover:opacity-100'
       }`}
     >
-      <img src={image} alt="" loading={index === 0 ? 'eager' : 'lazy'} className="h-16 w-24 object-cover md:h-[72px] md:w-[104px]" />
+      <GalleryImage key={image} src={image} alt="" sizes="104px" loading="lazy" width={104} height={72} className="h-16 w-24 object-cover md:h-[72px] md:w-[104px]" />
       <span className="sr-only">{`${alt} ${index + 1}`}</span>
     </button>
   );
@@ -98,7 +107,7 @@ export function RouteGallery({ images, alt, labels }) {
     const adjacentIndexes = [(activeIndex - 1 + total) % total, (activeIndex + 1) % total];
     adjacentIndexes.forEach((index) => {
       const preload = new Image();
-      preload.src = safeImages[index];
+      preload.src = isGeneratedVariantAvailable(safeImages[index]) ? responsiveImagePath(safeImages[index], 960) : safeImages[index];
     });
   }, [activeIndex, hasMultiple, safeImages, total]);
 
@@ -113,9 +122,9 @@ export function RouteGallery({ images, alt, labels }) {
       // which can shift the visitor away from the package content.
       const left = item.left < bounds.left ? item.left - bounds.left : Math.max(0, item.right - bounds.right);
       const top = item.top < bounds.top ? item.top - bounds.top : Math.max(0, item.bottom - bounds.bottom);
-      strip.scrollBy({ left, top, behavior: 'smooth' });
+      strip.scrollBy({ left, top, behavior: 'instant' });
     });
-  }, [activeIndex]);
+  }, [activeIndex, lightboxOpen]);
 
   useEffect(() => {
     if (!lightboxOpen) return undefined;
@@ -217,7 +226,7 @@ export function RouteGallery({ images, alt, labels }) {
           ) : null}
         </div>
         {hasMultiple ? (
-          <div className="mx-auto mt-4 flex max-w-full gap-2 overflow-x-auto pb-1">
+          <div className="mx-auto mt-4 flex max-w-full gap-2 overflow-x-auto overscroll-contain pb-1">
             {safeImages.map((image, index) => (
               <Thumbnail key={`${image}-${index}`} {...thumbnailProps(image, index, lightboxThumbnailRefs, true)} />
             ))}
@@ -230,9 +239,10 @@ export function RouteGallery({ images, alt, labels }) {
 
   return (
     <>
-      <div className="mt-8 grid min-w-0 grid-cols-1 items-start gap-3 md:grid-cols-[112px_minmax(0,1fr)]">
+      <p className="mt-8 text-right text-xs font-semibold text-muted">{labels.dialog} · {total} {hasMultiple ? <span aria-hidden="true"><span className="hidden md:inline">↕</span><span className="md:hidden">↔</span></span> : null}</p>
+      <div className={`mt-2 grid min-w-0 grid-cols-1 items-stretch gap-3 ${hasMultiple ? 'md:grid-cols-[112px_minmax(0,1fr)]' : ''}`}>
         {hasMultiple ? (
-          <div className="hidden max-h-[520px] flex-col gap-3 overflow-y-auto pr-1 md:flex">
+          <div className="hidden h-0 min-h-full flex-col gap-3 overflow-y-auto overscroll-contain pr-1 md:flex [scrollbar-width:thin]">
             {safeImages.map((image, index) => (
               <Thumbnail key={`${image}-${index}`} {...thumbnailProps(image, index, desktopThumbnailRefs)} />
             ))}
@@ -262,12 +272,12 @@ export function RouteGallery({ images, alt, labels }) {
             }}
             className="group block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           >
-            <img src={safeImages[activeIndex]} alt={activeAlt} className="aspect-[16/10] w-full object-cover" />
+            <GalleryImage key={safeImages[activeIndex]} src={safeImages[activeIndex]} alt={activeAlt} sizes="(min-width: 1280px) 700px, (min-width: 768px) 60vw, 100vw" loading="eager" className="aspect-[16/10] w-full object-cover" />
             <span className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/90 text-primary opacity-100 shadow-md transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
               <Expand className="h-4 w-4" aria-hidden="true" />
             </span>
           </button>
-          <span className="absolute bottom-3 right-3 rounded-full bg-primary/80 px-3 py-1.5 text-xs font-semibold text-white" aria-live="polite">{counter}</span>
+          <span className="absolute bottom-3 right-3 rounded-full bg-primary/80 px-3 py-1.5 text-sm font-semibold text-white" aria-live="polite">{counter}</span>
           {hasMultiple ? (
             <>
               <GalleryButton direction="previous" label={labels.previous} onClick={showPrevious} />
@@ -276,7 +286,7 @@ export function RouteGallery({ images, alt, labels }) {
           ) : null}
         </div>
         {hasMultiple ? (
-          <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1 md:hidden">
+          <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-contain pb-1 md:hidden">
             {safeImages.map((image, index) => (
               <Thumbnail key={`${image}-${index}`} {...thumbnailProps(image, index, mobileThumbnailRefs)} />
             ))}

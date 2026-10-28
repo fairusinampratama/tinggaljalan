@@ -1,3 +1,5 @@
+import { ItineraryTimeline } from '../ui/ItineraryTimeline';
+import { RouteContentCard } from '../ui/RouteContentCard';
 import {
   AlertTriangle,
   CalendarDays,
@@ -21,7 +23,7 @@ import { RatingDisplay } from '../ui/RatingDisplay';
 import { RouteGallery } from '../ui/RouteGallery';
 import { InlineStrong } from '../ui/InlineStrong';
 
-function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIcon: BulletIcon }) {
+function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIcon: BulletIcon, className }) {
   const visibleItems = localizeList(items, language);
 
   if (!visibleItems.length) {
@@ -29,7 +31,7 @@ function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIc
   }
 
   return (
-    <section className={`rounded-xl border border-line bg-surface p-5 shadow-soft`}>
+    <RouteContentCard className={className}>
       <h3 className="flex items-center gap-2 text-lg font-bold text-ink">
         <Icon className="h-4 w-4 text-secondary" /> {title}
       </h3>
@@ -45,7 +47,7 @@ function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIc
           </li>
         ))}
       </ul>
-    </section>
+    </RouteContentCard>
   );
 }
 
@@ -129,7 +131,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               }}
             />
 
-            <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-8">
+            <RouteContentCard className="mt-8">
               <h2 className="font-display text-3xl font-normal leading-[1.08] text-primary">{t.routeHighlights}</h2>
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 {localizeList(selectedArticle.highlights, language).map((highlight) => (
@@ -139,9 +141,9 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                   </div>
                 ))}
               </div>
-            </section>
+            </RouteContentCard>
 
-            <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-8">
+            <RouteContentCard className="mt-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.packageOptions}</p>
@@ -166,10 +168,10 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                 <MetaPill icon={Car}>{getLocalized(packageOption.pickupLabel, language)}</MetaPill>
                 <MetaPill icon={Users}>{getLocalized(packageOption.groupType, language)}</MetaPill>
               </div>
-            </section>
+            </RouteContentCard>
 
             {selectedArticle.addOns?.length ? (
-              <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-8">
+              <RouteContentCard className="mt-8">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.addOns}</p>
@@ -192,11 +194,13 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                     );
                   })}
                 </div>
-              </section>
+              </RouteContentCard>
             ) : null}
 
+            {selectedArticle.itinerarySteps?.length ? (
+              <ItineraryTimeline title={t.itinerary} items={selectedArticle.itinerarySteps} language={language} />
+            ) : <DetailList className="mt-8" title={t.itinerary} items={selectedArticle.itinerary} language={language} icon={Clock} />}
             <div className="mt-8 grid gap-5 lg:grid-cols-2">
-              <DetailList title={t.itinerary} items={selectedArticle.itinerary} language={language} icon={Clock} />
               <DetailList title={t.pickupDetails} items={selectedArticle.pickupDetails} language={language} icon={MapPin} />
               <DetailList title={t.includes} items={selectedArticle.includes} language={language} icon={CheckCircle} bulletIcon={CheckCircle} />
               <DetailList title={t.excludes} items={selectedArticle.excludes} language={language} icon={XCircle} bulletIcon={XCircle} />
@@ -206,12 +210,12 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
 
             {hasPolicies ? (
               <section
-                className="mt-8 space-y-7"
+                className="mt-8 space-y-5"
                 aria-label={`${t.cancellationPolicy} / ${t.confirmationPolicy}`}
                 data-testid="route-policies"
               >
                 {cancellationPoints.length ? (
-                  <div data-testid="cancellation-policy">
+                  <RouteContentCard data-testid="cancellation-policy">
                     <h3 className="text-lg font-bold text-ink">{t.cancellationPolicy}</h3>
                     <ul className="mt-3 space-y-2.5 text-sm font-semibold leading-6 text-muted">
                       {cancellationPoints.map((point, index) => (
@@ -221,11 +225,11 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </RouteContentCard>
                 ) : null}
 
                 {confirmationPoints.length ? (
-                  <div data-testid="confirmation-policy">
+                  <RouteContentCard data-testid="confirmation-policy">
                     <h3 className="text-lg font-bold text-ink">{t.confirmationPolicy}</h3>
                     <ul className="mt-3 space-y-2.5 text-sm font-semibold leading-6 text-muted">
                       {confirmationPoints.map((point, index) => (
@@ -235,13 +239,13 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </RouteContentCard>
                 ) : null}
               </section>
             ) : null}
 
             {selectedArticle.testimonials?.length ? (
-              <section className="mt-8 rounded-2xl border border-line bg-surface p-5 shadow-soft sm:p-8">
+              <RouteContentCard className="mt-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h2 className="font-display text-3xl font-normal leading-[1.08] text-primary">{t.travelerProof}</h2>
@@ -265,12 +269,12 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                     </figure>
                   ))}
                 </div>
-              </section>
+              </RouteContentCard>
             ) : null}
           </article>
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
-            <div className="rounded-2xl border border-line bg-surface p-5 shadow-soft">
+            <RouteContentCard>
               <p className="text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.selectedPackage}</p>
               <h2 className="mt-2 font-display text-3xl font-normal leading-[1.08] text-primary">
                 {getLocalized(packageOption.title, language) || localizedTitle}
@@ -305,7 +309,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                   {t.continueBooking} <ChevronRight className={iconSize} />
                 </button>
               </div>
-            </div>
+            </RouteContentCard>
           </aside>
         </div>
       </section>

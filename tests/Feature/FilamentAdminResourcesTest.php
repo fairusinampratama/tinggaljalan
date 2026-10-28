@@ -133,7 +133,7 @@ class FilamentAdminResourcesTest extends TestCase
         $this->assertSame('The final itinerary is confirmed by WhatsApp.', $policies['confirmation'][0]['us']);
     }
 
-    public function test_tour_package_gallery_enforces_two_to_ten_images_when_used(): void
+    public function test_tour_package_gallery_enforces_two_to_twenty_images_when_used(): void
     {
         $this->seed();
 
@@ -147,7 +147,7 @@ class FilamentAdminResourcesTest extends TestCase
 
         $this->assertInstanceOf(FileUpload::class, $gallery);
         $this->assertSame(2, $gallery->getMinFiles());
-        $this->assertSame(10, $gallery->getMaxFiles());
+        $this->assertSame(20, $gallery->getMaxFiles());
         $this->assertFalse($gallery->isRequired());
     }
 
