@@ -1,5 +1,5 @@
-@php($googleAdsId = trim((string) config('services.google_ads.id')))
 @php
+    $googleAdsId = trim((string) config('services.google_ads.id'));
     $googleAdsId = config('services.google_ads.consent_enabled') ? $googleAdsId : '';
     $gtmId = config('services.google_tag_manager.enabled')
         ? trim((string) config('services.google_tag_manager.id')) : '';
