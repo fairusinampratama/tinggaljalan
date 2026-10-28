@@ -6,6 +6,9 @@ payload remains supported. The relation's day/sort ordering is authoritative;
 clock labels are never parsed or sorted. Multiple saved days receive separators.
 
 The timeline occupies the existing main column above the other detail lists.
+RouteContentCard supplies the same white background, 16px corners, border,
+shadow and 20px/24px responsive padding to the itinerary, detail lists, policies,
+main content panels and booking summary. Initial route HTML shares its CSS class.
 Its complete text also appears in the initial server document. Booking, prices,
 cover images and route metadata are unchanged.
 
