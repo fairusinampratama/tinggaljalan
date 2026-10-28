@@ -1,11 +1,13 @@
 import { getLocalized } from '../../utils/localization';
+import { Clock } from 'lucide-react';
+import { RouteContentCard } from './RouteContentCard';
 
 export function ItineraryTimeline({ title, items = [], language = 'us' }) {
   const multiDay = new Set(items.map(item => item.dayNumber)).size > 1;
   const dayLabel = language === 'id' ? 'Hari' : language === 'cn' ? '第' : 'Day';
   return (
-    <section className="mt-8" aria-label={title} data-testid="itinerary-timeline">
-      <h3 className="text-lg font-bold text-ink">{title}</h3>
+    <RouteContentCard className="mt-8" aria-label={title} data-testid="itinerary-timeline">
+      <h3 className="flex items-center gap-2 text-lg font-bold text-ink"><Clock className="h-4 w-4 text-secondary" aria-hidden="true" />{title}</h3>
       <ol className="mt-5 space-y-6">
         {items.map((item, index) => (
           <li key={item.id} className="relative pl-6">
@@ -24,6 +26,6 @@ export function ItineraryTimeline({ title, items = [], language = 'us' }) {
           </li>
         ))}
       </ol>
-    </section>
+    </RouteContentCard>
   );
 }

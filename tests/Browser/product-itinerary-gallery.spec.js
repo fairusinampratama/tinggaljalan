@@ -63,6 +63,7 @@ for (const total of [1, 2, 10, 20]) {
       });
       await expect(dialog).toContainText(`2 / ${total}`);
     }
+    await expect.poll(() => dialog.locator('img').first().evaluate(img => img.complete && img.naturalWidth > 0), { timeout: 30000 }).toBe(true);
     await page.screenshot({ path: testInfo.outputPath('fullscreen.png') });
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);

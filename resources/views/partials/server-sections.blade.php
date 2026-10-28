@@ -1,7 +1,7 @@
         @foreach ($sections as $section)
             @continue(! empty($section['requiresItems']) && empty($section['items']))
             @continue(blank($section['text'] ?? null) && empty($section['items'] ?? []) && ! isset($section['id']))
-            <section @if (! empty($section['id'])) id="{{ $section['id'] }}" @endif>
+            <section @class(['route-content-card' => ($serverContent['component'] ?? '') === 'RouteDetailPage' && filled($section['title'] ?? null)]) @if (! empty($section['id'])) id="{{ $section['id'] }}" @endif>
                 @if (filled($section['title'] ?? null))
                     @if (($section['headingLevel'] ?? 2) === 3)
                         <h3>{{ $section['title'] }}</h3>
