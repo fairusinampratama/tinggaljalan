@@ -45,15 +45,12 @@ jobs:
           for directory in incoming releases shared; do
             du -sk "$root/deployments/$directory"
           done
+          echo PRODUCTION_RELEASE_AGE_ORDER
+          find "$root/deployments/releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' | sort -n
           echo PRODUCTION_RELEASE_DIRECTORIES
           find "$root/deployments/releases" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 -r du -sk
           echo PRODUCTION_ARCHIVES
           find "$root/deployments/incoming" -mindepth 1 -maxdepth 1 -type f -name 'release-*.tar.gz*' -printf '%f %s bytes %TY-%Tm-%Td\n' | sort
           echo SHARED_STORAGE_TOTALS
           du -sk "$root/deployments/shared/storage/app/public" "$root/deployments/shared/backups" 2>/dev/null || true
-          preview="$(dirname "$root")/preview.tinggaljalan.com"
-          if [[ -d "$preview/deployments" && ! -L "$preview/deployments" ]]; then
-            echo PREVIEW_DEPLOYMENT_TOTALS
-            du -sk "$preview/deployments/incoming" "$preview/deployments/releases" "$preview/deployments/shared" 2>/dev/null || true
-          fi
           REMOTE
