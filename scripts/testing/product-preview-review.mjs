@@ -100,6 +100,8 @@ try {
                 });
                 await expect(dialog).toContainText(`2 / ${total}`);
             }
+            await expect.poll(() => dialog.locator('img').first().evaluate(img => img.complete && img.naturalWidth > 0), { timeout: 30000 }).toBe(true);
+            if (total > 1) await expect.poll(() => dialog.locator('button[aria-current="true"] img').evaluate(img => img.complete && img.naturalWidth > 0), { timeout: 30000 }).toBe(true);
             if (total === 20) await page.screenshot({ path: path.join(output, `${profile}-20-photo-fullscreen.png`) });
             await page.keyboard.press('Escape');
             await expect(dialog).toHaveCount(0);
