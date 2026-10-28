@@ -7,6 +7,7 @@ use App\Models\TourPackage;
 use App\Models\User;
 use App\Support\InertiaPublicData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -46,24 +47,29 @@ class ProductItineraryGalleryTest extends TestCase
         $this->actingAs(User::where('email', 'admin@tinggaljalan.test')->firstOrFail());
         $package = TourPackage::where('slug', 'bromo-sunrise')->firstOrFail();
         $package->update(['status' => 'draft']);
-        $paths = [];
-        for ($i = 0; $i < 21; $i++) {
-            $paths[] = 'admin/packages/gallery/review-'.$i.'.jpg';
-            Storage::disk('public')->put($paths[$i], 'synthetic-reference');
+        $uploads = [];
+        for ($i = 0; $i < 20; $i++) {
+            $uploads[] = UploadedFile::fake()->image('review-'.$i.'.jpg', 64, 48);
         }
-        $gallery = array_slice($paths, 0, 20);
         Livewire::test(EditTourPackage::class, ['record' => $package->id])
-            ->fillForm(['gallery' => $gallery])->call('save')->assertHasNoFormErrors();
-        $this->assertSame($gallery, $package->fresh()->gallery);
+            ->fillForm(['gallery' => $uploads])->call('save')->assertHasNoFormErrors();
+        $gallery = $package->fresh()->gallery;
+        $this->assertCount(20, $gallery);
+        $paths = $gallery;
+        foreach ($paths as $file) {
+            Storage::disk('public')->assertExists($file);
+        }
         Livewire::test(EditTourPackage::class, ['record' => $package->id])->call('save')->assertHasNoFormErrors();
         $this->assertSame($gallery, $package->fresh()->gallery);
         $gallery = array_reverse($gallery);
-        $gallery[0] = $paths[20];
+        $replacement = 'admin/packages/gallery/replacement.jpg';
+        Storage::disk('public')->put($replacement, 'synthetic-reference');
+        $gallery[0] = $replacement;
         Livewire::test(EditTourPackage::class, ['record' => $package->id])
             ->fillForm(['gallery' => $gallery])->call('save')->assertHasNoFormErrors();
         $this->assertSame($gallery, $package->fresh()->gallery);
         Livewire::test(EditTourPackage::class, ['record' => $package->id])
-            ->fillForm(['gallery' => $paths])->call('save')->assertHasFormErrors();
+            ->fillForm(['gallery' => [...$paths, $replacement]])->call('save')->assertHasFormErrors();
         $this->assertSame($gallery, $package->fresh()->gallery);
         foreach ($paths as $file) {
             Storage::disk('public')->assertExists($file);

@@ -36,8 +36,8 @@
                                 @if (count(array_unique(array_column($section['timeline'], 'day'))) > 1 && ($loop->first || $section['timeline'][$loop->index - 1]['day'] !== $step['day']))
                                     <p class="mb-3 text-sm font-semibold text-secondary">{{ $section['dayLabel'] }} {{ $step['day'] }}{{ $section['dayLabel'] === '第' ? ' 天' : '' }}</p>
                                 @endif
-                                <div class="grid gap-2 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-5">
-                                    <div>@if (filled($step['time']))<span class="inline-block rounded-md bg-secondary/10 px-2.5 py-1 text-sm font-bold text-secondary">{{ $step['time'] }}</span>@endif</div>
+                                <div @class(['grid gap-2', 'sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-5' => filled($step['time'])])>
+                                    @if (filled($step['time']))<div><span class="inline-block rounded-md bg-secondary/10 px-2.5 py-1 text-sm font-bold text-secondary">{{ $step['time'] }}</span></div>@endif
                                     <div class="min-w-0 break-words"><p class="font-bold text-primary">{{ $step['title'] }}</p>@include('partials.plain-text', ['text' => $step['description']])</div>
                                 </div>
                             </li>

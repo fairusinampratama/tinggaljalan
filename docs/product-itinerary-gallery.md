@@ -20,3 +20,7 @@ Verification: ProductItineraryGalleryTest, FilamentAdminResourcesTest,
 PublicHtmlParityTest, TravelContentFoundationTest and the product-itinerary-gallery
 and route-gallery-overflow Playwright specs. Review the actual development
 screenshots before approving protected preview; production approval is separate.
+
+The repository seed Bromo schedule has empty time_label fields and times embedded
+in titles. Those titles remain intact; time badges require an administrator to
+enter a separate time label. No automatic parsing or data rewrite is performed.
