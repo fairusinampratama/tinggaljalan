@@ -9,7 +9,7 @@ function GalleryImage({ src, alt, sizes, loading, className, width = 1200, heigh
   const [originalOnly, setOriginalOnly] = useState(false);
   return <picture>
     {!originalOnly && responsiveSrcSet(src) ? <source type="image/webp" srcSet={responsiveSrcSet(src)} sizes={sizes} /> : null}
-    <img src={src} alt={alt} loading={loading} width={width} height={height} className={className} onError={() => setOriginalOnly(true)} />
+    <img src={!originalOnly && isGeneratedVariantAvailable(src) ? responsiveImagePath(src, 480) : src} alt={alt} loading={loading} width={width} height={height} className={className} onError={() => setOriginalOnly(true)} />
   </picture>;
 }
 
