@@ -200,7 +200,7 @@ class ServerPageContent
         }
         $gallery = $route['gallery'] ?? [];
         if ($gallery) {
-            $sections[] = ['title' => '', 'items' => collect($gallery)->map(fn ($src) => ['image' => self::image($src, self::localized($route['imageAlt'] ?? $route['title'] ?? null, $language))])->all()];
+            $sections[] = ['title' => '', 'items' => collect($gallery)->map(fn ($src) => ['image' => self::image($src, self::localized($route['imageAlt'] ?? $route['title'] ?? null, $language)), 'responsiveImage' => true])->all()];
         }
         foreach (['itinerary', 'pickupDetails', 'includes', 'excludes', 'goodToKnow', 'details'] as $key) {
             $section = self::section($t[$key], self::simpleItems($route[$key] ?? [], $language)) + ['headingLevel' => 3];
