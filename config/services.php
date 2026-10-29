@@ -55,6 +55,11 @@ return [
         ),
     ],
 
+    'google_analytics' => [
+        'id' => env('GOOGLE_ANALYTICS_ID', 'G-1L9N8XTME6'),
+        'enabled' => env('GOOGLE_ANALYTICS_ENABLED', env('APP_ENV', 'production') === 'production'),
+    ],
+
     'google_tag_manager' => [
         'id' => env('GOOGLE_TAG_MANAGER_ID', 'GTM-58KNQXXZ'),
         'enabled' => env('GOOGLE_TAG_MANAGER_ENABLED', env('APP_ENV', 'production') === 'production'),
