@@ -27,8 +27,12 @@ test('saved product gallery has readable previews and available controls after r
     for (const item of await items.all()) {
       await expect(item.getByRole('button', { name: 'Remove', exact: true })).toBeEnabled();
       await expect(item.getByRole('button', { name: 'edit', exact: true })).toBeEnabled();
-      await expect.poll(() => item.locator('canvas').evaluate(canvas =>
-        canvas.getBoundingClientRect().height)).toBeGreaterThan(120);
+      // Small screens have two columns: compare against the available tile width.
+      await expect.poll(() => item.evaluate(element => {
+        const canvas = element.querySelector('canvas');
+        const minimum = Math.min(120, element.getBoundingClientRect().width / 2);
+        return (canvas?.getBoundingClientRect().height ?? 0) / minimum;
+      })).toBeGreaterThan(1);
       await expect.poll(async () => {
         const { width, height } = await item.boundingBox();
         return height / width;
