@@ -300,6 +300,7 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
+          node scripts/testing/combined-gallery-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
       - name: Review production without writes
         if: inputs.production_revision != ''
         env:
