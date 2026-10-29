@@ -13,6 +13,8 @@ class GoogleTagManagerTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('services.google_analytics.enabled', false);
+
         config()->set('services.google_tag_manager.enabled', true);
         config()->set('services.google_tag_manager.id', 'GTM-58KNQXXZ');
         config()->set('services.google_ads.consent_enabled', false);
