@@ -55,6 +55,11 @@ return [
         ),
     ],
 
+    'google_tag_manager' => [
+        'id' => env('GOOGLE_TAG_MANAGER_ID', 'GTM-58KNQXXZ'),
+        'enabled' => env('GOOGLE_TAG_MANAGER_ENABLED', env('APP_ENV', 'production') === 'production'),
+    ],
+
     'exchange_rates' => [
         'provider' => env('EXCHANGE_RATE_PROVIDER', 'frankfurter'),
         'usd_idr_buffer_percent' => (float) env('EXCHANGE_RATE_USD_IDR_BUFFER_PERCENT', 2),

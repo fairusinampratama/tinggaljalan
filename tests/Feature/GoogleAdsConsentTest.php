@@ -14,6 +14,7 @@ class GoogleAdsConsentTest extends TestCase
         parent::setUp();
 
         config()->set('services.google_ads.consent_enabled', true);
+        config()->set('services.google_tag_manager.enabled', false);
     }
 
     public function test_public_pages_include_one_consent_gated_google_ads_bootstrap(): void
@@ -24,7 +25,7 @@ class GoogleAdsConsentTest extends TestCase
             $html = $this->get($path)->assertOk()->getContent();
 
             $this->assertSame(1, substr_count($html, 'data-google-ads-consent="AW-18427027980"'));
-            $this->assertSame(1, substr_count($html, "})(window, document, 'AW-18427027980');"));
+            $this->assertSame(1, substr_count($html, "})(window, document, 'AW-18427027980', '');"));
             $this->assertStringContainsString("window.gtag('consent', 'default', consentValues('denied'))", $html);
             $this->assertStringContainsString('window.TinggalJalanConsent', $html);
             $this->assertStringNotContainsString('<script async src="https://www.googletagmanager.com/', $html);

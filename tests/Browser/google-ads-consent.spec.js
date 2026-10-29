@@ -5,6 +5,8 @@ const googleTagPattern = 'https://www.googletagmanager.com/gtag/js**';
 async function mockGoogleTag(page) {
   const requests = [];
 
+  await page.route('https://www.googletagmanager.com/gtm.js**', (route) => route.fulfill({ contentType: 'application/javascript', body: '' }));
+
   await page.route(googleTagPattern, async (route) => {
     requests.push(route.request().url());
     await route.fulfill({
