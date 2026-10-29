@@ -1,25 +1,30 @@
-name: Combined production quota inventory
+name: Guarded obsolete preview code cleanup
 on:
   workflow_dispatch:
+    inputs:
+      apply:
+        description: Permanently remove ONLY preview releases 501eb36 and d19c49f after owner confirmation
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
-  inventory:
+  capacity:
     runs-on: ubuntu-24.04
     environment: production
     concurrency:
       group: production
       cancel-in-progress: false
-    env:
-      SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-      SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
-      SSH_USER: ${{ secrets.PROD_SSH_USER }}
-      DOMAIN_ROOT: ${{ secrets.PROD_DOMAIN_ROOT }}
     steps:
-      - name: Read project capacity and retained code inventory
+      - uses: actions/checkout@v4
+      - name: Inspect or apply exact preview-only cleanup
         env:
+          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          SSH_USER: ${{ secrets.PROD_SSH_USER }}
           PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+          APPLY: ${{ inputs.apply }}
         run: |
           set -euo pipefail
           umask 077
@@ -27,27 +32,8 @@ jobs:
           trap 'rm -rf -- "$private"' EXIT
           printf '%s\n' "$PRIVATE_KEY" > "$private/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$private/known_hosts"
+          mode=inspect
+          [[ "$APPLY" != true ]] || mode=apply
           ssh -p "$SSH_PORT" -i "$private/key" -o UserKnownHostsFile="$private/known_hosts" \
             -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes \
-            "$SSH_USER@$SSH_HOST" "bash -s -- '$DOMAIN_ROOT'" <<'REMOTE'
-          set -euo pipefail
-          root="$1"
-          [[ "$root" == /home/u304629909/domains/tinggaljalan.com ]]
-          if command -v quota >/dev/null; then timeout 15s quota -s || true; else echo 'ACCOUNT_QUOTA_COMMAND_UNAVAILABLE'; fi
-          for root in "$root" /home/u304629909/domains/preview.tinggaljalan.com; do
-            [[ "$(readlink -f "$root")" == "$root" ]]
-            current="$(readlink -f "$root/deployments/current")"
-            [[ "$current" == "$root/deployments/releases/"* ]]
-            printf 'DOMAIN=%s ACTIVE=%s\n' "${root##*/}" "$(cat "$current/REVISION")"
-            for kind in releases incoming shared; do
-              printf 'KIB %s ' "$kind"; du -sk "$root/deployments/$kind" | cut -f1
-              printf 'INODES %s ' "$kind"; du --inodes -s "$root/deployments/$kind" | cut -f1
-            done
-            find "$root/deployments/releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' | sort -n | while read -r stamp sha; do
-              [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || continue
-              release="$root/deployments/releases/$sha"
-              printf 'RELEASE %s MTIME=%s KIB=%s INODES=%s\n' "$sha" "$stamp" "$(du -sk "$release" | cut -f1)" "$(du --inodes -s "$release" | cut -f1)"
-            done
-            find "$root/deployments/incoming" -mindepth 1 -maxdepth 1 -type f -name 'release-*.tar.gz*' -printf 'ARCHIVE %f %s bytes\n'
-          done
-          REMOTE
+            "$SSH_USER@$SSH_HOST" "bash -s -- '$mode'" < scripts/deployment/cleanup-obsolete-preview-code.sh
