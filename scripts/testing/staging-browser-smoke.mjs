@@ -119,7 +119,7 @@ try {
         const target = `${base}${route}`;
         const normal = await initialContext.request.get(target);
         const bot = await initialContext.request.get(target, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' } });
-        if (!normal.ok() || !bot.ok()) throw new Error('Initial public HTML request failed.');
+        if (!normal.ok() || !bot.ok()) throw new Error('Initial public HTML request failed: route=' + route + ' normal=' + normal.status() + ' bot=' + bot.status());
         const raw = await normal.text();
         const botRaw = await bot.text();
         if ((!productionReview && !/noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || (productionReview && /noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || normal.headers()['x-robots-tag'] !== bot.headers()['x-robots-tag']) throw new Error(`Preview index protection differs for ${route}.`);

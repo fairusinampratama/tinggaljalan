@@ -300,16 +300,21 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
-          node scripts/testing/combined-gallery-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
       - name: Review production without writes
-        if: inputs.production_revision != ''
+        if: ${{ !cancelled() && inputs.production_revision != '' }}
         env:
           REVIEW_TARGET: production
           REVISION: ${{ inputs.production_revision }}
         run: |
           [[ "$REVISION" =~ ^[0-9a-f]{40}$ ]]
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review/production"
+      - name: Review deployed admin gallery without content writes
+        if: ${{ !cancelled() }}
+        env:
+          REVISION: ${{ inputs.revision }}
+        run: node scripts/testing/combined-gallery-preview-review.mjs "$RUNNER_TEMP/browser-review/config.json" "$REVISION" "$RUNNER_TEMP/staging-review"
       - name: Verify public content and media stayed unchanged during review
+        if: ${{ !cancelled() }}
         env:
           REVISION: ${{ inputs.revision }}
         run: |
