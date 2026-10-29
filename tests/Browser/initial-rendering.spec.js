@@ -103,6 +103,9 @@ test('initial locale does not depend on a later translation chunk; switches stay
   await page.goto('/');
   await expect(page.locator('.server-seo-content')).toHaveCount(0);
   await expect(page.locator('#home')).toContainText('Find a Trip');
+  // Resolve the independent consent panel before opening the mobile menu.
+  await page.getByTestId('consent-decline').click();
+  await expect(page.getByTestId('consent-banner')).toHaveCount(0);
   for (const [label, title] of [['ID', 'Cari Trip'], ['中文', '寻找行程'], ['EN', 'Find a Trip']]) {
     const button = page.locator('nav').getByRole('button', { name: label, exact: true });
     if (!await button.isVisible()) await page.locator('nav').getByRole('button', { name: 'Open menu' }).click();
