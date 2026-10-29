@@ -3,11 +3,14 @@
     $googleAdsId = config('services.google_ads.consent_enabled') ? $googleAdsId : '';
     $gtmId = config('services.google_tag_manager.enabled')
         ? trim((string) config('services.google_tag_manager.id')) : '';
+    $ga4Id = config('services.google_analytics.enabled')
+        ? trim((string) config('services.google_analytics.id')) : '';
+    $ga4Id = preg_match('/^G-[A-Z0-9]+$/', $ga4Id) ? $ga4Id : '';
     $gtmId = preg_match('/^GTM-[A-Z0-9]+$/', $gtmId) ? $gtmId : '';
 @endphp
-@if ($googleAdsId !== '' || $gtmId !== '')
-    <script data-google-ads-consent="{{ $googleAdsId }}" data-google-tag-manager="{{ $gtmId }}">
-        (function (window, document, adsId, gtmId) {
+@if ($googleAdsId !== '' || $gtmId !== '' || $ga4Id !== '')
+    <script data-google-ads-consent="{{ $googleAdsId }}" data-google-tag-manager="{{ $gtmId }}" data-google-analytics="{{ $ga4Id }}">
+        (function (window, document, adsId, gtmId, ga4Id) {
             if (window.TinggalJalanConsent) return;
 
             var storageKey = 'tinggaljalan-consent-v1';
@@ -62,15 +65,16 @@
                     document.head.appendChild(container);
                 }
 
-                if (!adsId) return;
+                if (!adsId && !ga4Id) return;
                 window.gtag('js', new Date());
-                window.gtag('config', adsId);
+                if (adsId) window.gtag('config', adsId);
+                if (ga4Id) window.gtag('config', ga4Id);
 
                 if (!document.getElementById(scriptId)) {
                     var script = document.createElement('script');
                     script.async = true;
                     script.id = scriptId;
-                    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(adsId);
+                    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(adsId || ga4Id);
                     document.head.appendChild(script);
                 }
             }
@@ -104,6 +108,6 @@
                 window.gtag('consent', 'update', consentValues('granted'));
                 loadGoogleTag();
             }
-        })(window, document, {{ Illuminate\Support\Js::from($googleAdsId) }}, {{ Illuminate\Support\Js::from($gtmId) }});
+        })(window, document, {{ Illuminate\Support\Js::from($googleAdsId) }}, {{ Illuminate\Support\Js::from($gtmId) }}, {{ Illuminate\Support\Js::from($ga4Id) }});
     </script>
 @endif

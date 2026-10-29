@@ -12,6 +12,7 @@ const applicationEnvironment = {
     DB_DATABASE: databasePath,
     GOOGLE_ADS_CONSENT_ENABLED: 'true',
     GOOGLE_TAG_MANAGER_ENABLED: 'true',
+    GOOGLE_ANALYTICS_ENABLED: 'true',
     MAIL_MAILER: 'array',
     QUEUE_CONNECTION: 'sync',
     SESSION_DRIVER: 'database',
