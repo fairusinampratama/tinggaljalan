@@ -240,8 +240,10 @@ class AdminForm
     {
         return self::imageUpload($field, $label, $directory, multiple: true)
             ->panelLayout('grid')
-            ->imagePreviewHeight('12rem')
-            ->itemPanelAspectRatio('4:3')
+            // FilePond expects a pixel count, not a CSS length ("12rem" becomes 12px).
+            ->imagePreviewHeight('192')
+            // Item panels use height / width, so 3:4 produces a landscape tile.
+            ->itemPanelAspectRatio('3:4')
             ->imageEditor()
             ->imageEditorViewportWidth(1280)
             ->imageEditorViewportHeight(960)
