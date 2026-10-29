@@ -44,13 +44,13 @@ jobs:
             printf 'TOTAL_KIB %s %s\n' "$directory" "$(du -sk "$root/deployments/$directory" | cut -f1)"
           done
           echo RELEASE_INVENTORY
-          while IFS= read -r release; do
+          find "$root/deployments/releases" -mindepth 1 -maxdepth 1 -type d -print | sort | while IFS= read -r release; do
             name="$(basename "$release")"
             [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
             active=no; [[ "$release" != "$current" ]] || active=yes
             revision=missing; [[ ! -f "$release/REVISION" ]] || revision="$(cat "$release/REVISION")"
             printf 'RELEASE %s KIB=%s ACTIVE=%s REVISION=%s\n' "$name" "$(du -sk "$release" | cut -f1)" "$active" "$revision"
-          done < <(find "$root/deployments/releases" -mindepth 1 -maxdepth 1 -type d -printf '%p\n' | sort)
+          done
           echo ARCHIVE_INVENTORY
           find "$root/deployments/incoming" -mindepth 1 -maxdepth 1 -type f -name 'release-*.tar.gz*' -printf '%f %s bytes\n' | sort
           printf 'GA4_FAILED_DIRECTORY_PRESENT='
