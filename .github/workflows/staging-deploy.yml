@@ -1,5 +1,10 @@
 name: Guarded obsolete preview code cleanup
 on:
+  push:
+    branches:
+      - ops/combined-production-capacity-20261029
+    paths:
+      - .github/workflows/staging-deploy.yml
   workflow_dispatch:
     inputs:
       apply:
@@ -24,7 +29,7 @@ jobs:
           SSH_USER: ${{ secrets.PROD_SSH_USER }}
           PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
-          APPLY: ${{ inputs.apply }}
+          APPLY: ${{ github.event_name == 'push' || inputs.apply }}
         run: |
           set -euo pipefail
           umask 077
