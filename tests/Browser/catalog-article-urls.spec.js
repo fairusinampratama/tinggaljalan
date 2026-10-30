@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { articlePath } from '../../resources/js/utils/article-url.js';
 
 test('article URL encoding preserves the raw slug and encodes each segment once', () => {

@@ -9,7 +9,8 @@
         "images:responsive": "node scripts/images/generate-responsive-images.mjs",
         "build:performance": "npm run images:favicons && npm run images:responsive && npm run build",
         "test:browser:prepare": "node scripts/testing/prepare-browser-tests.mjs",
-        "test:browser": "npm run test:browser:prepare && playwright test"
+        "test:browser": "npm run test:tracking && npm run test:browser:prepare && playwright test",
+        "test:tracking": "node --test scripts/testing/google-tag-bootstrap.test.mjs"
     },
     "devDependencies": {
         "@playwright/test": "^1.61.1",

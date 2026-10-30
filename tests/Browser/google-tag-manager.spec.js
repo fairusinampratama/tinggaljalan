@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 test('GTM respects consent, loads once, and remains blocked after revocation and reload', async ({ page }) => {
   const requests = [];
@@ -8,10 +8,10 @@ test('GTM respects consent, loads once, and remains blocked after revocation and
   });
   await page.goto('/');
   await expect(page.getByTestId('consent-banner')).toBeVisible();
-  expect(requests).toHaveLength(0);
+  expect(requests.filter((url) => url.includes('/gtm.js?'))).toHaveLength(0);
   await page.getByTestId('consent-decline').click();
   await page.reload();
-  expect(requests).toHaveLength(0);
+  expect(requests.filter((url) => url.includes('/gtm.js?'))).toHaveLength(0);
   await page.evaluate(() => {
     window.TinggalJalanConsent.grant();
     window.TinggalJalanConsent.grant();

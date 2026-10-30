@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { blockGoogleMeasurement, expect, test } from './fixtures.js';
 import { readFileSync } from 'node:fs';
 
 // Optional local cache of the unchanged, publicly hosted seed logo.
@@ -132,6 +132,7 @@ test('missing initial translations never mount an incomplete interface', async (
 
 test('CSS and JavaScript failures retain all meaningful homepage content', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
+  await blockGoogleMeasurement(context);
   const page = await context.newPage();
   await page.route('**/build/assets/*.css', (route) => route.abort());
   await page.goto('/#destination');
