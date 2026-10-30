@@ -21,6 +21,11 @@ test('GA4 configures once after consent and survives navigation without reconfig
   await expect.poll(() => requests.filter((url) => url.includes('/gtm.js?')).length).toBe(1);
   expect(await configCount()).toBe(1);
   await expect(page.locator('#tinggaljalan-google-ads')).toHaveCount(1);
+  await expect(page.locator('#tinggaljalan-google-ads')).toHaveAttribute('src', 'https://www.googletagmanager.com/gtag/js?id=G-1L9N8XTME6');
+  expect(requests.filter((url) => url.includes('/gtag/js?'))).toEqual([
+    'https://www.googletagmanager.com/gtag/js?id=G-1L9N8XTME6',
+  ]);
+  expect(await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'config' && entry[1] === 'AW-18427027980').length)).toBe(1);
   expect(requests.some((url) => url.includes('id=GTM-58KNQXXZ'))).toBe(true);
   const events = await page.evaluate(() => window.dataLayer.map((entry) => entry.event || Array.from(entry).slice(0, 2).join(':')));
   expect(events.indexOf('consent:default')).toBeLessThan(events.indexOf('consent:update'));

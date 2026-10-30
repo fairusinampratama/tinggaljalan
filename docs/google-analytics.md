@@ -2,6 +2,11 @@
 
 Measurement ID: `G-1L9N8XTME6`. The existing consent bootstrap configures GA4
 once after acceptance, using the same gtag.js loader and dataLayer as Google Ads.
+When GA4 is enabled, the shared loader uses its `G-` ID, matching the supplied
+Analytics installation URL. Ads-only installations retain the `AW-` fallback.
+Both existing destination config commands remain unchanged. This loader preference
+is a controlled diagnostic change, not proof that Google's installation detector
+will pass: it still loads only after consent.
 Declining or not deciding prevents loading; remembered acceptance loads on a
 subsequent document. Revocation updates Google's consent and blocks the loader
 on subsequent documents. No GA4 code is included in Filament admin.
@@ -28,3 +33,15 @@ workflow is introduced. No credentials are needed to install this public ID.
 Validation covers GA4 alone, disabled/invalid IDs, admin exclusion, and browser
 consent, repeated grants, shared loading, navigation, remembered grants and
 revocation. Follow the existing branch → CI → approval → deployment workflow.
+
+Run `npm run test:tracking` for offline bootstrap coverage across all seven
+non-empty Ads/GTM/GA4 combinations, including remembered consent and unavailable
+storage. The browser CI runs it before the existing cross-browser suite. Neither
+mocked browser tests nor offline tests verify delivery to Google.
+
+After an approved production release, repeat the actual Analytics installation
+Test and Tag Assistant checks for each intended destination. Protected preview
+cannot establish an external Google detector pass. If detection remains failed,
+record that result; do not remove consent gating or add a second Google snippet.
+Rollback is reverting the loader preference to `adsId || ga4Id`; no consent key,
+Google account settings, or historical data changes are involved.

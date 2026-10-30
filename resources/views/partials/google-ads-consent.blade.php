@@ -74,7 +74,7 @@
                     var script = document.createElement('script');
                     script.async = true;
                     script.id = scriptId;
-                    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(adsId || ga4Id);
+                    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ga4Id || adsId);
                     document.head.appendChild(script);
                 }
             }
