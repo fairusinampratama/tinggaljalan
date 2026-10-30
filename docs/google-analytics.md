@@ -1,47 +1,60 @@
-# Google Analytics 4
+# Google Analytics and Ads: advanced consent mode
 
-Measurement ID: `G-1L9N8XTME6`. The existing consent bootstrap configures GA4
-once after acceptance, using the same gtag.js loader and dataLayer as Google Ads.
-When GA4 is enabled, the shared loader uses its `G-` ID, matching the supplied
-Analytics installation URL. Ads-only installations retain the `AW-` fallback.
-Both existing destination config commands remain unchanged. This loader preference
-is a controlled diagnostic change, not proof that Google's installation detector
-will pass: it still loads only after consent.
-Declining or not deciding prevents loading; remembered acceptance loads on a
-subsequent document. Revocation updates Google's consent and blocks the loader
-on subsequent documents. No GA4 code is included in Filament admin.
+The shared Google tag uses advanced consent mode. A synchronous bootstrap at the
+start of the public `<head>` queues denied defaults for `ad_storage`,
+`analytics_storage`, `ad_user_data` and `ad_personalization` before destination
+configuration. A single static async script follows it, using GA4
+`G-1L9N8XTME6` when enabled, otherwise the configured Ads ID. Config commands for
+both enabled products are queued once per document. A loaded Google library may
+fetch its own destination resources; those are not extra application loaders.
 
-`GOOGLE_ANALYTICS_ENABLED` defaults true only for production. Set it false to
-disable GA4 independently. `GOOGLE_ANALYTICS_ID` overrides the measurement ID.
-Local/preview examples keep it disabled; browser CI uses mocked Google scripts.
+Before a choice, after Decline, and after withdrawal, the consent-aware Google
+library still loads and may send cookieless measurements. It must respect denied
+storage consent. Accept queues granted updates on the current page without
+reloading or reconfiguring the destinations. Saved acceptance is restored before
+configuration; the existing `tinggaljalan-consent-v1` key is preserved. Existing
+analytics/advertising cookies are not actively erased by this implementation;
+withdrawal sends denied updates. Verify real cookie behavior with Google tools.
 
-No manual SPA page-view, purchase, booking, or other conversion events are added.
-The standard config sends an initial page view after acceptance. Inertia virtual
-page views depend on GA4's Enhanced Measurement browser-history settings; verify
-those settings and actual events in Tag Assistant and Realtime after deployment.
-A queued config command or successful script response does not prove receipt.
+GTM remains separately blocked until acceptance because its published contents
+are not controlled by this code. See `google-tag-manager.md`. No public tracking
+bootstrap is included in Filament admin.
 
-Do not also configure this measurement ID in GTM unless explicitly migrating it
-out of this direct integration: that can cause duplicate page views. Recheck the
-published container before release; account-side tags may change independently.
-Consent and privacy copy includes analytics in all three existing languages.
+`GOOGLE_ANALYTICS_ENABLED` defaults true only in production and independently
+disables Analytics. `GOOGLE_ANALYTICS_ID` overrides the measurement ID. Ads retains
+its existing enable flag and ID. Keep all live tracking disabled in local and
+protected preview environments; CI enables it with mocked Google scripts.
 
-Existing consent grants are honored because the existing implementation already
-included analytics_storage in the combined choice. No new consent key or banner
-workflow is introduced. No credentials are needed to install this public ID.
+No manual SPA page views, purchases, bookings, or conversion events are added.
+Virtual page views depend on each destination's Enhanced Measurement history
+settings. Verify navigation, event counts and receipt for each intended property;
+a queued config or successful script response is not proof of receipt.
 
-Validation covers GA4 alone, disabled/invalid IDs, admin exclusion, and browser
-consent, repeated grants, shared loading, navigation, remembered grants and
-revocation. Follow the existing branch → CI → approval → deployment workflow.
+The Google tag may have multiple aliases/destinations configured in Google. Do
+not add duplicate destination configurations in GTM or change existing account
+links without reviewing them with the owner. Ads conversion-rule corrections are
+outside this release. The older destination's observed SPA gap remains unverified
+until its settings and real navigation events can be checked.
 
-Run `npm run test:tracking` for offline bootstrap coverage across all seven
-non-empty Ads/GTM/GA4 combinations, including remembered consent and unavailable
-storage. The browser CI runs it before the existing cross-browser suite. Neither
-mocked browser tests nor offline tests verify delivery to Google.
+## Validation and release
 
-After an approved production release, repeat the actual Analytics installation
-Test and Tag Assistant checks for each intended destination. Protected preview
-cannot establish an external Google detector pass. If detection remains failed,
-record that result; do not remove consent gating or add a second Google snippet.
-Rollback is reverting the loader preference to `adsId || ga4Id`; no consent key,
-Google account settings, or historical data changes are involved.
+`npm run test:tracking` exercises the actual inline bootstrap across seven enabled
+product combinations and unavailable storage. PHP tests verify the rendered
+static loader and default-consent ordering. Mocked browser tests cover initial
+loading, denied defaults, decline, grant, saved choices, withdrawal, single
+loaders, navigation and settings access. Mocked tests do not prove real Google
+cookie handling, data receipt, or an installation-detector pass.
+
+Follow branch → CI → preview approval → preview verification → production
+approval → production verification. Keep preview protected; use isolated test
+measurement or mocked tags rather than production conversions in preview.
+
+After approved production deployment, run the exact Analytics installation Test,
+Tag Assistant consent/hit checks, and receiving-account checks. The standard
+static script addresses discoverability of the loader, but a Google detector
+pass remains unverified until that real test succeeds. Never claim success from
+source inspection or CI alone.
+
+Rollback: revert this PR's bootstrap and privacy-copy changes together to restore
+basic consent loading. No database changes, Google account changes or historical
+data deletion are part of this implementation. Saved consent choices survive.

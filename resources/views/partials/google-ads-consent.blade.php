@@ -7,6 +7,7 @@
         ? trim((string) config('services.google_analytics.id')) : '';
     $ga4Id = preg_match('/^G-[A-Z0-9]+$/', $ga4Id) ? $ga4Id : '';
     $gtmId = preg_match('/^GTM-[A-Z0-9]+$/', $gtmId) ? $gtmId : '';
+    $googleTagId = $ga4Id !== '' ? $ga4Id : $googleAdsId;
 @endphp
 @if ($googleAdsId !== '' || $gtmId !== '' || $ga4Id !== '')
     <script data-google-ads-consent="{{ $googleAdsId }}" data-google-tag-manager="{{ $gtmId }}" data-google-analytics="{{ $ga4Id }}">
@@ -16,8 +17,6 @@
             var storageKey = 'tinggaljalan-consent-v1';
             var eventName = 'tinggaljalan:consent-change';
             var settingsEventName = 'tinggaljalan:consent-settings';
-            var scriptId = 'tinggaljalan-google-ads';
-            var configured = false;
 
             window.dataLayer = window.dataLayer || [];
             window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
@@ -52,10 +51,7 @@
                 window.dispatchEvent(new CustomEvent(eventName, { detail: { status: value } }));
             }
 
-            function loadGoogleTag() {
-                if (configured) return;
-                configured = true;
-
+            function loadTagManager() {
                 if (gtmId && !document.getElementById('tinggaljalan-gtm')) {
                     window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
                     var container = document.createElement('script');
@@ -64,25 +60,12 @@
                     container.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtmId);
                     document.head.appendChild(container);
                 }
-
-                if (!adsId && !ga4Id) return;
-                window.gtag('js', new Date());
-                if (adsId) window.gtag('config', adsId);
-                if (ga4Id) window.gtag('config', ga4Id);
-
-                if (!document.getElementById(scriptId)) {
-                    var script = document.createElement('script');
-                    script.async = true;
-                    script.id = scriptId;
-                    script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ga4Id || adsId);
-                    document.head.appendChild(script);
-                }
             }
 
             function grant() {
                 write('granted');
                 window.gtag('consent', 'update', consentValues('granted'));
-                loadGoogleTag();
+                loadTagManager();
                 notify('granted');
             }
 
@@ -106,8 +89,17 @@
 
             if (read() === 'granted') {
                 window.gtag('consent', 'update', consentValues('granted'));
-                loadGoogleTag();
+                loadTagManager();
+            }
+
+            if (adsId || ga4Id) {
+                window.gtag('js', new Date());
+                if (adsId) window.gtag('config', adsId);
+                if (ga4Id) window.gtag('config', ga4Id);
             }
         })(window, document, {{ Illuminate\Support\Js::from($googleAdsId) }}, {{ Illuminate\Support\Js::from($gtmId) }}, {{ Illuminate\Support\Js::from($ga4Id) }});
     </script>
+    @if ($googleTagId !== '')
+        <script async id="tinggaljalan-google-ads" src="https://www.googletagmanager.com/gtag/js?id={{ rawurlencode($googleTagId) }}"></script>
+    @endif
 @endif

@@ -34,21 +34,24 @@ function start(ids, saved, storageFails = false) {
 
 for (let mask = 1; mask < 8; mask++) {
   const ids = [mask & 1 ? 'AW-18427027980' : '', mask & 2 ? 'GTM-58KNQXXZ' : '', mask & 4 ? 'G-1L9N8XTME6' : ''];
-  test(`consent, loader preference and independent destinations: combination ${mask}`, () => {
+  test(`denied defaults before destination config; GTM waits for consent: combination ${mask}`, () => {
     const state = start(ids);
     const api = state.window.TinggalJalanConsent;
     assert.equal(state.window.dataLayer, state.queue);
     assert.equal(state.scripts.length, 0);
+    assert.equal(state.queue[1][0], 'consent');
+    assert.equal(state.queue[1][1], 'default');
+    assert.ok(Object.values(state.queue[1][2]).every((value) => value === 'denied'));
+    for (const id of ['AW-18427027980', 'G-1L9N8XTME6']) {
+      assert.equal(state.queue.filter((entry) => entry[0] === 'config' && entry[1] === id).length, ids.includes(id) ? 1 : 0);
+    }
     api.deny();
     assert.equal(state.scripts.length, 0);
     api.grant();
     api.grant();
     state.run(); // Re-executing the bootstrap must not reset or configure twice.
-    const loaders = state.scripts.filter((script) => script.id === 'tinggaljalan-google-ads');
-    assert.equal(loaders.length, ids[0] || ids[2] ? 1 : 0);
-    if (loaders.length) {
-      assert.equal(loaders[0].src, `https://www.googletagmanager.com/gtag/js?id=${ids[2] || ids[0]}`);
-    }
+    // The shared Google library is a static script, not dynamically injected.
+    assert.equal(state.scripts.filter((script) => script.id === 'tinggaljalan-google-ads').length, 0);
     assert.equal(state.scripts.filter((script) => script.id === 'tinggaljalan-gtm').length, ids[1] ? 1 : 0);
     for (const id of ['AW-18427027980', 'G-1L9N8XTME6']) {
       assert.equal(state.queue.filter((entry) => entry[0] === 'config' && entry[1] === id).length, ids.includes(id) ? 1 : 0);
@@ -64,14 +67,17 @@ for (let mask = 1; mask < 8; mask++) {
     assert.equal(start(ids, 'invalid').scripts.length, 0);
     const remembered = start(ids, 'granted');
     assert.deepEqual(remembered.scripts.map((script) => script.src), state.scripts.map((script) => script.src));
+    if (ids[0] || ids[2]) {
+      assert.ok(remembered.queue.findIndex((entry) => entry[0] === 'consent' && entry[1] === 'update') < remembered.queue.findIndex((entry) => entry[0] === 'config'));
+    }
   });
 }
 
-test('unavailable storage keeps a fresh visit blocked and permits explicit acceptance', () => {
+test('unavailable storage retains denied defaults and permits explicit acceptance for GTM', () => {
   const state = start(['AW-18427027980', 'GTM-58KNQXXZ', 'G-1L9N8XTME6'], undefined, true);
   assert.equal(state.scripts.length, 0);
   state.window.TinggalJalanConsent.grant();
-  assert.equal(state.scripts.length, 2);
+  assert.equal(state.scripts.length, 1);
   state.window.TinggalJalanConsent.deny();
   assert.ok(Object.values(state.queue.at(-1)[2]).every((value) => value === 'denied'));
 });

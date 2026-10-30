@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 async function declineOptionalConsent(page) {
     const decline = page.getByTestId('consent-decline');
