@@ -92,6 +92,8 @@ for (const [locale, label] of [['id', 'Chat melalui WhatsApp'], ['cn', '通过 W
 test('placement metadata alone emits no custom events or sensitive fields', async ({ page }) => {
   await page.route('https://www.googletagmanager.com/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
   await ready(page);
+  // The homepage CTA is in a lazy Suspense section; wait for its real mount.
+  await expect(page.locator('[data-whatsapp-placement="homepage"]')).toHaveCount(1);
   await page.evaluate(() => window.TinggalJalanConsent.grant());
   const before = await page.evaluate(() => window.dataLayer.length);
   // Stop navigation at the document edge while exercising the real DOM click.
