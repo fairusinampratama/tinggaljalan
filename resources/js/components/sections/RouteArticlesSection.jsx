@@ -1,4 +1,5 @@
-import { Car, CheckCircle, Clock, FileText, ListChecks, MessageCircle, Users } from 'lucide-react';
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { Car, CheckCircle, Clock, FileText, ListChecks, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../../utils/currency';
 import { getLocalized, getRegionConfig, localizeDuration } from '../../utils/localization';
@@ -120,8 +121,8 @@ export function RouteArticlesSection({
                     <Link to={`/routes/${item.id}`} className={`${primaryButtonClass} min-w-0 px-3`}>
                       <FileText className={`${iconSize} shrink-0`} /> <span className="truncate">{t.readArticle}</span>
                     </Link>
-                    <a href={whatsappUrl} target="_blank" rel="noreferrer" className={`${secondaryButtonClass} min-w-0 px-3`}>
-                      <MessageCircle className={`${iconSize} shrink-0`} /> <span className="truncate">{t.askRoute}</span>
+                    <a data-whatsapp-placement="route-card" href={whatsappUrl} target="_blank" rel="noreferrer" className={`${secondaryButtonClass} min-w-0 px-3`}>
+                      <WhatsAppIcon className="h-5 w-5" variant="green" /> <span className="truncate">{t.askRoute}</span>
                     </a>
                   </div>
                 </div>

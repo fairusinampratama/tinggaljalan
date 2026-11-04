@@ -1,3 +1,4 @@
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 import { usePage } from '@inertiajs/react';
 import {
   Building2,
@@ -155,7 +156,7 @@ export function AboutUsPage() {
   const profileActions = [
     mapUrl ? { icon: MapPin, label: t.aboutOpenMap, href: mapUrl, className: secondaryButtonClass } : null,
     contact.email ? { icon: Mail, label: t.aboutEmailUs, href: `mailto:${contact.email}`, className: secondaryButtonClass } : null,
-    contact.whatsapp ? { icon: MessageCircle, label: t.aboutChatWhatsapp, href: whatsappUrl, className: whatsappButtonClass } : null,
+    contact.whatsapp ? { icon: WhatsAppIcon, label: t.aboutChatWhatsapp, href: whatsappUrl, className: whatsappButtonClass } : null,
   ].filter(Boolean);
 
   return (
@@ -401,7 +402,7 @@ export function AboutUsPage() {
               <p className="mx-auto mt-4 max-w-2xl text-sm font-medium leading-7 text-white/65">{getLocalized(cta.text, language)}</p>
               <div className="mt-6 flex flex-col justify-center gap-3 sm:mt-7 sm:flex-row">
                 <SmartLink href={cta.primary_url} className={`${secondaryButtonClass} w-full sm:w-auto`}><Compass className="h-4 w-4" aria-hidden="true" />{getLocalized(cta.primary_label, language)}</SmartLink>
-                <SmartLink href={secondaryUrl} className={`${whatsappButtonClass} w-full sm:w-auto`}><MessageCircle className="h-4 w-4" aria-hidden="true" />{getLocalized(cta.secondary_label, language)}</SmartLink>
+                <SmartLink href={secondaryUrl} className={`${whatsappButtonClass} w-full sm:w-auto`}>{cta.secondary_url === 'whatsapp' ? <WhatsAppIcon className="h-5 w-5" /> : <MessageCircle className="h-4 w-4" aria-hidden="true" />}{getLocalized(cta.secondary_label, language)}</SmartLink>
               </div>
             </div>
           </section>

@@ -1,6 +1,7 @@
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 import { router } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, MessageCircle, Minus, Plus } from 'lucide-react';
+import { ArrowRight, Minus, Plus } from 'lucide-react';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { DateField } from '../components/ui/DateField';
@@ -290,7 +291,7 @@ export function BookingPage() {
                   rel="noreferrer"
                   className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1ebe5d] hover:text-white sm:min-h-11 sm:px-5 sm:py-2.5"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <WhatsAppIcon className="h-5 w-5" />
                   {t.chatOnWhatsapp}
                 </a>
               </>

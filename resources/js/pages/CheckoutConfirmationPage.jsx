@@ -1,6 +1,7 @@
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 import { usePage } from '@inertiajs/react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, MessageCircle, Info } from 'lucide-react';
+import { CheckCircle, Info } from 'lucide-react';
 import { CheckoutSteps } from '../components/checkout/CheckoutSteps';
 import { SummaryCard } from '../components/checkout/SummaryCard';
 import { PageShell } from '../components/ui/PageShell';
@@ -45,7 +46,7 @@ export function CheckoutConfirmationPage() {
           </div>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <a href={handoffUrl} target="_blank" rel="noreferrer" className={`${whatsappButtonClass} w-full justify-center sm:w-auto`}>
-              <MessageCircle className={iconSize} /> {t.sendToWhatsapp}
+              <WhatsAppIcon className="h-5 w-5" /> {t.sendToWhatsapp}
             </a>
             <Link to="/" className={`${secondaryButtonClass} w-full justify-center sm:w-auto`}>
               {t.done}

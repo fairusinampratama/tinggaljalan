@@ -1,5 +1,6 @@
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 import { usePage } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle, Circle, Clock, CreditCard, MessageCircle, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Circle, Clock, CreditCard, XCircle } from 'lucide-react';
 import { PaymentStatusMonitor } from '../components/checkout/PaymentStatusMonitor';
 import { PageShell } from '../components/ui/PageShell';
 import { Seo } from '../components/seo/Seo';
@@ -136,7 +137,7 @@ export function CheckoutPaymentStatusPage() {
                 </a>
               ) : null}
               <a href={props.whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
-                <MessageCircle className="h-4 w-4" /> {copy.ask_whatsapp ?? 'Ask on WhatsApp'}
+                <WhatsAppIcon className="h-5 w-5" /> {copy.ask_whatsapp ?? 'Ask on WhatsApp'}
               </a>
               <a href="/" className={secondaryButtonClass}>{copy.back_home ?? 'Back home'}</a>
             </div>
