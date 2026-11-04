@@ -3,9 +3,10 @@ import fs from 'node:fs/promises';
 const output='whatsapp-cta-review';
 test('before and after visual review on identical synthetic content',async({page})=>{
  test.setTimeout(180000);
+ page.setDefaultTimeout(15000);
  await fs.mkdir(output,{recursive:true});
  await page.route('https://www.googletagmanager.com/**',r=>r.fulfill({contentType:'application/javascript',body:''}));
- for(const [name,width,height,path] of [['home-mobile',390,844,'/'],['home-desktop',1440,1000,'/'],['route-mobile',390,844,'/routes/bromo-sunrise'],['route-desktop',1440,1000,'/routes/bromo-sunrise'],['about-mobile',390,844,'/about-us'],['home-tablet',768,1024,'/']]){
+ for(const [name,width,height,path] of [['home-mobile',390,844,'/'],['home-desktop',1440,1000,'/'],['route-mobile',390,844,'/routes/bromo-sunrise'],['route-desktop',1440,1000,'/routes/bromo-sunrise'],['about-mobile',390,844,'/about-us'],['home-tablet',768,1024,'/'],['route-narrow',320,740,'/routes/bromo-sunrise']]){
   await page.setViewportSize({width,height});
   for(const [state,port] of [['before',4174],['after',4173]]){
    await page.goto(`http://127.0.0.1:${port}${path}`);
@@ -13,6 +14,7 @@ test('before and after visual review on identical synthetic content',async({page
    const decline=page.getByTestId('consent-decline');if(await decline.isVisible())await decline.click();
    await page.evaluate(()=>document.fonts.ready);
    await expect.poll(()=>page.locator('main > nav img').evaluate(el=>el.complete && el.naturalWidth>0)).toBe(true);
+   console.log(state,name);
    await page.screenshot({path:`${output}/${state}-${name}.png`});
   }
  }

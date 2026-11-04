@@ -214,3 +214,14 @@ main:has([data-testid="consent-banner"]) [data-mobile-contact-bar] {
         visibility: hidden;
     }
 }
+
+/* Leave the footer's privacy and navigation controls above persistent CTAs. */
+.contact-safe-footer {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+
+@media (width < 64rem) {
+    main:has([data-mobile-contact-bar]) .contact-safe-footer {
+        padding-bottom: calc(8rem + env(safe-area-inset-bottom));
+    }
+}

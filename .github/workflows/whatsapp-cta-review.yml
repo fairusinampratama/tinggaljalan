@@ -59,7 +59,7 @@ jobs:
             done
           done
           printf '%s\n' "import config from './playwright.config.js'; export default {...config, webServer: undefined};" > playwright.visual.config.js
-          npx playwright test tests/Browser/whatsapp-visual.local.spec.js --config=playwright.visual.config.js --project=desktop-chromium --workers=1
+          npx playwright test tests/Browser/whatsapp-visual.local.spec.js --config=playwright.visual.config.js --project=desktop-chromium --workers=1 --retries=0
       - uses: actions/upload-artifact@v4
         if: always()
         with:
