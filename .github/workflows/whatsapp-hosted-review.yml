@@ -1,0 +1,79 @@
+name: WhatsApp hosted preservation and CTA review
+on:
+  push:
+    branches: [verify/whatsapp-hosted-review-20261104]
+    paths: [.github/workflows/whatsapp-hosted-review.yml, scripts/testing/whatsapp-hosted-review.mjs]
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare private review access and snapshot current content
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/cta-private" "$RUNNER_TEMP/cta-hosted"
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/cta-private/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/cta-private/known_hosts"
+          python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/cta-private/config.json"
+          cat > "$RUNNER_TEMP/cta-private/ssh_config" <<CONFIG
+          Host staging
+              HostName 153.92.9.54
+              Port 65002
+              User u304629909
+              IdentityFile $RUNNER_TEMP/cta-private/key
+              UserKnownHostsFile $RUNNER_TEMP/cta-private/known_hosts
+              StrictHostKeyChecking yes
+              IdentitiesOnly yes
+              BatchMode yes
+              ConnectTimeout 20
+          CONFIG
+          current="$(ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "cat /home/u304629909/domains/preview.tinggaljalan.com/deployments/current/REVISION")"
+          [[ "$current" =~ ^[0-9a-f]{40}$ ]]
+          ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$current'" < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/cta-hosted/preservation-before.json"
+          ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "sha256sum /home/u304629909/domains/tinggaljalan.com/deployments/shared/.env" > "$RUNNER_TEMP/cta-hosted/production-env-before.sha256"
+          ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "du -sk /home/u304629909/domains/preview.tinggaljalan.com/deployments/releases /home/u304629909/domains/preview.tinggaljalan.com/deployments/incoming"
+      - name: Inspect actual hosted revision and responsive CTAs without CMS writes
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          node scripts/testing/whatsapp-hosted-review.mjs "$RUNNER_TEMP/cta-private/config.json" 07f6373e63445af45fb105726120d27216545798 "$RUNNER_TEMP/cta-hosted"
+      - name: Verify shared content, media, branding and production configuration preserved
+        if: always()
+        run: |
+          set -euo pipefail
+          current="$(ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "cat /home/u304629909/domains/preview.tinggaljalan.com/deployments/current/REVISION")"
+          [[ "$current" =~ ^[0-9a-f]{40}$ ]]
+          ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "/opt/alt/php84/usr/bin/php /dev/stdin '$current'" < scripts/testing/staging-preservation-readonly.php > "$RUNNER_TEMP/cta-hosted/preservation-after.json"
+          ssh -F "$RUNNER_TEMP/cta-private/ssh_config" staging "sha256sum /home/u304629909/domains/tinggaljalan.com/deployments/shared/.env" > "$RUNNER_TEMP/cta-hosted/production-env-after.sha256"
+          cmp "$RUNNER_TEMP/cta-hosted/production-env-before.sha256" "$RUNNER_TEMP/cta-hosted/production-env-after.sha256"
+          node --input-type=module - "$RUNNER_TEMP/cta-hosted" <<'JS'
+          import fs from 'node:fs';
+          const dir=process.argv[2], a=JSON.parse(fs.readFileSync(dir+'/preservation-before.json')), b=JSON.parse(fs.readFileSync(dir+'/preservation-after.json'));
+          delete a.revision; delete b.revision;
+          if(JSON.stringify(a)!==JSON.stringify(b))throw new Error('Public content, branding, media or production state changed during deployment/review.');
+          console.log('Both public-content databases, both media fingerprints, both logos and production revision/configuration preserved.');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: whatsapp-hosted-preview-review
+          path: ${{ runner.temp }}/cta-hosted
+          retention-days: 14
+      - name: Remove temporary review access
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/cta-private"
