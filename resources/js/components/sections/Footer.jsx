@@ -1,4 +1,5 @@
-import { ArrowUp, Cookie, ExternalLink, Mail, MapPin, MessageCircle } from 'lucide-react';
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { ArrowUp, Cookie, ExternalLink, Mail, MapPin } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
 import { iconSize, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 
@@ -95,8 +96,8 @@ export function Footer({ t, whatsappUrl }) {
             <h2 className="mt-2 text-2xl font-bold leading-tight">{t.contactTitleFooter}</h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-white/65">{t.contactTextFooter}</p>
             <div className="mt-5 flex flex-col gap-3">
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
-                <MessageCircle className={iconSize} /> {t.sendToWhatsapp ?? 'WhatsApp'}
+              <a data-whatsapp-placement="footer" href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
+                <WhatsAppIcon className="h-5 w-5" /> {t.sendToWhatsapp ?? 'WhatsApp'}
               </a>
               <a href={contactDetails.emailHref ?? `mailto:${contactDetails.email ?? ''}`} className={`${secondaryButtonClass} border-white/15 bg-surface/10 text-white hover:bg-surface hover:text-ink`}>
                 <Mail className={iconSize} /> {contactDetails.email}

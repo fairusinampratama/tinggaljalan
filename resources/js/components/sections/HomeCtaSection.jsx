@@ -1,4 +1,5 @@
-import { ExternalLink, MessageCircle, Route } from 'lucide-react';
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { ExternalLink, Route } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { buttonClass, iconSize, whatsappButtonClass } from '../ui/styles';
@@ -55,8 +56,8 @@ export function HomeCtaSection({ whatsappUrl, items }) {
               <Link to="/routes" className={[buttonClass, 'bg-white text-primary shadow-sm hover:bg-subtle'].join(' ')}>
                 <Route className={iconSize} /> {t.exploreRoutes}
               </Link>
-              <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
-                <MessageCircle className={iconSize} /> {t.chat}
+              <a data-whatsapp-placement="homepage" href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
+                <WhatsAppIcon className="h-5 w-5" /> {t.chat}
               </a>
             </div>
           </div>

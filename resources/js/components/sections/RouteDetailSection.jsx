@@ -1,3 +1,4 @@
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
 import { ItineraryTimeline } from '../ui/ItineraryTimeline';
 import { RouteContentCard } from '../ui/RouteContentCard';
 import {
@@ -9,7 +10,6 @@ import {
   Clock,
   Info,
   MapPin,
-  MessageCircle,
   Sparkles,
   TicketCheck,
   Users,
@@ -302,8 +302,8 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                 </div>
               </div>
               <div className="mt-5 grid gap-3">
-                <a href={whatsappUrl} target="_blank" rel="noreferrer" className={primaryButtonClass}>
-                  <MessageCircle className={iconSize} /> {t.askAvailability}
+                <a href={whatsappUrl} target="_blank" rel="noreferrer" data-whatsapp-placement="route-sidebar" className={primaryButtonClass}>
+                  <WhatsAppIcon className="h-5 w-5" /> {t.askAvailability}
                 </a>
                 <button type="button" className={secondaryButtonClass} onClick={onBookRoute}>
                   {t.continueBooking} <ChevronRight className={iconSize} />
@@ -314,7 +314,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 shadow-2xl backdrop-blur lg:hidden">
+      <div data-mobile-contact-bar className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-2xl backdrop-blur lg:hidden">
         <div className="mx-auto flex max-w-7xl items-center gap-3">
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-bold uppercase tracking-[0.04em] text-secondary">{t.fromPrice}</p>
@@ -323,8 +323,8 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             </p>
             <p className="truncate text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
           </div>
-          <a href={whatsappUrl} target="_blank" rel="noreferrer" className={primaryButtonClass}>
-            <MessageCircle className={iconSize} /> {t.askRoute}
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" data-whatsapp-placement="route-mobile" className={`${primaryButtonClass} min-h-12 shrink-0`}>
+            <WhatsAppIcon className="h-5 w-5" /> {t.askRoute}
           </a>
         </div>
       </div>

@@ -1,4 +1,5 @@
-import { Compass, MessageCircle } from 'lucide-react';
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { Compass } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
@@ -37,14 +38,16 @@ function HeroCta({ label, url, className }) {
   if (!isAllowedExternalUrl(url)) return null;
 
   const sameContext = isSameContextExternalUrl(url);
+  const isWhatsApp = /^https:\/\/(?:[^/]+\.)?(?:wa\.me|whatsapp\.com)(?:\/|$)/i.test(url);
   return (
     <a
       href={url}
+      data-whatsapp-placement={isWhatsApp ? 'homepage-hero' : undefined}
       className={className}
       target={sameContext ? undefined : '_blank'}
       rel={sameContext ? undefined : 'noreferrer'}
     >
-      {label}
+      {isWhatsApp ? <WhatsAppIcon className="h-5 w-5" /> : null}{label}
     </a>
   );
 }

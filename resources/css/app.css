@@ -200,3 +200,17 @@ html[data-initial-fragment] #app { overflow-anchor: none; }
 .server-document .itinerary-timeline p { margin: 0; }
 .server-document .route-content-card { margin-top: 2rem; }
 .server-document .route-content-card > :first-child { margin-top: 0; }
+
+/* Persistent contact actions yield to privacy choices and the small-screen menu.
+   visibility also removes them from keyboard navigation while covered. */
+main:has([data-testid="consent-banner"]) .floating-whatsapp,
+main:has([data-testid="consent-banner"]) [data-mobile-contact-bar] {
+    visibility: hidden;
+}
+
+@media (width < 64rem) {
+    main:has([data-mobile-menu]) .floating-whatsapp,
+    main:has([data-mobile-menu]) [data-mobile-contact-bar] {
+        visibility: hidden;
+    }
+}
