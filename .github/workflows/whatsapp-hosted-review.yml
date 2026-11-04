@@ -51,7 +51,7 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
-          node scripts/testing/whatsapp-hosted-review.mjs "$RUNNER_TEMP/cta-private/config.json" 07f6373e63445af45fb105726120d27216545798 "$RUNNER_TEMP/cta-hosted"
+          node scripts/testing/whatsapp-hosted-review.mjs "$RUNNER_TEMP/cta-private/config.json" 065cfd995f953231ceee5c0a384100d15cafc815 "$RUNNER_TEMP/cta-hosted"
       - name: Verify shared content, media, branding and production configuration preserved
         if: always()
         run: |
