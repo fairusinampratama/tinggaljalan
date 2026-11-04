@@ -1,0 +1,55 @@
+name: Preview deployment read-only diagnostics
+on:
+  push:
+    branches: [ops/whatsapp-preview-diagnostics-20261104]
+    paths: [.github/workflows/preview-diagnostics.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 07f6373e63445af45fb105726120d27216545798
+      - name: Inspect active release and access responses without changes
+        env:
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$RUNNER_TEMP/private"
+          trap 'rm -rf -- "$RUNNER_TEMP/private"' EXIT
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/private/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/private/known_hosts"
+          python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/private/config.json"
+          ssh -p 65002 -i "$RUNNER_TEMP/private/key" -o UserKnownHostsFile="$RUNNER_TEMP/private/known_hosts" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 u304629909@153.92.9.54 'bash -s' <<'SH'
+          set -eu
+          root=/home/u304629909/domains/preview.tinggaljalan.com
+          echo "ACTIVE_PREVIEW=$(cat "$root/deployments/current/REVISION")"
+          echo "ACTIVE_PRODUCTION=$(cat /home/u304629909/domains/tinggaljalan.com/deployments/current/REVISION)"
+          for p in / /up /admin/login /robots.txt; do
+            code=$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "https://preview.tinggaljalan.com$p")
+            echo "HOST_ANONYMOUS $p $code"
+          done
+          grep -E 'DirectoryIndex|FilesMatch|RewriteRule|Require|AuthType' "$root/public_html/.htaccess"
+          ls -ld "$root/public_html/index-07f6373e63445af45fb105726120d27216545798.php"
+          if test -e "$root/deployments/releases/07f6373e63445af45fb105726120d27216545798"; then echo CANDIDATE_RETAINED; else echo CANDIDATE_REMOVED; fi
+          SH
+          python3 - "$RUNNER_TEMP/private/config.json" <<'PY'
+          import json,sys,urllib.request,urllib.error,base64
+          cfg=json.load(open(sys.argv[1])); token=base64.b64encode(('reviewer:'+cfg['review_password']).encode()).decode()
+          base='https://preview.tinggaljalan.com'
+          for authenticated in [False,True]:
+            for path in ['/','/up','/admin/login','/robots.txt']:
+              headers={'Authorization':'Basic '+token} if authenticated else {}
+              try:
+                with urllib.request.urlopen(urllib.request.Request(base+path,headers=headers),timeout=25) as r:
+                  body=r.read(); print('RUNNER',authenticated,path,r.status, json.loads(body) if path=='/up' else '')
+              except urllib.error.HTTPError as e: print('RUNNER',authenticated,path,e.code)
+          PY
