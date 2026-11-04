@@ -35,7 +35,7 @@ export function Footer({ t, whatsappUrl }) {
   const consentEnabled = typeof window !== 'undefined' && Boolean(window.TinggalJalanConsent);
 
   return (
-    <footer id="contact" className="bg-ink px-4 py-10 text-white sm:px-8 lg:px-10">
+    <footer id="contact" className="contact-safe-footer bg-ink px-4 pt-10 text-white sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[1.25fr_0.9fr_1fr] lg:items-start">
           <div>

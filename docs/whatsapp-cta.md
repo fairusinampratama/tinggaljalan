@@ -9,7 +9,8 @@ On route detail pages below 1024px, the floating action is hidden because the
 existing bottom contact bar already provides the WhatsApp action (minimum 48px
 high). The desktop pill remains available. The bottom bar and floating action
 respect safe-area insets and yield while the consent panel or mobile menu is
-open. No destination URL, message, booking action or link target is changed.
+open. Footer clearance keeps Cookie settings and Back to top above the persistent
+actions when scrolled to the bottom. No destination URL, message, booking action or link target is changed.
 
 Official unmodified digital white and green SVG glyphs were obtained from Meta's
 2026 logo pack at https://www.meta.com/brand/resources/whatsapp/whatsapp-brand/
