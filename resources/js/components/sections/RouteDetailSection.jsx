@@ -323,7 +323,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             </p>
             <p className="truncate text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
           </div>
-          <a href={whatsappUrl} target="_blank" rel="noreferrer" data-whatsapp-placement="route-mobile" aria-label={`${t.askRoute} — WhatsApp`} className={`${primaryButtonClass} min-h-12 shrink-0`}>
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" data-whatsapp-placement="route-mobile" aria-label={`${t.askRoute} — WhatsApp`} className={`${primaryButtonClass} min-h-12 sm:min-h-12 shrink-0`}>
             <WhatsAppIcon className="h-5 w-5" /> {t.askRoute}
           </a>
         </div>

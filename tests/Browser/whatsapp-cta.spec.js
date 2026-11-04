@@ -102,3 +102,17 @@ test('placement metadata alone emits no custom events or sensitive fields', asyn
   expect(await page.evaluate(() => window.dataLayer.length)).toBe(before);
   expect(await page.locator('[data-whatsapp-placement]').evaluateAll(els => els.map(el => el.dataset.whatsappPlacement))).toEqual(expect.arrayContaining(['floating', 'homepage', 'footer']));
 });
+
+
+test('route contact keeps a 48px tap target through tablet breakpoints', async ({ page }) => {
+  await ready(page, '/routes/bromo-sunrise');
+  const contact = page.locator('[data-whatsapp-placement="route-mobile"]');
+  for (const width of [320, 640, 768, 1023]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(contact).toBeVisible();
+    await expect(contact).toHaveCSS('min-height', '48px');
+    expect((await contact.boundingBox()).height).toBeGreaterThanOrEqual(48);
+    await expect(floating(page)).toBeHidden();
+    await insideViewport(page, contact);
+  }
+});
