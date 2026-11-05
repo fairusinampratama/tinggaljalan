@@ -31,6 +31,17 @@ jobs:
           ssh -p 65002 -i "$RUNNER_TEMP/private/key" -o UserKnownHostsFile="$RUNNER_TEMP/private/known_hosts" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 u304629909@153.92.9.54 'bash -s' <<'SH'
           set -eu
           root=/home/u304629909/domains/preview.tinggaljalan.com
+          for sha in 266178c2326768d871e4471ea189df9f91ef8a14 31164e9297dec003a0d937c1dd9ce8c0d0a0c5e9; do
+            d="$root/deployments/releases/$sha"
+            test "$(cat "$d/REVISION")" = "$sha"
+            test "$(readlink -f "$root/deployments/current")" != "$d"
+            test -L "$d/storage"
+            test "$(readlink -f "$d/storage")" = "$root/deployments/shared/storage"
+            test -L "$d/.env"
+            test "$(readlink -f "$d/.env")" = "$root/deployments/shared/.env"
+            echo "OBSOLETE_CODE_VALIDATED=$sha"
+            stat -c '%y' "$d"
+          done
           echo 'STORAGE_AND_QUOTA_READ_ONLY'
           df -Pk "$root"
           df -Pi "$root"
