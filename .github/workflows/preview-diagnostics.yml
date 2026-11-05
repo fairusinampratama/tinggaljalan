@@ -31,6 +31,13 @@ jobs:
           ssh -p 65002 -i "$RUNNER_TEMP/private/key" -o UserKnownHostsFile="$RUNNER_TEMP/private/known_hosts" -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=20 u304629909@153.92.9.54 'bash -s' <<'SH'
           set -eu
           root=/home/u304629909/domains/preview.tinggaljalan.com
+          echo 'STORAGE_AND_QUOTA_READ_ONLY'
+          df -Pk "$root"
+          df -Pi "$root"
+          if command -v quota >/dev/null 2>&1; then quota -s || true; fi
+          du -sk "$root/deployments/releases" "$root/deployments/incoming" "$root/deployments/shared" /home/u304629909/domains/tinggaljalan.com/deployments/releases
+          for d in "$root"/deployments/releases/*; do test ! -d "$d" || du -sk "$d"; done
+          find "$root/deployments/incoming" -maxdepth 1 -type f -printf '%f %s bytes\\n'
           echo "ACTIVE_PREVIEW=$(cat "$root/deployments/current/REVISION")"
           echo "ACTIVE_PRODUCTION=$(cat /home/u304629909/domains/tinggaljalan.com/deployments/current/REVISION)"
           for p in / /up /admin/login /robots.txt; do
