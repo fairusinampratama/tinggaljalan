@@ -1,7 +1,8 @@
+import { WhatsAppIcon } from '../components/ui/WhatsAppIcon';
 import { TextParagraphs } from '../components/ui/TextParagraphs';
 import { articleSectionId } from '../utils/text';
 import { usePage } from '@inertiajs/react';
-import { CalendarDays, ChevronRight, Clock, Compass, MessageCircle, Route as RouteIcon } from 'lucide-react';
+import { CalendarDays, ChevronRight, Clock, Compass, Route as RouteIcon } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { NewsCardsSection } from '../components/sections/NewsCardsSection';
 import { Seo } from '../components/seo/Seo';
@@ -126,7 +127,7 @@ export function NewsDetailPage() {
                       rel="noreferrer"
                       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5 hover:bg-[#1fb457] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary"
                     >
-                      <MessageCircle className="h-4 w-4" />
+                      <WhatsAppIcon className="h-5 w-5" />
                       WhatsApp
                     </a>
                     <Link

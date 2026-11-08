@@ -1,4 +1,5 @@
-import { CalendarDays, ChevronRight, Clock, Compass, MessageCircle, Newspaper, Route as RouteIcon, Search, X } from 'lucide-react';
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { CalendarDays, ChevronRight, Clock, Compass, Newspaper, Route as RouteIcon, Search, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useBooking } from '../../context/BookingContext';
 import { getLocalized } from '../../utils/localization';
@@ -324,8 +325,8 @@ export function NewsCtaBand({ language = 'id', whatsappUrl }) {
         >
           <RouteIcon className={iconSize} /> {t.viewRoutes}
         </Link>
-        <a href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
-          <MessageCircle className={iconSize} /> WhatsApp
+        <a data-whatsapp-placement="news" href={whatsappUrl} target="_blank" rel="noreferrer" className={whatsappButtonClass}>
+          <WhatsAppIcon className="h-5 w-5" /> WhatsApp
         </a>
       </div>
     </section>

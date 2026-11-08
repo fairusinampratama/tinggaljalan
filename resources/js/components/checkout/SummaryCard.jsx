@@ -1,4 +1,5 @@
-import { AlertTriangle, CreditCard, MessageCircle, Users } from 'lucide-react';
+import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { AlertTriangle, CreditCard, Users } from 'lucide-react';
 import { formatCurrency } from '../../utils/currency';
 import { formatTravelDate } from '../../utils/date';
 import { getLocalized } from '../../utils/localization';
@@ -35,7 +36,7 @@ export function SummaryCard({ t, booking, selectedRoute, summary, bookingBlock, 
                 rel="noreferrer"
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1ebe5d] hover:text-white"
               >
-                <MessageCircle className="h-4 w-4" />
+                <WhatsAppIcon className="h-5 w-5" />
                 {t.chatOnWhatsapp}
               </a>
               {onReduceGuests ? (

@@ -61,7 +61,7 @@ export function Navbar({ language, setLanguage, t }) {
       </div>
 
       {isMenuOpen ? (
-        <div className="border-t border-line bg-surface px-4 py-4 lg:hidden">
+        <div data-mobile-menu className="border-t border-line bg-surface px-4 py-4 lg:hidden">
           <div className="grid gap-2">
             {navItems.map((item) => (
               <Link key={item.to} to={item.to} className="rounded-xl px-3 py-3 text-sm font-bold transition duration-200 hover:bg-subtle hover:text-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary" onClick={() => setIsMenuOpen(false)}>
