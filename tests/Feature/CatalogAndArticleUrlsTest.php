@@ -13,6 +13,17 @@ class CatalogAndArticleUrlsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_retired_bromo_url_returns_not_found_without_changing_other_missing_articles(): void
+    {
+        $this->get('/news/Bromo-wildfire?utm_source=old-link')
+            ->assertNotFound()
+            ->assertSee('This article is no longer available')
+            ->assertSee('href="'.route('news.index').'"', false);
+
+        $this->get('/news/other-missing-article')->assertRedirect(route('news.index'));
+        $this->get('/sitemap.xml')->assertOk()->assertDontSee('/news/Bromo-wildfire');
+    }
+
     public function test_unfiltered_catalog_pages_have_their_own_canonical_and_crawlable_links(): void
     {
         $this->seed();
