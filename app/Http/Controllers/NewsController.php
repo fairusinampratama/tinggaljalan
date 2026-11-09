@@ -75,6 +75,10 @@ class NewsController extends Controller
             ->first();
 
         if (! $article) {
+            if ($slug === 'Bromo-wildfire') {
+                return response()->view('errors.retired-news', [], 404);
+            }
+
             return redirect()->route('news.index');
         }
 
