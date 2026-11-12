@@ -134,6 +134,11 @@ def plan(environment, previous=''):
     shared = deployments / 'shared'
     for directory in (root, deployments, releases, shared):
         canonical_directory(directory)
+    for name in ('.production-deployment-state', '.preview-release-pending.json',
+                 '.database-refresh-pending.json'):
+        pending = deployments / name
+        require(not pending.exists() and not pending.is_symlink(),
+                'Pending deployment/refresh recovery; retention requires investigation')
     current = deployments / 'current'
     require(current.is_symlink(), 'Current release must be a symlink')
     active = current.resolve()

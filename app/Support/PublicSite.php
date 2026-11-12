@@ -83,6 +83,10 @@ class PublicSite
 
     public static function whatsappBase(): string
     {
+        if (app()->environment('staging')) {
+            return '#';
+        }
+
         $number = SiteSetting::first()?->whatsapp_number;
         $number = preg_replace('/\D+/', '', $number ?? '6281234567890');
 
@@ -91,6 +95,10 @@ class PublicSite
 
     public static function whatsappUrl(array $lines): string
     {
+        if (app()->environment('staging')) {
+            return '#';
+        }
+
         return self::whatsappBase().'?text='.rawurlencode(implode("\n", array_filter($lines)));
     }
 

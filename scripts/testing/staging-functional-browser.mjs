@@ -23,7 +23,7 @@ try {
         await context.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
         stage = `${name}: booking form`;
         await page.goto(`${base}/language/us`);
-        await page.goto(`${base}/booking?route=jogja-heritage`, {waitUntil:'networkidle'});
+        await page.goto(`${base}/booking?route=${encodeURIComponent(config.functional_route ?? 'jogja-heritage')}`, {waitUntil:'networkidle'});
         const consent = page.getByTestId('consent-decline');
         if (await consent.isVisible()) await consent.click();
         await page.getByPlaceholder(/hotel, airport/i).fill(`SYNTHETIC CHECK ${run} ${name}`);
