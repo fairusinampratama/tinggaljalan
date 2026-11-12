@@ -22,14 +22,14 @@ jobs:
 
     steps:
       - name: Check out smoke test
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
 
       - name: Check production
         run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "" "$RUNNER_TEMP/production-monitor"
 
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: production-monitor-${{ github.run_id }}
           path: ${{ runner.temp }}/production-monitor
@@ -57,7 +57,7 @@ jobs:
       group: hosting-capacity-monitor
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
       - name: Inspect capacity and apply bounded release retention
         env:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}

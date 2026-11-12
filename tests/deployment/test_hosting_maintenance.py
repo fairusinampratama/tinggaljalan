@@ -20,6 +20,87 @@ spec.loader.exec_module(m)
 
 
 class HostingMaintenanceTests(unittest.TestCase):
+    def test_expired_refresh_helpers_are_removed_only_when_every_file_is_known(self):
+        incoming = self.deploy / 'incoming'
+        incoming.mkdir()
+        expired = incoming / 'db-refresh-123-1'
+        expired.mkdir()
+        for name in ('config.json', 'refresh-preview-database.php', 'preview-db-schema.json'):
+            (expired / name).write_text('synthetic-transfer')
+        unknown = incoming / 'db-refresh-124-1'
+        unknown.mkdir()
+        (unknown / 'config.json').write_text('preserve-with-unreviewed-content')
+        (unknown / 'customer-data.jsonl.gz').write_text('preserve-private-data')
+        with patch.object(m.time, 'time', return_value=time.time() + 3 * 86400):
+            self.assertEqual(m.clean_expired_uploads('preview'), 4)
+        self.assertFalse(expired.exists())
+        self.assertTrue((unknown / 'config.json').exists())
+        self.assertTrue((unknown / 'customer-data.jsonl.gz').exists())
+
+    def test_production_configuration_json_is_never_assumed_to_be_a_transfer(self):
+        incoming = self.deploy / 'incoming'
+        incoming.mkdir()
+        config = incoming / ('config-' + 'a' * 40 + '.json')
+        config.write_text('not-a-production-workflow-file')
+        with patch.object(m, 'DOMAINS', {'production': 'preview.tinggaljalan.com'}), patch.object(
+            m.time, 'time', return_value=time.time() + 3 * 86400
+        ):
+            self.assertEqual(m.clean_expired_uploads('production'), 0)
+        self.assertTrue(config.exists())
+
+    def test_expired_transfer_cleanup_is_bounded_and_preserves_unknown_files(self):
+        incoming = self.deploy / 'incoming'
+        incoming.mkdir()
+        source = self.release(7)
+        archive = incoming / ('release-' + source.name + '.tar.gz')
+        with tarfile.open(archive, 'w:gz') as output:
+            for name in ('REVISION', 'vendor/autoload.php', 'public/build/manifest.json'):
+                output.add(source / name, arcname='./' + name)
+        partial = incoming / ('release-' + 'a' * 40 + '.tar.gz.part')
+        partial.write_bytes(b'interrupted-upload')
+        config = incoming / ('config-' + 'b' * 40 + '.json')
+        config.write_text('{"private":"fixture"}')
+        unknown = incoming / 'customer-backup.sql.gz'
+        unknown.write_text('preserve-private-backup')
+        symlink = incoming / ('config-' + 'c' * 40 + '.json')
+        symlink.symlink_to(self.shared / '.env')
+        unreviewed = incoming / ('release-' + 'd' * 40 + '.tar.gz')
+        unreviewed.write_bytes(b'not-a-reviewed-code-archive')
+        recent = incoming / ('config-' + 'e' * 40 + '.json')
+        recent.write_text('recent-transfer')
+        future = time.time() + 3 * 86400
+        os.utime(recent, (future, future))
+        with patch.object(m.time, 'time', return_value=future):
+            self.assertEqual(m.clean_expired_uploads('preview'), 3)
+        self.assertFalse(archive.exists())
+        self.assertFalse(partial.exists())
+        self.assertFalse(config.exists())
+        self.assertTrue(unknown.exists())
+        self.assertTrue(symlink.is_symlink())
+        self.assertTrue(unreviewed.exists())
+        self.assertTrue(recent.exists())
+        self.assertEqual((self.shared / '.env').read_text(), 'secret-fixture')
+
+    def test_expired_uploads_are_preserved_while_recovery_is_pending(self):
+        incoming = self.deploy / 'incoming'
+        incoming.mkdir()
+        partial = incoming / ('release-' + 'a' * 40 + '.tar.gz.part')
+        partial.write_bytes(b'interrupted')
+        (self.deploy / '.production-deployment-state').write_text('pending')
+        with patch.object(m.time, 'time', return_value=time.time() + 3 * 86400):
+            self.assertEqual(m.clean_expired_uploads('preview'), 0)
+        self.assertTrue(partial.exists())
+
+    def test_incomplete_scan_does_not_delete_even_expired_transfers(self):
+        incoming = self.deploy / 'incoming'
+        incoming.mkdir()
+        partial = incoming / ('release-' + 'a' * 40 + '.tar.gz.part')
+        partial.write_bytes(b'interrupted')
+        with patch.object(m, 'usage', side_effect=RuntimeError('incomplete scan')):
+            with self.assertRaises(RuntimeError):
+                m.maintain()
+        self.assertTrue(partial.exists())
+
     def test_monitor_wait_budget_is_bounded_and_never_steals_a_lock(self):
         path = self.account / '.tinggaljalan-maintenance.lock'
         with m.lock(path):

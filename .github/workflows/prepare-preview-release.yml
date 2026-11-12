@@ -23,7 +23,7 @@ jobs:
     outputs:
       source_sha: ${{ steps.source.outputs.source_sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
         with:
           ref: ${{ github.sha }}
       - name: Resolve exact candidate without hosting secrets
@@ -44,8 +44,10 @@ jobs:
     concurrency:
       group: hosting-account
       cancel-in-progress: false
+    env:
+      STAGING_ROOT: /home/u304629909/domains/preview.tinggaljalan.com
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
         with:
           ref: ${{ github.sha }}
       - uses: ./.github/actions/preview-access
@@ -55,13 +57,47 @@ jobs:
           user: ${{ secrets.STAGING_SSH_USER }}
           private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           known-hosts: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
-      - name: Recover only a journal-owned interrupted publication
+      - name: Detect an interrupted database refresh without reading row data
+        id: pending
+        run: |
+          PENDING="$(ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "if test -e '$STAGING_ROOT/deployments/.database-refresh-pending.json' || test -L '$STAGING_ROOT/deployments/.database-refresh-pending.json'; then echo true; else echo false; fi")"
+          [[ "$PENDING" == true || "$PENDING" == false ]]
+          echo "database=$PENDING" >> "$GITHUB_OUTPUT"
+      - name: Prepare existing refresh recovery only when its journal exists
+        if: steps.pending.outputs.database == 'true'
+        env:
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: |
+          python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/preview-access/db-config.json"
+          REMOTE="$STAGING_ROOT/deployments/incoming/db-recover-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "RECOVERY_REMOTE=$REMOTE" >> "$GITHUB_ENV"
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "umask 077; test ! -e '$REMOTE' && test ! -L '$REMOTE' && mkdir '$REMOTE' && test \"\$(readlink -f '$REMOTE')\" = '$REMOTE'"
+          scp -F "$RUNNER_TEMP/preview-access/config" \
+            scripts/deployment/refresh-preview-database.php scripts/deployment/preview-db-refresh-lib.php \
+            scripts/deployment/preview-db-schema.json scripts/deployment/preview-media-refresh-lib.php \
+            scripts/deployment/staging-config.php "preview:$REMOTE/"
+          scp -F "$RUNNER_TEMP/preview-access/config" "$RUNNER_TEMP/preview-access/db-config.json" "preview:$REMOTE/config.json"
+      - name: Restore only the pending preview DB and media backup
+        if: steps.pending.outputs.database == 'true'
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "/opt/alt/php84/usr/bin/php '$RECOVERY_REMOTE/refresh-preview-database.php' rollback '$RECOVERY_REMOTE/config.json'"
+      - name: Recover only a journal-owned interrupted code publication
         run: |
           ssh -F "$RUNNER_TEMP/preview-access/config" preview 'python3 - recover' \
             < scripts/deployment/preview-release-state.py
       - name: Remove temporary SSH credentials
         if: always()
-        run: rm -rf -- "$RUNNER_TEMP/preview-access"
+        run: |
+          if test -f "$RUNNER_TEMP/preview-access/config" && test -n "${RECOVERY_REMOTE:-}"; then
+            ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+              "rm -f '$RECOVERY_REMOTE/config.json' '$RECOVERY_REMOTE/refresh-preview-database.php' '$RECOVERY_REMOTE/preview-db-refresh-lib.php' '$RECOVERY_REMOTE/preview-db-schema.json' '$RECOVERY_REMOTE/preview-media-refresh-lib.php' '$RECOVERY_REMOTE/staging-config.php'; rmdir '$RECOVERY_REMOTE'" || true
+          fi
+          rm -rf -- "$RUNNER_TEMP/preview-access"
 
   candidate:
     name: Build and test candidate once
@@ -88,10 +124,10 @@ jobs:
       STAGING_ROOT: /home/u304629909/domains/preview.tinggaljalan.com
     steps:
       - name: Check out trusted controller and verification code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
         with:
           ref: ${{ github.sha }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
         with:
           name: ${{ needs.candidate.outputs.artifact_name }}
           path: ${{ runner.temp }}/candidate
@@ -99,7 +135,7 @@ jobs:
         run: |
           python3 scripts/deployment/release-provenance.py archive "$RUNNER_TEMP/candidate" "$SOURCE_SHA"
           python3 scripts/deployment/hosting-maintenance.py archive-budget "$RUNNER_TEMP/candidate/release-$SOURCE_SHA.tar.gz"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4; verified CI revision
         with:
           node-version: '22'
           cache: npm
@@ -168,7 +204,7 @@ jobs:
           fi
           python3 scripts/deployment/release-provenance.py receipt "$RUNNER_TEMP/candidate" "$SOURCE_SHA"
       - name: Save promotion evidence after every required check succeeds
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: preview-receipt-${{ github.run_id }}
           path: ${{ runner.temp }}/candidate/preview-receipt.json
@@ -184,7 +220,7 @@ jobs:
           fi
       - name: Save public browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: preview-review-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/preview-review

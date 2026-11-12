@@ -23,6 +23,7 @@ class PreviewStateTest(unittest.TestCase):
         self.shared = self.deployment / 'shared'
         self.public = self.root / 'public_html'
         self.public.mkdir(parents=True)
+        (self.deployment / 'incoming').mkdir(parents=True)
         (self.shared / 'storage/app/public').mkdir(parents=True)
         (self.shared / '.env').write_text('preserve-config')
         (self.shared / 'storage/app/public/logo.png').write_bytes(b'preserve-logo')
@@ -66,12 +67,15 @@ class PreviewStateTest(unittest.TestCase):
 
     def test_browser_failure_restores_code_and_access_protection(self):
         self.begin()
+        transfer = self.deployment / 'incoming' / ('config-' + NEW + '.json')
+        transfer.write_text('synthetic-private-transfer')
         self.switch()
         m.transaction('rollback', NEW, DIGEST, '123-1')
         self.assertEqual((self.deployment / 'current').resolve(), self.old)
         self.assertEqual((self.public / '.htaccess').read_text(), self.rules)
         self.assertFalse((self.deployment / 'releases' / NEW).exists())
         self.assertFalse((self.deployment / '.preview-release-pending.json').exists())
+        self.assertFalse(transfer.exists())
         self.preserved()
 
     def test_failure_before_publication_preserves_previous_code(self):
@@ -121,6 +125,23 @@ class PreviewStateTest(unittest.TestCase):
             self.begin()
         self.assertTrue(candidate.exists())
         self.preserved()
+
+    def test_unowned_transfer_is_never_overwritten_or_deleted(self):
+        transfer = self.deployment / 'incoming' / ('config-' + NEW + '.json')
+        transfer.write_text('preserve-unowned-file')
+        with self.assertRaisesRegex(RuntimeError, 'Unowned candidate transfer'):
+            self.begin()
+        self.assertEqual(transfer.read_text(), 'preserve-unowned-file')
+        self.assertFalse((self.deployment / '.preview-release-pending.json').exists())
+
+    def test_only_the_actual_offline_rule_blocks_publication(self):
+        path = self.public / '.htaccess'
+        path.write_text(self.rules + '# A revision may legitimately contain 503 in its SHA\n')
+        self.begin()
+        m.transaction('rollback', NEW, DIGEST, '123-1')
+        path.write_text(self.rules + 'RewriteRule ^ - [R=503,L]\n')
+        with self.assertRaisesRegex(RuntimeError, 'not ready'):
+            m.transaction('begin', NEW, DIGEST, '123-1')
 
 
 if __name__ == '__main__':

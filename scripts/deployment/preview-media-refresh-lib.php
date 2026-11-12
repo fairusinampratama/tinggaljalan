@@ -6,7 +6,7 @@ function refreshMediaFields(): array
     return [
         'destinations' => ['cover_image' => null],
         'tour_packages' => ['cover_image' => null, 'gallery' => '*'],
-        'news_articles' => ['cover_image' => null],
+        'news_articles' => ['cover_image' => null, 'sections' => '*.images.*.path'],
         'hero_slides' => ['desktop_image' => null, 'mobile_image' => null],
         'team_members' => ['portrait' => null],
         'company_milestones' => ['image' => null],
@@ -29,7 +29,25 @@ function refreshVisitMedia(PDO $db, callable $visit): void
                 } else {
                     $value = json_decode($original, true, flags: JSON_THROW_ON_ERROR);
                     refreshAssert(is_array($value));
-                    if ($nested === '*') {
+                    if ($nested === '*.images.*.path') {
+                        // Public editorial photographs added after the original
+                        // refresh branch: preserve prose/alt/captions, visit paths only.
+                        refreshAssert(array_is_list($value));
+                        $updated = $value;
+                        foreach ($value as $sectionIndex => $section) {
+                            refreshAssert(is_array($section));
+                            if (($section['images'] ?? null) === null) {
+                                continue;
+                            }
+                            refreshAssert(is_array($section['images']) && array_is_list($section['images']));
+                            foreach ($section['images'] as $imageIndex => $image) {
+                                refreshAssert(is_array($image));
+                                if (array_key_exists('path', $image)) {
+                                    $updated[$sectionIndex]['images'][$imageIndex]['path'] = $visit($image['path']);
+                                }
+                            }
+                        }
+                    } elseif ($nested === '*') {
                         $updated = array_map($visit, $value);
                     } else {
                         $updated = $value;
@@ -71,7 +89,7 @@ function refreshMediaPath(?string $value): ?array
         return ['static', $path];
     }
     $path = preg_replace('~^storage/~', '', $path);
-    $allowed = ['admin/hero/', 'admin/packages/covers/', 'admin/packages/gallery/', 'admin/destinations/covers/', 'admin/news/covers/', 'admin/about/', 'admin/site/', 'admin/platform-links/logos/', 'admin/preview-refresh/'];
+    $allowed = ['admin/hero/', 'admin/packages/covers/', 'admin/packages/gallery/', 'admin/destinations/covers/', 'admin/news/covers/', 'admin/news/sections/', 'admin/about/', 'admin/site/', 'admin/platform-links/logos/', 'admin/preview-refresh/'];
     refreshAssert(count(array_filter($allowed, fn ($directory) => str_starts_with($path, $directory))) > 0);
 
     return ['upload', $path];

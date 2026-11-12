@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
 import sys
 
@@ -37,7 +38,7 @@ def layout():
     root = ACCOUNT / 'domains/preview.tinggaljalan.com'
     deployment = root / 'deployments'
     for path in (ACCOUNT, root, deployment, deployment / 'releases',
-                 deployment / 'shared', root / 'public_html'):
+                 deployment / 'shared', deployment / 'incoming', root / 'public_html'):
         require(path.is_dir() and path.resolve() == path, 'Unexpected preview layout')
     require((root / '.tinggaljalan-staging').read_text().strip() == 'preview.tinggaljalan.com',
             'Preview identity marker is missing')
@@ -79,10 +80,15 @@ def transaction(operation, source, digest, run):
             release = deployment / 'releases' / source
             require(active != source and not release.exists() and not release.is_symlink(),
                     'Candidate revision already exists; use its existing verified run or a new commit')
+            for name in ('config-' + source + '.json', 'release-' + source + '.tar.gz',
+                         'release-' + source + '.tar.gz.part'):
+                transfer = deployment / 'incoming' / name
+                require(not transfer.exists() and not transfer.is_symlink(),
+                        'Unowned candidate transfer exists; preserve it for review')
             htaccess = root / 'public_html/.htaccess'
             require(htaccess.is_file() and not htaccess.is_symlink(), 'Preview access protection is missing')
             rules = htaccess.read_text()
-            require('Require valid-user' in rules and '503' not in rules,
+            require('Require valid-user' in rules and 'RewriteRule ^ - [R=503,L]' not in rules,
                     'Preview is not ready for a new publication')
             require((root / ('public_html/index-' + active + '.php')).is_file(),
                     'Previous preview entry point is missing')
@@ -130,6 +136,14 @@ def transaction(operation, source, digest, run):
         if candidate.exists():
             require(shutil.rmtree.avoids_symlink_attacks, 'Safe recursive deletion is unavailable')
             shutil.rmtree(str(candidate))
+        for name in ('config-' + source + '.json', 'release-' + source + '.tar.gz',
+                     'release-' + source + '.tar.gz.part'):
+            transfer = deployment / 'incoming' / name
+            if transfer.exists() or transfer.is_symlink():
+                info = transfer.lstat()
+                require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1
+                        and info.st_uid == os.geteuid(), 'Ambiguous journal-owned transfer')
+                transfer.unlink()
         pending.unlink()
 
 

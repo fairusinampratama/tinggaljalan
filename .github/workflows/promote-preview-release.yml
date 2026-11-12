@@ -26,14 +26,14 @@ jobs:
       archive_sha256: ${{ steps.verify.outputs.archive_sha256 }}
       artifact_name: ${{ steps.verify.outputs.artifact_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
         with:
           ref: ${{ github.sha }}
       - name: Validate run identifier before downloading evidence
         env:
           PREVIEW_RUN_ID: ${{ inputs.preview_run_id }}
         run: '[[ "$PREVIEW_RUN_ID" =~ ^[1-9][0-9]*$ ]]'
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
         with:
           name: preview-receipt-${{ inputs.preview_run_id }}
           run-id: ${{ inputs.preview_run_id }}
@@ -72,12 +72,12 @@ jobs:
 
     steps:
       - name: Check out deployment scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
         with:
           ref: ${{ github.sha }}
 
       - name: Download immutable release
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
         with:
           name: ${{ needs.evidence.outputs.artifact_name }}
           run-id: ${{ inputs.preview_run_id }}
@@ -85,7 +85,7 @@ jobs:
           path: ${{ runner.temp }}/release
 
       - name: Download original successful preview receipt
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
         with:
           name: preview-receipt-${{ inputs.preview_run_id }}
           run-id: ${{ inputs.preview_run_id }}
@@ -108,7 +108,8 @@ jobs:
           test -n "$SSH_HOST"
           test -n "$SSH_PORT"
           test -n "$SSH_USER"
-          test -n "$DOMAIN_ROOT"
+          [[ "$DOMAIN_ROOT" == /home/u304629909/domains/tinggaljalan.com ]]
+          [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
           test -n "$SSH_PRIVATE_KEY"
           test -n "$SSH_KNOWN_HOSTS"
 
@@ -141,6 +142,21 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             "GITHUB_REPOSITORY=fairusinampratama/tinggaljalan python3 - hosted '$SOURCE_SHA' '$ARCHIVE_SHA256'" \
             < scripts/deployment/release-provenance.py
+
+      - name: Recover a known interrupted production code operation before publishing
+        run: |
+          PENDING="$(ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "if test -e '$DOMAIN_ROOT/deployments/.production-deployment-state' || test -L '$DOMAIN_ROOT/deployments/.production-deployment-state'; then echo true; else echo false; fi")"
+          [[ "$PENDING" == true || "$PENDING" == false ]]
+          if [[ "$PENDING" == true ]]; then
+            ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+              -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+              "$SSH_USER@$SSH_HOST" \
+              "bash -s -- '$DOMAIN_ROOT' recover '$PRODUCTION_URL'" \
+              < scripts/deployment/rollback-hostinger.sh
+          fi
 
       - name: Record previous release
         id: previous
@@ -269,7 +285,7 @@ jobs:
 
     steps:
       - name: Check out smoke test
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
         with:
           ref: ${{ github.sha }}
 
@@ -278,7 +294,7 @@ jobs:
 
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: production-smoke-${{ github.run_id }}
           path: ${{ runner.temp }}/production-smoke

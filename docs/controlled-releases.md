@@ -16,7 +16,7 @@ exact source commit can be selected for preview.
    A source with outdated staging configuration/capacity helpers is refused; bring
    the branch up to date with main first. No UI work should start from an old
    infrastructure branch.
-3. The main controller recovers a journal-owned interrupted preview publication,
+3. The main controller restores any pending preview DB/media backup with the existing refresh recovery helper, then recovers a journal-owned interrupted preview code publication,
    then invokes the shared CI workflow without hosting secrets. It builds frontend
    assets once, runs PHP and all browser projects, and packages production
    dependencies with those exact assets. Packaging only runs for this explicit
@@ -102,8 +102,7 @@ does not block capacity monitoring. It still takes the same host account lock an
 waits at most 120 seconds if an actual operation is running. No lock is stolen.
 If hosting access, scans or budgets remain unsafe, it fails with an alert.
 
-At normal usage, capacity checks are read-only. At a warning or reservation failure,
-only existing bounded release retention may run, followed by remeasurement. Keep
+After a complete scan, known workflow transfer files older than 24 hours can be removed from the dedicated incoming directories. This includes interrupted code uploads and private preview configuration/helper transfers; recent files, unknown/private backups, symlinks, hardlinks, and pending-operation files are preserved. Production configuration JSON is never assumed to be a workflow transfer. No credential values are read or logged during this cleanup. At a warning or reservation failure, existing bounded release retention may also run, followed by remeasurement. Keep
 active code and two rollback releases per site; never broaden cleanup to uploaded
 media, customer data, backups, configuration or unknown directories. Pending code
 or DB refresh journals prevent cleanup from removing recovery code.

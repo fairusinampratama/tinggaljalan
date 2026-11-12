@@ -45,7 +45,7 @@ automatically roll back a previously committed release.
 
 `hosting-maintenance.py maintain --reserve` runs before release upload.
 `maintain --alert` is used by the production monitor's capacity job. Both take the
-account lock. Healthy capacity is read-only. A complete scan above the warning
+account lock. A complete usage scan is required before cleanup. Known expired workflow transfer files can be removed after 24 hours even at normal usage; recent, unknown, linked and pending-operation files are preserved. Production configuration JSON is excluded. No credential values are read or printed. A complete scan above the warning
 threshold or deployment reservation triggers the existing retention policy for
 production and preview, then another complete capacity scan.
 

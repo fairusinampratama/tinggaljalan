@@ -1,6 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { discoverReviewRoutes } from './public-review-routes.mjs';
 const [file, revision, output] = process.argv.slice(2);
 if (!file || !/^[a-f0-9]{40}$/.test(revision ?? '') || !output) throw new Error('Invalid media check arguments.');
 const config = JSON.parse(await readFile(file, 'utf8'));
@@ -16,7 +17,9 @@ try {
         if (health.status !== 'up' || health.revision !== revision) throw new Error('Unexpected runtime.');
         await context.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
         const page = await context.newPage();
-        const routes = ['/', '/routes', '/news', '/about-us'];
+        const sitemap = await context.request.get(`${base}/sitemap.xml`);
+        if (!sitemap.ok()) throw new Error('Public sitemap failed.');
+        const routes = ['/', '/routes', '/news', '/about-us', ...discoverReviewRoutes(await sitemap.text()).map(([, route]) => route)];
         let checked = 0;
         let variants = 0;
         for (const route of routes) {

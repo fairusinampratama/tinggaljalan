@@ -29,7 +29,7 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
       - name: Validate script syntax
         run: |
           bash -n scripts/deployment/staging-preflight.sh
@@ -51,7 +51,7 @@ jobs:
       STAGING_ROOT: ${{ vars.STAGING_ROOT }}
       OPERATION: ${{ inputs.operation }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
       - name: Validate staging credentials without revealing values
         env:
           STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
@@ -139,7 +139,7 @@ jobs:
           ssh-keygen -lf "$RUNNER_TEMP/staging-known-hosts" >/dev/null
           printf 'Matched existing production host record to the configured staging endpoint. No SSH session or deployment was started.\n' >> "$GITHUB_STEP_SUMMARY"
       - name: Preserve public host record for staging configuration
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: staging-host-record-${{ github.run_id }}
           path: ${{ runner.temp }}/staging-known-hosts
@@ -156,7 +156,7 @@ jobs:
       group: hosting-account
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
       - name: Prepare pinned hosting access
         env:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
@@ -227,7 +227,7 @@ jobs:
           PYCODE
       - name: Preserve verified recovery archives before deleting expired releases
         if: inputs.operation == 'retention-apply'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: hosting-expired-release-recovery-${{ github.run_id }}
           path: ${{ runner.temp }}/hosting-recovery/*.tar.gz

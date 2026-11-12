@@ -38,6 +38,9 @@ try {
     refreshAssert($accountLock !== false && flock($accountLock, LOCK_EX | LOCK_NB));
     $lock = fopen($deploy.'/.lock', 'c');
     refreshAssert($lock !== false && flock($lock, LOCK_EX | LOCK_NB));
+    if ($operation === 'refresh') {
+        refreshAssert(! file_exists($deploy.'/.preview-release-pending.json') && ! is_link($deploy.'/.preview-release-pending.json'));
+    }
     if ($operation !== 'finalize' && is_file($pending)) {
         // Close HTTP before any recovery precondition can fail.
         $closed = "# Pending preview database refresh: fail closed\nRewriteEngine On\nRewriteRule ^ - [R=503,L]\n".file_get_contents($offline);

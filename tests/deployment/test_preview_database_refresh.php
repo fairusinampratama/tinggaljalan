@@ -266,6 +266,35 @@ refreshAssert((int) $target->query('SELECT COUNT(*) FROM bookings')->fetchColumn
 refreshAssert(file_get_contents($sourceImages.'/public.png') === $image);
 $checks++;
 $retention = $media.'/preview/database-backups';
+// Current admin/public rendering also supports public photographs inside sections.
+$inlineDirectory = $media.'/production/deployments/shared/storage/app/public/admin/news/sections';
+mkdir($inlineDirectory, 0755, true);
+$inlineFixture = imagecreatetruecolor(7, 5);
+imagefill($inlineFixture, 0, 0, imagecolorallocate($inlineFixture, 0, 0, 200));
+imagepng($inlineFixture, $inlineDirectory.'/public.png');
+imagedestroy($inlineFixture);
+$inlineBytes = file_get_contents($inlineDirectory.'/public.png');
+$target->beginTransaction();
+refreshVisitMedia($target, fn ($path) => null);
+$section = ['heading' => ['us' => 'Public editorial heading'], 'body' => ['us' => 'Public article prose.'],
+    'images' => [['path' => 'admin/news/sections/public.png', 'alt' => ['us' => 'Public photo description'], 'caption' => ['us' => 'Published photographer credit']]]];
+refreshUpdate($target, 'news_articles', ['sections' => json_encode([$section], JSON_THROW_ON_ERROR)]);
+refreshAssert(refreshCopyPublicImages($target, $media.'/production', $previewShared) === 1);
+$copiedSection = json_decode($target->query('SELECT sections FROM news_articles LIMIT 1')->fetchColumn(), true, flags: JSON_THROW_ON_ERROR)[0];
+refreshAssert($copiedSection['heading'] === $section['heading'] && $copiedSection['body'] === $section['body']);
+refreshAssert($copiedSection['images'][0]['alt'] === $section['images'][0]['alt'] && $copiedSection['images'][0]['caption'] === $section['images'][0]['caption']);
+refreshAssert(str_starts_with($copiedSection['images'][0]['path'], '/storage/admin/preview-refresh/'));
+refreshAssert(file_get_contents($inlineDirectory.'/public.png') === $inlineBytes);
+refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2));
+$app->useStoragePath($previewShared.'/storage');
+refreshAssert(refreshGenerateMedia($target, $previewShared, dirname(__DIR__, 2), new ResponsiveImageGenerator) === 5);
+refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true);
+$app->useStoragePath($originalStoragePath);
+$target->rollBack();
+refreshRestoreMedia($previewShared, $baseline);
+refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2));
+refreshAssert(refreshManagedMediaState($previewShared) === $baseline);
+$checks++;
 mkdir($retention, 0700);
 foreach ([1, 2, 3, 4, 5] as $number) {
     file_put_contents($retention.'/preview-before-'.$number.'-1.jsonl.gz', 'synthetic-preview-backup');
