@@ -53,7 +53,8 @@ The policy retains each site's active release and two complete rollback releases
 applies the one-hour grace period, and refuses unknown/private/unsafe release
 layouts. It never deletes shared storage, uploaded files, database backups,
 database records, or unknown directories. A failed usage scan does not authorize
-cleanup. If retention cannot free enough safe capacity, the command fails and
+cleanup. Pending deployment or refresh journals block retention so recovery code
+cannot be pruned while an interrupted operation awaits restoration. If retention cannot free enough safe capacity, the command fails and
 alerts; it does not broaden the deletion policy.
 
 Automatic retention does not archive expired code artifacts first. Source commits

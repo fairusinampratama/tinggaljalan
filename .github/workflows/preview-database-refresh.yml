@@ -130,7 +130,7 @@ jobs:
       - name: Check bounded hosting capacity before copying preview data
         run: |
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging \
-            'python3 - maintain --reserve' < scripts/deployment/hosting-maintenance.py
+            "if test -e /home/u304629909/domains/preview.tinggaljalan.com/deployments/.database-refresh-pending.json; then echo 'Pending preview recovery takes priority over cleanup.'; else python3 - maintain --reserve; fi" < scripts/deployment/hosting-maintenance.py
       - name: Transfer host-only refresh helpers
         run: |
           set -euo pipefail

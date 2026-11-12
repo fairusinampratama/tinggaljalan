@@ -20,6 +20,19 @@ spec.loader.exec_module(m)
 
 
 class HostingMaintenanceTests(unittest.TestCase):
+    def test_pending_operation_prevents_retention_from_removing_recovery_code(self):
+        releases = [self.release(i) for i in range(1, 7)]
+        self.current(releases[-1])
+        for name in ('.production-deployment-state', '.preview-release-pending.json',
+                     '.database-refresh-pending.json'):
+            with self.subTest(pending=name):
+                pending = self.deploy / name
+                pending.write_text('pending operation')
+                with self.assertRaisesRegex(RuntimeError, 'Pending deployment/refresh recovery'):
+                    m.retention('preview', apply=True)
+                self.assertTrue(all(path.exists() for path in releases))
+                pending.unlink()
+
     def test_maintenance_leaves_normal_usage_alone(self):
         with patch.object(m, 'usage', return_value=(100000, 1024**3)), patch.object(m, 'retention') as clean:
             self.assertTrue(m.maintain(reserve=True)['allowed'])
