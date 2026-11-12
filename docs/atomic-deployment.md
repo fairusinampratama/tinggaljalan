@@ -45,7 +45,13 @@ PHP quality and tests
 Cross-browser responsive tests
 ```
 
-After deployment is enabled, every validated push or merge to `main` packages a release and waits for production approval. Production deployments are queued and never cancel an active deployment.
+Merging to `main` runs validation only. To publish, open **Validate changes and publish production**, choose **Run workflow**, select `main`, and explicitly enable **Publish this main revision**. Leaving that option unchecked only validates. All three checks must pass again before packaging. The protected `production` environment then requires the owner's approval before SSH secrets are released. Administrators cannot bypass this approval. Self-review remains available for the sole maintainer; enable prevention only after adding another approver.
+
+The deployment job also requires the repository-level `PRODUCTION_DEPLOY_ENABLED=true` switch. Neither that switch nor a merge can independently publish. Concurrent deployments share the existing hosting lock and cannot interrupt a running deployment. GitHub may replace an older pending job with a newer pending one; this is not a durable queue of every requested deployment.
+
+`main` requires a pull request, current passing Frontend/PHP/browser checks from GitHub Actions, resolved conversations, and applies these rules to administrators. Force pushes and branch deletion are blocked. A second PR reviewer is not required because the repository currently has a sole maintainer; production approval is a separate deliberate action.
+
+This is the first release-control increment. Promoting one preview-verified artifact without rebuilding, interruption recovery, automatic bounded maintenance, independent monitoring, and the refresh branch reconciliation remain separate implementation steps. Do not claim these are enabled by this change.
 
 ## Deployment runner
 
@@ -79,7 +85,7 @@ readlink -f /home/u304629909/domains/tinggaljalan.com/tinggaljalan-app
 curl -fsS https://tinggaljalan.com/up
 ```
 
-After verification, set `PRODUCTION_DEPLOY_ENABLED=true`. The next successful `main` workflow will perform the first automated release.
+After verification, set `PRODUCTION_DEPLOY_ENABLED=true`. A manually requested publish on `main` can now proceed through validation and production approval.
 
 ## Deployment behavior
 
@@ -103,7 +109,7 @@ The remote deployment then:
 8. Recycles the account's LiteSpeed PHP workers so the new process reads the new release and Vite manifest.
 9. Confirms `/up` reports the expected runtime revision, live HTML references the expected Vite entry files, and every referenced frontend asset returns HTTP 200.
 10. Runs sitemap, route, news, admin, and SEO checks before accepting the release.
-11. Retains five code releases and ten database backups after success.
+11. Retains the active code release plus two complete rollback releases (with the immediately previous release pinned) and ten database backups after success.
 
 If any post-maintenance step fails, the script restores the previous code symlink, rebuilds its caches, recycles LiteSpeed PHP workers again, and brings the previous release online. Database migrations are not reversed, so production migrations must use the expand/contract pattern and remain compatible with the previous release.
 
