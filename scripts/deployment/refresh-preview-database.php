@@ -102,7 +102,7 @@ try {
     if ($operation === 'finalize') {
         refreshAssert(is_file($pending));
         $record = json_decode(file_get_contents($pending), true, flags: JSON_THROW_ON_ERROR);
-        refreshAssert(hash_file('sha256', $productionRoot.'/deployments/shared/.env') === $record['production_env_hash']);
+        refreshAssert(refreshFileIdentity($productionRoot.'/deployments/shared/.env') === $record['production_env_identity']);
         refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $record['production_revision']);
         // Browser checks add explicitly synthetic bookings; do not re-run the pristine-copy verifier here.
         refreshPruneBackups($deploy.'/database-backups', $record['backup']);
@@ -166,7 +166,7 @@ try {
     $stage = 'preview backup';
     $digest = refreshBackup($target, $schema, $backup);
     $mediaBaseline = refreshManagedMediaState($shared);
-    $state = ['media_baseline' => $mediaBaseline, 'backup' => basename($backup), 'digest' => $digest, 'htaccess' => base64_encode($htaccess), 'production_env_hash' => hash_file('sha256', $productionEnvPath), 'production_revision' => trim(file_get_contents($productionRoot.'/deployments/current/REVISION'))];
+    $state = ['media_baseline' => $mediaBaseline, 'backup' => basename($backup), 'digest' => $digest, 'htaccess' => base64_encode($htaccess), 'production_env_identity' => refreshFileIdentity($productionEnvPath), 'production_revision' => trim(file_get_contents($productionRoot.'/deployments/current/REVISION'))];
     refreshAssert(file_put_contents($pending, json_encode($state, JSON_THROW_ON_ERROR), LOCK_EX) !== false);
     $stage = 'copy and sanitize';
     $counts = refreshCopy($source, $target, $schema);
@@ -178,7 +178,7 @@ try {
         refreshAssert((int) $target->query('SELECT COUNT(*) FROM '.refreshIdentifier($table))->fetchColumn() === $counts[$table]);
     }
     refreshAssert($counts['destinations'] > 0 && $counts['tour_packages'] > 0);
-    refreshAssert(hash_file('sha256', $productionEnvPath) === $state['production_env_hash']);
+    refreshAssert(refreshFileIdentity($productionEnvPath) === $state['production_env_identity']);
     refreshAssert(trim(file_get_contents($productionRoot.'/deployments/current/REVISION')) === $state['production_revision']);
     $stage = 'public tourism images';
     $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);

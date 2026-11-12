@@ -34,7 +34,7 @@ responsive image variants, as before; recovery never deletes those shared files.
 Manual rollback now validates the full revision and canonical paths, refuses to
 run over a pending deployment journal, and installs recovery before entering
 maintenance. Its catchable signal/error handling restores the previous code.
-Manual rollback does not yet have its own SIGKILL journal.
+Manual rollback records its target and previous release in the same private production journal, with a rollback phase that never authorizes deleting the retained target. A subsequent rollback or deployment invocation recovers an interrupted operation. The explicit `recover` rollback mode restores pending code state and verifies health without a new publication.
 
 After the existing host-side health gate succeeds, the deployment commits before
 housekeeping. Retention failure emits a warning rather than reverting healthy
@@ -75,8 +75,6 @@ scans, remeasurement and unresolved capacity. PHP/database behavior is covered b
 the normal application suite; these shell fixtures deliberately do not claim to
 exercise a live MySQL restore. The additional **Deployment recovery safety** workflow runs the actual Laravel backup command against a fresh MySQL 8.4 service, restores into a second empty disposable database, verifies the migrated application schema, fixture values and foreign keys, and checks failed-dump cleanup. It has no hosting secrets and refuses non-local or existing databases.
 
-Still to implement and verify separately: off-account backup coverage, manual rollback SIGKILL recovery, trusted shared
-preview/promotion controller, mandatory preview evidence for production, PR #29
-refresh integration, independent uptime alerts, and obsolete workflow retirement.
+See `controlled-releases.md` for the shared preview/promotion controller and refreshed operating sequence. Independent uptime alerts and off-account backup coverage still require external setup and verification.
 
 The **Check production approval gate** manual workflow requests production approval but never checks out code, references secrets, or contacts hosting. Use it to verify a waiting approval without risking an application publication; cancel the waiting run after inspection.

@@ -187,6 +187,48 @@ if [[ "${SIGNAL_AT:-}" == health ]]; then kill -"$SIGNAL" "$PPID"; fi
         self.assertEqual((self.deployments / 'current').resolve(), self.old)
         self.assert_preserved()
 
+    def test_sigkill_during_manual_rollback_is_recovered_and_retried(self):
+        import shutil
+        target = self.releases / NEW
+        shutil.copytree(self.package, target)
+        script = (ROOT / 'scripts/deployment/rollback-hostinger.sh').read_text()
+        script = script.replace('/opt/alt/php84/usr/bin/php', str(self.bin / 'php'))
+        script = script.replace('/home/u304629909', str(self.work))
+        rollback = self.work / 'rollback.sh'
+        rollback.write_text(script)
+        env = dict(os.environ, PATH=str(self.bin) + ':' + os.environ['PATH'],
+                   CALLS=str(self.calls), MAINTENANCE=str(self.maintenance))
+        command = ['bash', str(rollback), str(self.domain), NEW, 'https://tinggaljalan.com']
+        result = subprocess.run(command, env=dict(env, SIGNAL_AT='health', SIGNAL='KILL'),
+                                capture_output=True, text=True)
+        self.assertNotEqual(result.returncode, 0)
+        journal = self.deployments / '.production-deployment-state'
+        self.assertTrue(journal.exists())
+        self.assertIn('rollback', journal.read_text())
+        result = subprocess.run(command, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Recovered interrupted deployment', result.stdout)
+        self.assertEqual((self.deployments / 'current').resolve(), target)
+        self.assertTrue(self.old.exists(), 'Rollback must retain the previous release')
+        self.assertFalse(journal.exists())
+        self.assert_preserved()
+
+    def test_deploy_recovery_never_deletes_an_existing_manual_rollback_target(self):
+        import shutil
+        target = self.releases / NEW
+        shutil.copytree(self.package, target)
+        journal = self.deployments / '.production-deployment-state'
+        journal.write_text(NEW + '\n' + OLD + '\nrollback\n')
+        current = self.deployments / 'current'
+        current.unlink()
+        current.symlink_to(target)
+        result = self.run_deploy()
+        self.assertNotEqual(result.returncode, 0, 'Existing rollback code is not a disposable deploy candidate')
+        self.assertEqual(current.resolve(), self.old)
+        self.assertTrue(target.exists())
+        self.assertFalse(journal.exists())
+        self.assert_preserved()
+
     def test_housekeeping_failure_keeps_healthy_release(self):
         result = self.run_deploy(FAIL_RETENTION='1')
         self.assertEqual(result.returncode, 0, result.stderr)

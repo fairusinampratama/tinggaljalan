@@ -20,6 +20,15 @@ spec.loader.exec_module(m)
 
 
 class HostingMaintenanceTests(unittest.TestCase):
+    def test_monitor_wait_budget_is_bounded_and_never_steals_a_lock(self):
+        path = self.account / '.tinggaljalan-maintenance.lock'
+        with m.lock(path):
+            with self.assertRaises(BlockingIOError):
+                with m.lock(path, wait_seconds=1):
+                    self.fail('A held operation lock was stolen')
+        with self.assertRaisesRegex(RuntimeError, 'lock wait budget'):
+            m.maintain(wait_seconds=121)
+
     def test_pending_operation_prevents_retention_from_removing_recovery_code(self):
         releases = [self.release(i) for i in range(1, 7)]
         self.current(releases[-1])

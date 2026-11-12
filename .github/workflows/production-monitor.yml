@@ -54,7 +54,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: staging
     concurrency:
-      group: hosting-account
+      group: hosting-capacity-monitor
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/hosting-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/hosting-ssh/known_hosts"
           SSH=(ssh -i "$RUNNER_TEMP/hosting-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/hosting-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST")
-          "${SSH[@]}" 'python3 - maintain --alert' < scripts/deployment/hosting-maintenance.py
+          "${SSH[@]}" 'python3 - maintain --alert --wait-lock 120' < scripts/deployment/hosting-maintenance.py
       - name: Record capacity alert
         if: failure()
         run: |

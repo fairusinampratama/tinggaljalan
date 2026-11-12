@@ -1,0 +1,200 @@
+name: Prepare verified preview release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact candidate commit; leave empty to use this main revision
+        type: string
+        default: ''
+  workflow_call:
+    inputs:
+      source_sha:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  select:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    outputs:
+      source_sha: ${{ steps.source.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Resolve exact candidate without hosting secrets
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_sha || github.sha }}
+        run: python3 scripts/deployment/release-provenance.py select "$SOURCE_SHA"
+
+  recover:
+    name: Recover an interrupted preview publication
+    needs: select
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: staging
+      deployment: false
+    concurrency:
+      group: hosting-account
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: ./.github/actions/preview-access
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          port: ${{ secrets.STAGING_SSH_PORT }}
+          user: ${{ secrets.STAGING_SSH_USER }}
+          private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          known-hosts: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+      - name: Recover only a journal-owned interrupted publication
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview 'python3 - recover' \
+            < scripts/deployment/preview-release-state.py
+      - name: Remove temporary SSH credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/preview-access"
+
+  candidate:
+    name: Build and test candidate once
+    needs: [select, recover]
+    uses: ./.github/workflows/ci-deploy.yml
+    with:
+      source_sha: ${{ needs.select.outputs.source_sha }}
+      build_candidate: true
+
+  preview:
+    name: Publish and verify the exact preview artifact
+    needs: [select, candidate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment:
+      name: staging
+      url: https://preview.tinggaljalan.com
+    concurrency:
+      group: hosting-account
+      cancel-in-progress: false
+    env:
+      SOURCE_SHA: ${{ needs.candidate.outputs.source_sha }}
+      ARCHIVE_SHA256: ${{ needs.candidate.outputs.archive_sha256 }}
+      STAGING_ROOT: /home/u304629909/domains/preview.tinggaljalan.com
+    steps:
+      - name: Check out trusted controller and verification code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.candidate.outputs.artifact_name }}
+          path: ${{ runner.temp }}/candidate
+      - name: Verify immutable artifact before hosting access
+        run: |
+          python3 scripts/deployment/release-provenance.py archive "$RUNNER_TEMP/candidate" "$SOURCE_SHA"
+          python3 scripts/deployment/hosting-maintenance.py archive-budget "$RUNNER_TEMP/candidate/release-$SOURCE_SHA.tar.gz"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare browser tooling before publication
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - uses: ./.github/actions/preview-access
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          port: ${{ secrets.STAGING_SSH_PORT }}
+          user: ${{ secrets.STAGING_SSH_USER }}
+          private-key: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          known-hosts: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+      - name: Prepare private preview configuration
+        env:
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          STAGING_ADMIN_PASSWORD: ${{ secrets.STAGING_ADMIN_PASSWORD }}
+        run: python3 scripts/deployment/prepare-staging-secrets.py "$RUNNER_TEMP/preview-access/app.json"
+      - name: Record production health before preview operations
+        run: bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com '' "$RUNNER_TEMP/production-before"
+      - name: Check capacity and create durable preview rollback record
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview 'python3 - maintain --reserve' \
+            < scripts/deployment/hosting-maintenance.py
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "python3 - begin '$SOURCE_SHA' '$ARCHIVE_SHA256' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'" \
+            < scripts/deployment/preview-release-state.py
+      - name: Transfer the same archive and publish pending browser verification
+        run: |
+          REMOTE_ARCHIVE="$STAGING_ROOT/deployments/incoming/release-$SOURCE_SHA.tar.gz"
+          REMOTE_CONFIG="$STAGING_ROOT/deployments/incoming/config-$SOURCE_SHA.json"
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview "test ! -L '$REMOTE_ARCHIVE' && test ! -L '$REMOTE_CONFIG'"
+          scp -F "$RUNNER_TEMP/preview-access/config" "$RUNNER_TEMP/candidate/release-$SOURCE_SHA.tar.gz" "preview:$REMOTE_ARCHIVE"
+          scp -F "$RUNNER_TEMP/preview-access/config" "$RUNNER_TEMP/preview-access/app.json" "preview:$REMOTE_CONFIG"
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "bash -s -- '$STAGING_ROOT' '$SOURCE_SHA' '$REMOTE_ARCHIVE' '$ARCHIVE_SHA256' '$REMOTE_CONFIG' await-browser-verification" \
+            < scripts/deployment/deploy-staging.sh
+      - name: Verify isolated DB, disabled integrations and select realistic test route
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "/opt/alt/php84/usr/bin/php /dev/stdin '$SOURCE_SHA' route" \
+            < scripts/testing/staging-functional-guard.php > "$RUNNER_TEMP/preview-access/route.json"
+          node -e 'const fs=require("fs");const p=process.argv[1];const c=JSON.parse(fs.readFileSync(p));const r=JSON.parse(fs.readFileSync(process.argv[2]));if(!/^[a-z0-9-]+$/i.test(r.functional_route))process.exit(1);c.functional_route=r.functional_route;fs.writeFileSync(p,JSON.stringify(c),{mode:0o600})' "$RUNNER_TEMP/preview-access/app.json" "$RUNNER_TEMP/preview-access/route.json"
+      - name: Require desktop, mobile, media, booking and admin checks
+        run: |
+          node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review"
+          node scripts/testing/staging-media-browser.mjs "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review"
+          node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review" "$GITHUB_RUN_ID"
+      - name: Confirm production remains healthy at the original revision
+        run: |
+          PREVIOUS="$(cat "$RUNNER_TEMP/production-before/observed-revision.txt")"
+          bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com "$PREVIOUS" "$RUNNER_TEMP/production-after"
+      - name: Finalize verified preview publication
+        run: |
+          FINALIZED="$(ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "python3 - finalize '$SOURCE_SHA' '$ARCHIVE_SHA256' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'" \
+            < scripts/deployment/preview-release-state.py)"
+          PREVIOUS="$(printf '%s' "$FINALIZED" | python3 -c 'import json,sys; print(json.load(sys.stdin)["previous_sha"])')"
+          [[ "$PREVIOUS" =~ ^[0-9a-f]{40}$ ]]
+          if ! ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+            "python3 - retention preview --apply --previous '$PREVIOUS'" \
+            < scripts/deployment/hosting-maintenance.py; then
+            echo '::warning::Verified preview is healthy; post-success code retention needs attention.'
+          fi
+          python3 scripts/deployment/release-provenance.py receipt "$RUNNER_TEMP/candidate" "$SOURCE_SHA"
+      - name: Save promotion evidence after every required check succeeds
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-receipt-${{ github.run_id }}
+          path: ${{ runner.temp }}/candidate/preview-receipt.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Restore previous preview after publication or browser failure
+        if: failure() || cancelled()
+        run: |
+          if test -f "$RUNNER_TEMP/preview-access/config"; then
+            ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+              "python3 - rollback '$SOURCE_SHA' '$ARCHIVE_SHA256' '$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT'" \
+              < scripts/deployment/preview-release-state.py
+          fi
+      - name: Save public browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/preview-review
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Remove temporary private configuration
+        if: always()
+        run: |
+          if test -f "$RUNNER_TEMP/preview-access/config"; then
+            ssh -F "$RUNNER_TEMP/preview-access/config" preview \
+              "rm -f '$STAGING_ROOT/deployments/incoming/config-$SOURCE_SHA.json'" || true
+          fi
+          rm -rf -- "$RUNNER_TEMP/preview-access"

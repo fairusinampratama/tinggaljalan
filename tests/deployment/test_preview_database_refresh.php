@@ -16,6 +16,14 @@ $policy = json_decode(file_get_contents(__DIR__.'/../../scripts/deployment/previ
 $schema = refreshSchema($db);
 refreshValidateSchema($schema, $schema, $policy);
 $checks = 0;
+$identityFixture = tempnam(sys_get_temp_dir(), 'preview-identity-');
+file_put_contents($identityFixture, 'synthetic-configuration');
+$identity = refreshFileIdentity($identityFixture);
+refreshAssert(array_keys($identity) === ['dev', 'ino', 'mode', 'uid', 'gid', 'size', 'mtime', 'ctime']);
+file_put_contents($identityFixture, 'changed-synthetic-configuration-size');
+refreshAssert(refreshFileIdentity($identityFixture) !== $identity);
+unlink($identityFixture);
+$checks++;
 $expectFailure = function (callable $call) use (&$checks): void {
     try {
         $call();

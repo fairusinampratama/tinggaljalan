@@ -8,6 +8,18 @@ function refreshAssert(bool $condition): void
     }
 }
 
+function refreshFileIdentity(string $path): array
+{
+    // Verify the production configuration file's identity without deriving a
+    // fingerprint from credentials or retaining a second copy of their values.
+    refreshAssert(! is_link($path) && realpath($path) === $path && is_file($path));
+    clearstatcache(true, $path);
+    $metadata = stat($path);
+    refreshAssert(is_array($metadata));
+
+    return array_intersect_key($metadata, array_flip(['dev', 'ino', 'mode', 'uid', 'gid', 'size', 'mtime', 'ctime']));
+}
+
 function refreshIdentifier(string $name): string
 {
     refreshAssert((bool) preg_match('/^[a-z][a-z0-9_]*$/', $name));

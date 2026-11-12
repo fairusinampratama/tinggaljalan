@@ -42,6 +42,9 @@ try {
         || PaymentSetting::query()->whereNotNull('secret_key')->exists()) {
         throw new RuntimeException('Payment credentials exist.');
     }
+    if (! Http::preventingStrayRequests()) {
+        throw new RuntimeException('Preview application HTTP guard is missing.');
+    }
     Http::preventStrayRequests();
     $settings = app(PaymentSettingsService::class);
     $stage = 'disabled gateway selection';
@@ -62,7 +65,12 @@ try {
             }
         }
     }
-    echo "Preview database isolated; notifications disabled; all payment methods reject requests without network calls.\n";
+    if (($argv[2] ?? '') === 'route') {
+        require_once $release.'/scripts/deployment/preview-db-refresh-lib.php';
+        echo json_encode(['functional_route' => refreshFunctionalRoute(DB::connection()->getPdo())], JSON_THROW_ON_ERROR).PHP_EOL;
+    } else {
+        echo "Preview database isolated; notifications disabled; all payment methods reject requests without network calls.\n";
+    }
 } catch (Throwable $error) {
     fwrite(STDERR, 'Preview functional guard failed at '.$stage.'. No credentials logged.'.PHP_EOL);
     exit(1);

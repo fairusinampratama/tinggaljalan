@@ -41,7 +41,7 @@ def canonical_directory(path):
 
 
 @contextlib.contextmanager
-def lock(path, inherited=None):
+def lock(path, inherited=None, wait_seconds=0):
     canonical_directory(path.parent)
     require(not path.is_symlink(), 'Symlink lock refused')
     if inherited is not None:
@@ -53,7 +53,15 @@ def lock(path, inherited=None):
         return
     descriptor = os.open(str(path), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        deadline = time.monotonic() + wait_seconds
+        while True:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.25)
         yield
     finally:
         os.close(descriptor)
@@ -237,9 +245,10 @@ def retention(environment, apply=False, previous='', lock_fd=None, expected_plan
         return result
 
 
-def maintain(reserve=False, alert=False):
+def maintain(reserve=False, alert=False, wait_seconds=0):
     """Bounded retention only, then remeasure. Never boot Laravel or touch DBs."""
-    with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
+    require(isinstance(wait_seconds, int) and 0 <= wait_seconds <= 120, 'Invalid lock wait budget')
+    with lock(ACCOUNT / '.tinggaljalan-maintenance.lock', wait_seconds=wait_seconds):
         try:
             return capacity(reserve=reserve, alert=True)
         except CapacityError:
@@ -263,6 +272,7 @@ def main():
     maintenance = sub.add_parser('maintain')
     maintenance.add_argument('--reserve', action='store_true')
     maintenance.add_argument('--alert', action='store_true')
+    maintenance.add_argument('--wait-lock', type=int, default=0)
     archive = sub.add_parser('archive-budget')
     archive.add_argument('archive', type=Path)
     obsolete = sub.add_parser('archive-obsolete')
@@ -280,7 +290,7 @@ def main():
     elif args.command == 'capacity':
         capacity(args.reserve, args.alert)
     elif args.command == 'maintain':
-        maintain(args.reserve, args.alert)
+        maintain(args.reserve, args.alert, args.wait_lock)
     elif args.command == 'archive-obsolete':
         with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
             archive_obsolete(args.environment)

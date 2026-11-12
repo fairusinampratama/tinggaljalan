@@ -70,7 +70,7 @@ Disposable MySQL tests exercise the actual PDO helpers, dirty production-shaped 
 
 The live workflow verifies actual preview DB and gateway rejection, then reuses rendering checks and synthetic booking/admin checks on desktop/mobile. Its booking test selects a valid priced package from the refreshed data. Only sanitized browser screenshots/diagnostics become GitHub artifacts, after successful verification. Passwords, private config, DB rows and dumps are excluded.
 
-Production `/up` must remain healthy at the same revision before and after; its environment file hash and deployed revision must remain unchanged on Hostinger. These checks establish that this operation did not deploy or change production configuration. Normal production traffic can still create bookings while the read-only snapshot runs.
+Production `/up` must remain healthy at the same revision before and after; its environment file identity/ownership/permissions/size/timestamps and deployed revision must remain unchanged on Hostinger. The helper has no production write path. These checks detect file replacement or metadata changes without computing credential-derived fingerprints or retaining a second configuration copy; they are operational evidence rather than a cryptographic comparison of production configuration values. Normal production traffic can still create bookings while the read-only snapshot runs.
 
 The existing Hostinger source DB account has normal production privileges; this helper constrains its connection to a read-only transaction. A separately provisioned SELECT-only DB account would add database-level defense against future helper changes. No new persistent production access is created here.
 
