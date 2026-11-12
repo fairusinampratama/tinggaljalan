@@ -23,6 +23,8 @@ on:
     paths:
       - .github/workflows/staging-deploy.yml
       - scripts/deployment/deploy-staging.sh
+      - scripts/deployment/hosting-maintenance.py
+      - tests/deployment/test_hosting_maintenance.py
       - scripts/deployment/configure-staging.php
       - scripts/deployment/staging-config.php
       - scripts/deployment/prepare-staging-secrets.py
@@ -70,6 +72,7 @@ jobs:
           node --check scripts/testing/staging-functional-browser.mjs
           python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
+          python3 tests/deployment/test_hosting_maintenance.py
           if bash scripts/deployment/deploy-staging.sh /home/u304629909/domains/tinggaljalan.com invalid invalid invalid invalid; then
             echo 'Production root was accepted.' >&2
             exit 1
@@ -140,7 +143,7 @@ jobs:
       name: staging
       url: https://preview.tinggaljalan.com
     concurrency:
-      group: staging
+      group: hosting-account
       cancel-in-progress: false
     env:
       SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
@@ -195,6 +198,9 @@ jobs:
         run: |
           set -euo pipefail
           ARCHIVE="$RUNNER_TEMP/release/release-$GITHUB_SHA.tar.gz"
+          python3 scripts/deployment/hosting-maintenance.py archive-budget "$ARCHIVE"
+          ssh -F "$RUNNER_TEMP/staging-ssh/ssh_config" staging \
+            'python3 - capacity --reserve' < scripts/deployment/hosting-maintenance.py
           DIGEST="$(sha256sum "$ARCHIVE" | cut -d' ' -f1)"
           REMOTE_ARCHIVE="$STAGING_ROOT/deployments/incoming/release-$GITHUB_SHA.tar.gz"
           REMOTE_CONFIG="$STAGING_ROOT/deployments/incoming/config-$GITHUB_SHA.json"
@@ -244,7 +250,7 @@ jobs:
     timeout-minutes: 15
     environment: staging
     concurrency:
-      group: staging
+      group: hosting-account
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4

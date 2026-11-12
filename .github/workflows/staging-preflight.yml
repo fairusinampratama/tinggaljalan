@@ -4,18 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Read-only operation
+        description: Connection/readiness checks or explicit hosting maintenance
         type: choice
         options:
           - connection
           - readiness
           - export-host-record
+          - hosting-capacity
+          - retention-plan
+          - retention-apply
         default: connection
   pull_request:
     paths:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/staging-preflight.sh
       - scripts/deployment/prepare-staging-secrets.py
+      - scripts/deployment/hosting-maintenance.py
+      - tests/deployment/test_hosting_maintenance.py
 
 permissions:
   contents: read
@@ -26,10 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate script syntax
-        run: bash -n scripts/deployment/staging-preflight.sh
+        run: |
+          bash -n scripts/deployment/staging-preflight.sh
+          python3 tests/deployment/test_hosting_maintenance.py
 
   connection:
-    if: github.event_name == 'workflow_dispatch' && inputs.operation != 'export-host-record'
+    if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'connection' || inputs.operation == 'readiness')
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -138,3 +145,56 @@ jobs:
           path: ${{ runner.temp }}/staging-known-hosts
           retention-days: 1
           if-no-files-found: error
+
+  hosting-maintenance:
+    if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'hosting-capacity' || inputs.operation == 'retention-plan' || inputs.operation == 'retention-apply')
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: staging
+    concurrency:
+      group: hosting-account
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check hosting capacity or apply reviewed retention
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
+          test -n "$PRIVATE_KEY" && test -n "$KNOWN_HOSTS"
+          umask 077
+          mkdir -p "$RUNNER_TEMP/hosting-ssh"
+          trap 'rm -rf -- "$RUNNER_TEMP/hosting-ssh"' EXIT
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/hosting-ssh/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/hosting-ssh/known_hosts"
+          SSH=(ssh -i "$RUNNER_TEMP/hosting-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/hosting-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST")
+          case "$OPERATION" in
+            hosting-capacity) COMMAND='capacity --alert' ;;
+            retention-plan) COMMAND='retention' ;;
+            retention-apply) COMMAND='retention'; APPLY='--apply' ;;
+            *) echo 'Unsupported maintenance operation.' >&2; exit 1 ;;
+          esac
+          if [[ "$COMMAND" == retention ]]; then
+            bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com
+            for environment in preview production; do
+              "${SSH[@]}" "python3 - retention $environment ${APPLY:-}" < scripts/deployment/hosting-maintenance.py
+            done
+            bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com
+            if [[ "${APPLY:-}" == --apply ]]; then
+              "${SSH[@]}" 'python3 - capacity --reserve' < scripts/deployment/hosting-maintenance.py
+            fi
+          else
+            "${SSH[@]}" "python3 - $COMMAND" < scripts/deployment/hosting-maintenance.py
+          fi
+      - name: Record maintenance result
+        if: always()
+        run: |
+          echo '## Hosting maintenance' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Operation: ${{ inputs.operation }}; result: ${{ job.status }}. See sanitized capacity and release-policy output in job logs.' >> "$GITHUB_STEP_SUMMARY"
