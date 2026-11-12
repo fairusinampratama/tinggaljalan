@@ -126,7 +126,7 @@ try {
         const target = `${base}${route}`;
         const normal = await initialContext.request.get(target);
         const bot = await initialContext.request.get(target, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' } });
-        if (!normal.ok() || !bot.ok()) throw new Error('Initial public HTML request failed.');
+        if (!normal.ok() || !bot.ok()) throw new Error(`Initial public HTML request failed for ${route}: normal=${normal.status()}, bot=${bot.status()}.`);
         const raw = await normal.text();
         const botRaw = await bot.text();
         if ((!productionReview && !/noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || (productionReview && /noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || normal.headers()['x-robots-tag'] !== bot.headers()['x-robots-tag']) throw new Error(`Preview index protection differs for ${route}.`);
@@ -207,6 +207,12 @@ try {
         console.error(JSON.stringify(diagnostics));
         throw new Error('Preview JavaScript or asset errors were detected; see diagnostics.json.');
     }
+} catch (error) {
+    // Retain only public route/status information; never credentials or cookies.
+    await writeFile(path.join(output, 'failure.txt'), redact(error.message) + '\n', { mode: 0o600 });
+    throw error;
 } finally {
+    await writeFile(path.join(output, 'completed-checks.txt'), results.join('\n') + '\n', { mode: 0o600 });
+    await writeFile(path.join(output, 'observations.json'), JSON.stringify(observations, null, 2), { mode: 0o600 });
     await browser.close();
 }
