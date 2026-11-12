@@ -53,7 +53,14 @@ jobs:
           php artisan key:generate
           php artisan migrate --force
       - name: Test refresh and sanitization against real MySQL
-        run: php tests/deployment/test_preview_database_refresh.php
+        run: |
+          set -euo pipefail
+          if php tests/deployment/test_preview_database_refresh.php --verify-failure-exit; then
+            echo 'Safety harness incorrectly accepted an uncaught failure.' >&2
+            exit 1
+          fi
+          php tests/deployment/test_preview_database_refresh.php | tee "$RUNNER_TEMP/preview-database-safety.log"
+          grep -Eq '^Preview database safety tests passed: [0-9]+ ' "$RUNNER_TEMP/preview-database-safety.log"
       - name: Check PHP syntax and formatting
         run: |
           FILES=(scripts/deployment/preview-db-audit.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-media-refresh-lib.php scripts/deployment/refresh-preview-database.php tests/deployment/test_preview_database_refresh.php)

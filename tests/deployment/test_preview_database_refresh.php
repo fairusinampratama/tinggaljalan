@@ -10,6 +10,15 @@ require __DIR__.'/../../vendor/autoload.php';
 require __DIR__.'/../../scripts/deployment/preview-db-refresh-lib.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
+// Laravel's console bootstrap can otherwise render an uncaught exception and
+// leave a directly invoked PHP script with a successful process exit status.
+set_exception_handler(static function (Throwable $error): void {
+    fwrite(STDERR, 'Preview database safety test failed: '.get_class($error).PHP_EOL);
+    exit(1);
+});
+if (($argv[1] ?? '') === '--verify-failure-exit') {
+    throw new RuntimeException('Intentional disposable safety-harness failure.');
+}
 $db = DB::connection()->getPdo();
 refreshAssert($db->query('SELECT DATABASE()')->fetchColumn() === 'preview_refresh_test');
 $policy = json_decode(file_get_contents(__DIR__.'/../../scripts/deployment/preview-db-schema.json'), true, flags: JSON_THROW_ON_ERROR);
@@ -275,7 +284,7 @@ imagepng($inlineFixture, $inlineDirectory.'/public.png');
 imagedestroy($inlineFixture);
 $inlineBytes = file_get_contents($inlineDirectory.'/public.png');
 $target->beginTransaction();
-refreshVisitMedia($target, fn ($path) => null);
+refreshVisitMedia($target, fn ($path) => $path === null ? null : '');
 $section = ['heading' => ['us' => 'Public editorial heading'], 'body' => ['us' => 'Public article prose.'],
     'images' => [['path' => 'admin/news/sections/public.png', 'alt' => ['us' => 'Public photo description'], 'caption' => ['us' => 'Published photographer credit']]]];
 refreshUpdate($target, 'news_articles', ['sections' => json_encode([$section], JSON_THROW_ON_ERROR)]);
