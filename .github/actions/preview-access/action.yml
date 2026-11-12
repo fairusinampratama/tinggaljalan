@@ -1,0 +1,50 @@
+name: Prepare pinned preview SSH access
+description: Configure private runner files for the fixed Hostinger preview account
+inputs:
+  host:
+    required: true
+    description: Existing staging SSH host
+  port:
+    required: true
+    description: Existing staging SSH port
+  user:
+    required: true
+    description: Existing staging SSH user
+  private-key:
+    required: true
+    description: Existing staging SSH key
+  known-hosts:
+    required: true
+    description: Pinned staging host keys
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SSH_HOST: ${{ inputs.host }}
+        SSH_PORT: ${{ inputs.port }}
+        SSH_USER: ${{ inputs.user }}
+        PRIVATE_KEY: ${{ inputs.private-key }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        set -euo pipefail
+        [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
+        test -n "$PRIVATE_KEY" && test -n "$KNOWN_HOSTS"
+        umask 077
+        mkdir -p "$RUNNER_TEMP/preview-access"
+        printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/preview-access/key"
+        printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/preview-access/known_hosts"
+        cat > "$RUNNER_TEMP/preview-access/config" <<CONFIG
+        Host preview
+            HostName $SSH_HOST
+            Port $SSH_PORT
+            User $SSH_USER
+            IdentityFile $RUNNER_TEMP/preview-access/key
+            UserKnownHostsFile $RUNNER_TEMP/preview-access/known_hosts
+            StrictHostKeyChecking yes
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 20
+            ServerAliveInterval 10
+            ServerAliveCountMax 3
+        CONFIG

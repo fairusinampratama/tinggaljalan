@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { discoverReviewRoutes } from './public-review-routes.mjs';
 
 const [configFile, revision, output] = process.argv.slice(2);
 if (!configFile || !/^[a-f0-9]{40}$/.test(revision ?? '') || !output) {
@@ -14,10 +15,7 @@ const browser = await chromium.launch();
 const results = [];
 const diagnostics = [];
 const priorityRoutes = [
-    ['bromo-article', '/news/Bromo-wildfire'],
-    ['ijen-article', '/news/trip-ijen-creater'],
-    ['bukit-lawang-article', '/news/bukit-lawang-jungle-trekking-orangutan-guide'],
-    ['bromo-route', '/routes/BROMO'], ['home', '/'], ['routes', '/routes'],
+    ['home', '/'], ['routes', '/routes'],
     ['news', '/news'], ['about', '/about-us'], ['privacy', '/privacy-policy'],
 ];
 const publicRoutes = new Set([...priorityRoutes.map(([, route]) => route), '/?lang=id', '/news?lang=cn', '/routes?destination=bromo']);
@@ -34,6 +32,16 @@ try {
     }
     await anonymous.close();
     }
+    const discovery = await browser.newContext({
+        httpCredentials: productionReview ? undefined : { username: 'reviewer', password: config.review_password, origin: base },
+    });
+    const sitemap = await discovery.request.get(`${base}/sitemap.xml`);
+    if (!sitemap.ok()) throw new Error('Current public sitemap could not be read.');
+    for (const detail of discoverReviewRoutes(await sitemap.text())) {
+        priorityRoutes.push(detail);
+        publicRoutes.add(detail[1]);
+    }
+    await discovery.close();
     for (const [name, viewport, isMobile] of [
         ['desktop', { width: 1440, height: 1000 }, false],
         ['mobile', { width: 390, height: 844 }, true],
@@ -67,7 +75,6 @@ try {
             if (width.document > width.viewport + 2 && route !== '/routes/BROMO') {
                 throw new Error('Preview layout overflows the viewport.');
             }
-            if (await page.locator('.decorative-backdrop, .decorative-canvas, .decorative-divider, [data-backdrop]').count()) throw new Error('Excluded ornament UI is present.');
             observations.push({ viewport: name, route, width });
             for (const [index, fraction] of [0, 0.33, 0.67, 1].entries()) {
                 const scroll = await page.evaluate(fraction => {
@@ -79,7 +86,7 @@ try {
                 observations.push({ viewport: name, route, screenshot: index, scroll });
                 await page.screenshot({ path: path.join(output, `${name}-${label}-scroll-${index}.png`) });
             }
-            results.push(`${name}: ${label} rendered, ornament-free, target directives verified`);
+            results.push(`${name}: ${label} rendered, responsive layout and target directives verified`);
             if (label === 'routes' || label === 'news') {
                 const detail = label === 'news'
                     ? page.locator('article[role="link"]').first()

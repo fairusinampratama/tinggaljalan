@@ -39,8 +39,8 @@ jobs:
       DB_USERNAME: root
       DB_PASSWORD: test-password
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2; verified CI revision
         with:
           php-version: '8.4'
           extensions: pdo_mysql, mbstring, intl, dom, curl, zip, gd
@@ -53,7 +53,14 @@ jobs:
           php artisan key:generate
           php artisan migrate --force
       - name: Test refresh and sanitization against real MySQL
-        run: php tests/deployment/test_preview_database_refresh.php
+        run: |
+          set -euo pipefail
+          if php tests/deployment/test_preview_database_refresh.php --verify-failure-exit; then
+            echo 'Safety harness incorrectly accepted an uncaught failure.' >&2
+            exit 1
+          fi
+          php tests/deployment/test_preview_database_refresh.php | tee "$RUNNER_TEMP/preview-database-safety.log"
+          grep -Eq '^Preview database safety tests passed: [0-9]+ ' "$RUNNER_TEMP/preview-database-safety.log"
       - name: Check PHP syntax and formatting
         run: |
           FILES=(scripts/deployment/preview-db-audit.php scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-media-refresh-lib.php scripts/deployment/refresh-preview-database.php tests/deployment/test_preview_database_refresh.php)
@@ -76,8 +83,8 @@ jobs:
       group: hosting-account
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4; verified CI revision
         with:
           node-version: '22'
           cache: npm
@@ -127,6 +134,10 @@ jobs:
         run: |
           curl --fail --silent --show-error --max-time 30 https://tinggaljalan.com/up > "$RUNNER_TEMP/preview-refresh/production-before.json"
           node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1]));if(r.status!=="up"||!/^[a-f0-9]{40}$/.test(r.revision))process.exit(1)' "$RUNNER_TEMP/preview-refresh/production-before.json"
+      - name: Recover a pending preview code publication before refreshing data
+        run: |
+          ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging 'python3 - recover' \
+            < scripts/deployment/preview-release-state.py
       - name: Check bounded hosting capacity before copying preview data
         run: |
           ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging \
@@ -169,7 +180,7 @@ jobs:
           if test -f "$RUNNER_TEMP/preview-refresh/ssh_config" && test -n "${REFRESH_REMOTE:-}"; then
             ssh -F "$RUNNER_TEMP/preview-refresh/ssh_config" staging "if test -f '$REFRESH_REMOTE/refresh-preview-database.php'; then /opt/alt/php84/usr/bin/php '$REFRESH_REMOTE/refresh-preview-database.php' rollback '$REFRESH_REMOTE/config.json'; fi"
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         if: success()
         with:
           name: preview-db-refresh-review-${{ github.run_id }}-${{ github.run_attempt }}

@@ -6,6 +6,8 @@ SHA="${2:?}"
 ARCHIVE="${3:?}"
 DIGEST="${4:?}"
 CONFIG="${5:?}"
+DEFER="${6:-}"
+[[ -z "$DEFER" || "$DEFER" == await-browser-verification ]]
 [[ "$ROOT" == /home/u304629909/domains/preview.tinggaljalan.com ]]
 [[ "$SHA" =~ ^[0-9a-f]{40}$ && "$DIGEST" =~ ^[0-9a-f]{64}$ ]]
 [[ "$(readlink -f "$ROOT")" == "$ROOT" ]]
@@ -44,6 +46,18 @@ flock -n 8 || { echo 'Hosting maintenance/deployment already running.' >&2; exit
 [[ ! -L "$DEPLOY/.lock" ]]
 exec 9>"$DEPLOY/.lock"
 flock -n 9 || { echo 'Another staging deployment holds the lock.' >&2; exit 1; }
+if [[ "$DEFER" == await-browser-verification ]]; then
+    [[ ! -L "$DEPLOY/.preview-release-pending.json" ]]
+    python3 - "$DEPLOY/.preview-release-pending.json" "$SHA" "$DIGEST" <<'PYTHON'
+import json, sys
+with open(sys.argv[1]) as stream:
+    record = json.load(stream)
+if record.get('source') != sys.argv[2] or record.get('digest') != sys.argv[3]:
+    raise SystemExit('Preview rollback record does not match this candidate')
+PYTHON
+else
+    [[ ! -e "$DEPLOY/.preview-release-pending.json" && ! -L "$DEPLOY/.preview-release-pending.json" ]] || { echo 'Preview publication recovery is pending.' >&2; exit 1; }
+fi
 chmod 600 "$CONFIG"
 cleanup() {
     rm -f -- "$CONFIG" "$CURL_CONFIG" "$CURL_CONFIG.html" "$CURL_CONFIG.assets"
@@ -69,6 +83,7 @@ tar -xzf "$ARCHIVE" -C "$RELEASE"
 [[ "$(cat "$RELEASE/REVISION")" == "$SHA" ]]
 test -f "$RELEASE/vendor/autoload.php"
 test -f "$RELEASE/public/build/manifest.json"
+printf '%s\n' "$DIGEST" > "$RELEASE/.release-archive.sha256"
 "$PHP" "$RELEASE/scripts/deployment/configure-staging.php" "$RELEASE" "$ROOT" configure "$CONFIG"
 mkdir -p "$SHARED/storage/app/public/admin/hero" "$SHARED/storage/framework/cache/data" \
     "$SHARED/storage/framework/sessions" "$SHARED/storage/framework/views" "$SHARED/storage/logs"
@@ -230,6 +245,11 @@ for path in /.env /.htpasswd; do
 done
 trap - ERR
 COMPLETED=1
+if [[ "$DEFER" == await-browser-verification ]]; then
+    rm -f -- "$ARCHIVE"
+    echo "Preview $SHA awaits browser verification and explicit finalize."
+    exit 0
+fi
 RETENTION_ARGS=()
 [[ -z "$PREVIOUS" ]] || RETENTION_ARGS=(--previous "$PREVIOUS_SHA")
 python3 "$RELEASE/scripts/deployment/hosting-maintenance.py" retention preview --apply \

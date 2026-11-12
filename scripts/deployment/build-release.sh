@@ -7,6 +7,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full 40-character Git SHA is required." >&2; exit 1; }
 
+[[ "$(git -C "$ROOT" rev-parse HEAD)" == "$SHA" ]] || { echo 'Release revision must match the checked-out source.' >&2; exit 1; }
+
 OUTPUT="$(realpath -m "$OUTPUT")"
 mkdir -p "$(dirname "$OUTPUT")"
 

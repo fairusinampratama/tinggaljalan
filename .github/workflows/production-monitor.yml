@@ -22,14 +22,14 @@ jobs:
 
     steps:
       - name: Check out smoke test
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
 
       - name: Check production
         run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "" "$RUNNER_TEMP/production-monitor"
 
       - name: Upload failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
         with:
           name: production-monitor-${{ github.run_id }}
           path: ${{ runner.temp }}/production-monitor
@@ -54,10 +54,10 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment: staging
     concurrency:
-      group: hosting-account
+      group: hosting-capacity-monitor
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
       - name: Inspect capacity and apply bounded release retention
         env:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
@@ -76,7 +76,7 @@ jobs:
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/hosting-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/hosting-ssh/known_hosts"
           SSH=(ssh -i "$RUNNER_TEMP/hosting-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/hosting-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST")
-          "${SSH[@]}" 'python3 - maintain --alert' < scripts/deployment/hosting-maintenance.py
+          "${SSH[@]}" 'python3 - maintain --alert --wait-lock 120' < scripts/deployment/hosting-maintenance.py
       - name: Record capacity alert
         if: failure()
         run: |

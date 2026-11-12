@@ -66,7 +66,7 @@ recover_pending() {
     mapfile -t record < "$STATE"
     [[ "${#record[@]}" == 3 ]] || return 1
     [[ "${record[0]}" =~ ^[0-9a-f]{40}$ && "${record[1]}" =~ ^[0-9a-f]{40}$ ]] || return 1
-    [[ "${record[0]}" != "${record[1]}" && "${record[2]}" =~ ^(prepared|maintenance)$ ]] || return 1
+    [[ "${record[0]}" != "${record[1]}" && "${record[2]}" =~ ^(prepared|maintenance|rollback)$ ]] || return 1
     candidate="$RELEASES/${record[0]}"
     previous="$RELEASES/${record[1]}"
     phase="${record[2]}"
@@ -90,7 +90,7 @@ recover_pending() {
         ln -s "$previous" "$CURRENT.rollback" || return 1
         mv -Tf "$CURRENT.rollback" "$CURRENT" || return 1
     fi
-    if [[ "$phase" == maintenance || "$active" == "$candidate" ]]; then
+    if [[ "$phase" == maintenance || "$phase" == rollback || "$active" == "$candidate" ]]; then
         "$PHP_BIN" "$previous/artisan" optimize:clear >/dev/null || return 1
         "$PHP_BIN" "$previous/artisan" config:cache >/dev/null || return 1
         "$PHP_BIN" "$previous/artisan" event:cache >/dev/null || return 1
@@ -102,7 +102,7 @@ recover_pending() {
     # Only the journal-owned candidate is disposable. Shared data is reached
     # through symlinks, which rm removes without following their targets.
     [[ "$(readlink -f "$CURRENT")" != "$candidate" ]] || return 1
-    rm -rf -- "$candidate" || return 1
+    if [[ "$phase" != rollback ]]; then rm -rf -- "$candidate" || return 1; fi
     rm -f -- "$STATE" "$STATE.next" || return 1
     echo "Recovered interrupted deployment; previous code restored. Database was not restored."
 }
@@ -147,6 +147,7 @@ fi
 find "$RELEASE" -type d -exec chmod 755 {} +
 test "$(tr -d '[:space:]' < "$RELEASE/REVISION")" == "$SHA" || { echo "Release revision mismatch." >&2; exit 1; }
 
+printf '%s\n' "$(sha256sum "$ARCHIVE" | cut -d' ' -f1)" > "$RELEASE/.release-archive.sha256"
 rm -rf "$RELEASE/storage" "$RELEASE/public/storage"
 ln -s "$SHARED/.env" "$RELEASE/.env"
 ln -s "$SHARED/storage" "$RELEASE/storage"

@@ -25,6 +25,7 @@ RESERVE_BYTES = 512 * 1024**2
 FILE_BUDGET = 350000
 BYTE_BUDGET = 10 * 1024**3
 GRACE_SECONDS = 3600
+UPLOAD_GRACE_SECONDS = 24 * 3600
 
 
 class CapacityError(RuntimeError):
@@ -41,7 +42,7 @@ def canonical_directory(path):
 
 
 @contextlib.contextmanager
-def lock(path, inherited=None):
+def lock(path, inherited=None, wait_seconds=0):
     canonical_directory(path.parent)
     require(not path.is_symlink(), 'Symlink lock refused')
     if inherited is not None:
@@ -53,7 +54,15 @@ def lock(path, inherited=None):
         return
     descriptor = os.open(str(path), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
     try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        deadline = time.monotonic() + wait_seconds
+        while True:
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.25)
         yield
     finally:
         os.close(descriptor)
@@ -237,15 +246,108 @@ def retention(environment, apply=False, previous='', lock_fd=None, expected_plan
         return result
 
 
-def maintain(reserve=False, alert=False):
+def clean_expired_uploads(environment):
+    """Remove only expired workflow transfer files, never shared application data."""
+    deployment = ACCOUNT / 'domains' / DOMAINS[environment] / 'deployments'
+    incoming = deployment / 'incoming'
+    if not incoming.exists() and not incoming.is_symlink():
+        return 0
+    for path in (deployment.parent, deployment, incoming):
+        canonical_directory(path)
+    removed = unreviewed = 0
+    with lock(deployment / '.lock'):
+        if any((deployment / name).exists() or (deployment / name).is_symlink() for name in (
+            '.production-deployment-state', '.preview-release-pending.json', '.database-refresh-pending.json'
+        )):
+            return 0
+        cutoff = time.time() - UPLOAD_GRACE_SECONDS
+        for path in incoming.iterdir():
+            if environment == 'preview' and re.fullmatch(r'db-(refresh|recover)-[0-9]+-[0-9]+', path.name):
+                info = path.lstat()
+                if (not stat.S_ISDIR(info.st_mode) or path.resolve() != path
+                        or info.st_uid != os.geteuid() or max(info.st_mtime, info.st_ctime) >= cutoff):
+                    continue
+                allowed = {'refresh-preview-database.php', 'preview-db-refresh-lib.php',
+                           'preview-db-schema.json', 'preview-media-refresh-lib.php',
+                           'staging-config.php', 'config.json', 'functional-route.json'}
+                children = list(path.iterdir())
+                states = {child.name: child.lstat() for child in children}
+                if any(child.name not in allowed or not stat.S_ISREG(states[child.name].st_mode)
+                       or states[child.name].st_nlink != 1 or states[child.name].st_uid != os.geteuid()
+                       or max(states[child.name].st_mtime, states[child.name].st_ctime) >= cutoff
+                       for child in children):
+                    unreviewed += 1
+                    continue
+                # Remove credential transfers first. Only inspected filenames are
+                # unlinked; rmdir refuses any unexpected concurrent additions.
+                for child in sorted(children, key=lambda item: (item.name != 'config.json', item.name)):
+                    require(child.lstat() == states[child.name], 'Recovery transfer changed during cleanup')
+                    child.unlink()
+                    removed += 1
+                path.rmdir()
+                removed += 1
+                continue
+            match = re.fullmatch(r'(release|config)-([0-9a-f]{40})(\.tar\.gz(?:\.part)?|\.json)', path.name)
+            if not match or (match[1] == 'config') != (match[3] == '.json'):
+                continue
+            if match[1] == 'config' and environment != 'preview':
+                continue  # Production never receives workflow configuration JSON.
+            info = path.lstat()
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                    or info.st_uid != os.geteuid() or max(info.st_mtime, info.st_ctime) >= cutoff):
+                continue
+            if match[3] == '.tar.gz':
+                try:
+                    # Do not assume a SQL backup or arbitrary archive is disposable
+                    # merely because it was given a workflow-looking filename.
+                    revision = None
+                    required = set()
+                    with tarfile.open(str(path), 'r:gz') as archive:
+                        for member in archive:
+                            parts = Path(member.name).parts
+                            require(not member.name.startswith('/') and '..' not in parts
+                                    and '.env' not in parts and not member.isdev()
+                                    and not member.issym() and not member.islnk()
+                                    and not member.name.endswith(('.sql', '.sql.gz', '.sqlite', '.sqlite3')),
+                                    'Unexpected content in expired transfer archive')
+                            name = member.name.lstrip('./')
+                            if name == 'REVISION':
+                                require(member.isfile() and member.size <= 100, 'Invalid transfer revision')
+                                revision = archive.extractfile(member).read().decode().strip()
+                            if name in ('vendor/autoload.php', 'public/build/manifest.json') and member.isfile():
+                                required.add(name)
+                    require(revision == match[2] and len(required) == 2, 'Unreviewed transfer archive')
+                except (RuntimeError, OSError, UnicodeError, tarfile.TarError, EOFError):
+                    unreviewed += 1
+                    continue
+            # Config JSON is an expired, private workflow credential-transfer file;
+            # its values are neither read nor printed. Partial upload files are
+            # disposable only within this canonical, dedicated incoming directory.
+            current = path.lstat()
+            require((current.st_dev, current.st_ino, current.st_size, current.st_mtime, current.st_ctime)
+                    == (info.st_dev, info.st_ino, info.st_size, info.st_mtime, info.st_ctime),
+                    'Transfer file changed during cleanup')
+            path.unlink()
+            removed += 1
+    print(json.dumps(dict(environment=environment, expired_transfer_entries_removed=removed,
+                          unreviewed_transfers_preserved=unreviewed)), flush=True)
+    return removed
+
+
+def maintain(reserve=False, alert=False, wait_seconds=0):
     """Bounded retention only, then remeasure. Never boot Laravel or touch DBs."""
-    with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
+    require(isinstance(wait_seconds, int) and 0 <= wait_seconds <= 120, 'Invalid lock wait budget')
+    with lock(ACCOUNT / '.tinggaljalan-maintenance.lock', wait_seconds=wait_seconds):
+        result = None
         try:
-            return capacity(reserve=reserve, alert=True)
+            result = capacity(reserve=reserve, alert=True)
         except CapacityError:
             # A failed/incomplete scan is not a capacity diagnosis and must not
             # authorize deletion. Only the threshold-specific error reaches here.
             pass
+        removed = sum(clean_expired_uploads(environment) for environment in DOMAINS)
+        if result is not None:
+            return capacity(reserve=reserve, alert=alert) if removed else result
         for environment in DOMAINS:
             retention(environment, apply=True)
         # Exhaustion or an unresolved warning remains an error. There is no
@@ -263,6 +365,7 @@ def main():
     maintenance = sub.add_parser('maintain')
     maintenance.add_argument('--reserve', action='store_true')
     maintenance.add_argument('--alert', action='store_true')
+    maintenance.add_argument('--wait-lock', type=int, default=0)
     archive = sub.add_parser('archive-budget')
     archive.add_argument('archive', type=Path)
     obsolete = sub.add_parser('archive-obsolete')
@@ -280,7 +383,7 @@ def main():
     elif args.command == 'capacity':
         capacity(args.reserve, args.alert)
     elif args.command == 'maintain':
-        maintain(args.reserve, args.alert)
+        maintain(args.reserve, args.alert, args.wait_lock)
     elif args.command == 'archive-obsolete':
         with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
             archive_obsolete(args.environment)

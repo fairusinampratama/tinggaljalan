@@ -1,0 +1,313 @@
+name: Promote verified preview release
+
+on:
+  workflow_dispatch:
+    inputs:
+      preview_run_id:
+        description: Successful Prepare verified preview release run ID to promote unchanged
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  evidence:
+    name: Validate trusted preview evidence
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: staging
+      deployment: false
+    outputs:
+      source_sha: ${{ steps.verify.outputs.source_sha }}
+      archive_sha256: ${{ steps.verify.outputs.archive_sha256 }}
+      artifact_name: ${{ steps.verify.outputs.artifact_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate run identifier before downloading evidence
+        env:
+          PREVIEW_RUN_ID: ${{ inputs.preview_run_id }}
+        run: '[[ "$PREVIEW_RUN_ID" =~ ^[1-9][0-9]*$ ]]'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
+        with:
+          name: preview-receipt-${{ inputs.preview_run_id }}
+          run-id: ${{ inputs.preview_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/receipt
+      - name: Require matching main, successful mandatory checks and current preview
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+          PREVIEW_RUN_ID: ${{ inputs.preview_run_id }}
+        run: python3 scripts/deployment/release-provenance.py promotion "$RUNNER_TEMP/receipt/preview-receipt.json" "$PREVIEW_RUN_ID"
+
+  deploy:
+    name: Deploy production
+    needs: evidence
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    environment: production
+    concurrency:
+      group: hosting-account
+      cancel-in-progress: false
+    outputs:
+      deployed_sha: ${{ steps.release.outputs.deployed_sha }}
+      previous_sha: ${{ steps.previous.outputs.previous_sha }}
+    env:
+      PRODUCTION_URL: https://tinggaljalan.com
+      SOURCE_SHA: ${{ needs.evidence.outputs.source_sha }}
+      ARCHIVE_SHA256: ${{ needs.evidence.outputs.archive_sha256 }}
+      PREVIEW_RUN_ID: ${{ inputs.preview_run_id }}
+      SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+      SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+      SSH_USER: ${{ secrets.PROD_SSH_USER }}
+      DOMAIN_ROOT: ${{ secrets.PROD_DOMAIN_ROOT }}
+
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download immutable release
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
+        with:
+          name: ${{ needs.evidence.outputs.artifact_name }}
+          run-id: ${{ inputs.preview_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/release
+
+      - name: Download original successful preview receipt
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4; verified CI revision
+        with:
+          name: preview-receipt-${{ inputs.preview_run_id }}
+          run-id: ${{ inputs.preview_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/receipt
+
+      - name: Recheck current main and original archive after production approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/deployment/release-provenance.py promotion "$RUNNER_TEMP/receipt/preview-receipt.json" "$PREVIEW_RUN_ID" --policy-only
+          python3 scripts/deployment/release-provenance.py archive "$RUNNER_TEMP/release" "$SOURCE_SHA"
+          [[ "$(sha256sum "$RUNNER_TEMP/release/release-$SOURCE_SHA.tar.gz" | cut -d' ' -f1)" == "$ARCHIVE_SHA256" ]]
+
+      - name: Validate deployment secrets
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_HOST"
+          test -n "$SSH_PORT"
+          test -n "$SSH_USER"
+          [[ "$DOMAIN_ROOT" == /home/u304629909/domains/tinggaljalan.com ]]
+          [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$SSH_KNOWN_HOSTS"
+
+      - name: Configure pinned SSH access
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/production"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/production" "$HOME/.ssh/known_hosts"
+
+      - name: Verify production SSH reachability
+        run: |
+          ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=3 \
+            "$SSH_USER@$SSH_HOST" \
+            "printf 'Production SSH reachable\n'"
+
+      - name: Recheck preview identity under the production release lock
+        run: |
+          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "GITHUB_REPOSITORY=fairusinampratama/tinggaljalan python3 - hosted '$SOURCE_SHA' '$ARCHIVE_SHA256'" \
+            < scripts/deployment/release-provenance.py
+
+      - name: Recover a known interrupted production code operation before publishing
+        run: |
+          PENDING="$(ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "if test -e '$DOMAIN_ROOT/deployments/.production-deployment-state' || test -L '$DOMAIN_ROOT/deployments/.production-deployment-state'; then echo true; else echo false; fi")"
+          [[ "$PENDING" == true || "$PENDING" == false ]]
+          if [[ "$PENDING" == true ]]; then
+            ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+              -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+              "$SSH_USER@$SSH_HOST" \
+              "bash -s -- '$DOMAIN_ROOT' recover '$PRODUCTION_URL'" \
+              < scripts/deployment/rollback-hostinger.sh
+          fi
+
+      - name: Record previous release
+        id: previous
+        run: |
+          previous_sha="$(ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "if test -f '$DOMAIN_ROOT/deployments/current/REVISION'; then tr -d '[:space:]' < '$DOMAIN_ROOT/deployments/current/REVISION'; fi")"
+          [[ -z "$previous_sha" || "$previous_sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "previous_sha=$previous_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Check account capacity before uploading a release
+        run: |
+          python3 scripts/deployment/hosting-maintenance.py archive-budget "$RUNNER_TEMP/release/release-$SOURCE_SHA.tar.gz"
+          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" 'python3 - maintain --reserve' \
+            < scripts/deployment/hosting-maintenance.py
+
+      - name: Upload release
+        env:
+          ARCHIVE: ${{ runner.temp }}/release/release-${{ needs.evidence.outputs.source_sha }}.tar.gz
+        run: |
+          REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$SOURCE_SHA.tar.gz"
+          REMOTE_PART="$REMOTE_ARCHIVE.part"
+          LOCAL_SIZE="$(stat -c '%s' "$ARCHIVE")"
+          LOCAL_SHA256="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+          ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "mkdir -p '$DOMAIN_ROOT/deployments/incoming'"
+
+          uploaded=0
+          for attempt in 1 2 3; do
+            ssh \
+              -i "$HOME/.ssh/production" \
+              -p "$SSH_PORT" \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              "$SSH_USER@$SSH_HOST" \
+              "rm -f '$REMOTE_PART'"
+
+            if scp \
+              -i "$HOME/.ssh/production" \
+              -P "$SSH_PORT" \
+              -o BatchMode=yes \
+              -o ConnectTimeout=20 \
+              "$ARCHIVE" \
+              "$SSH_USER@$SSH_HOST:$REMOTE_PART"; then
+              REMOTE_METADATA="$(ssh \
+                -i "$HOME/.ssh/production" \
+                -p "$SSH_PORT" \
+                -o BatchMode=yes \
+                -o ConnectTimeout=20 \
+                "$SSH_USER@$SSH_HOST" \
+                "printf '%s ' \"\$(stat -c '%s' '$REMOTE_PART')\"; sha256sum '$REMOTE_PART' | cut -d' ' -f1")"
+
+              if [[ "$REMOTE_METADATA" == "$LOCAL_SIZE $LOCAL_SHA256" ]]; then
+                ssh \
+                  -i "$HOME/.ssh/production" \
+                  -p "$SSH_PORT" \
+                  -o BatchMode=yes \
+                  -o ConnectTimeout=20 \
+                  "$SSH_USER@$SSH_HOST" \
+                  "mv '$REMOTE_PART' '$REMOTE_ARCHIVE'"
+                uploaded=1
+                break
+              fi
+            fi
+
+            echo "Release upload attempt $attempt failed integrity verification." >&2
+          done
+
+          [[ "$uploaded" == "1" ]] || {
+            echo 'Release upload failed after three integrity-checked attempts.' >&2
+            exit 1
+          }
+
+      - name: Deploy atomic release
+        run: |
+          REMOTE_ARCHIVE="$DOMAIN_ROOT/deployments/incoming/release-$SOURCE_SHA.tar.gz"
+          ssh \
+            -i "$HOME/.ssh/production" \
+            -p "$SSH_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" \
+            "bash -s -- '$DOMAIN_ROOT' '$SOURCE_SHA' '$REMOTE_ARCHIVE' '$PRODUCTION_URL'" \
+            < scripts/deployment/deploy-hostinger.sh
+
+      - name: Expose deployed revision
+        id: release
+        run: echo "deployed_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Record deployment summary
+        env:
+          PREVIOUS_SHA: ${{ steps.previous.outputs.previous_sha }}
+        run: |
+          {
+            echo '## Production deployment'
+            echo
+            echo "- Deployed revision: \`$SOURCE_SHA\`"
+            echo "- Previous revision: \`${PREVIOUS_SHA:-initial-release}\`"
+            echo "- URL: $PRODUCTION_URL"
+            echo '- Strategy: prewarmed atomic symlink release'
+            echo '- Host-side health check: passed (automatic rollback gate)'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove deployment key from runner
+        if: always()
+        run: rm -f "$HOME/.ssh/production"
+
+  production-smoke:
+    name: Verify deployed production
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PRODUCTION_URL: https://tinggaljalan.com
+
+    steps:
+      - name: Check out smoke test
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Run independent production smoke test
+        run: bash scripts/deployment/production-smoke-test.sh "$PRODUCTION_URL" "${{ needs.deploy.outputs.deployed_sha }}" "$RUNNER_TEMP/production-smoke"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4; verified CI revision
+        with:
+          name: production-smoke-${{ github.run_id }}
+          path: ${{ runner.temp }}/production-smoke
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Record smoke-test summary
+        if: always()
+        run: |
+          {
+            echo '## Independent production smoke test'
+            echo
+            echo "- Expected revision: \`${{ needs.deploy.outputs.deployed_sha }}\`"
+            echo "- Previous revision: \`${{ needs.deploy.outputs.previous_sha || 'initial-release' }}\`"
+            echo "- Result: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"

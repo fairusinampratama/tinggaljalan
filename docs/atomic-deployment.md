@@ -45,13 +45,11 @@ PHP quality and tests
 Cross-browser responsive tests
 ```
 
-Merging to `main` runs validation only. To publish, open **Validate changes and publish production**, choose **Run workflow**, select `main`, and explicitly enable **Publish this main revision**. Leaving that option unchecked only validates. All three checks must pass again before packaging. The protected `production` environment then requires the owner's approval before SSH secrets are released. Administrators cannot bypass this approval. Self-review remains available for the sole maintainer; enable prevention only after adding another approver.
+Merging to `main` runs validation only. Run **Prepare verified preview release** from `main` to build and verify an exact candidate on preview. After it is merged and reviewed, run **Promote verified preview release** with that successful preview run ID. Promotion downloads the original archive, checks that its content matches current main, and requires the protected production approval. It does not rebuild.
 
-The deployment job also requires the repository-level `PRODUCTION_DEPLOY_ENABLED=true` switch. Neither that switch nor a merge can independently publish. Concurrent deployments share the existing hosting lock and cannot interrupt a running deployment. GitHub may replace an older pending job with a newer pending one; this is not a durable queue of every requested deployment.
+The `production` environment requires the repository owner, disallows administrator bypass and allows self-review for the sole maintainer. `main` requires a PR, all three current passing checks and resolved conversations; force pushes and deletion are blocked, including for administrators. Restrict the `staging` environment to main as well so source branch selection cannot choose outdated privileged workflow rules.
 
-`main` requires a pull request, current passing Frontend/PHP/browser checks from GitHub Actions, resolved conversations, and applies these rules to administrators. Force pushes and branch deletion are blocked. A second PR reviewer is not required because the repository currently has a sole maintainer; production approval is a separate deliberate action.
-
-Deployment interruption recovery and bounded capacity cleanup are described in [deployment recovery](deployment-recovery.md). Promoting one preview-verified artifact without rebuilding, independent monitoring, and the refresh branch reconciliation remain separate implementation steps.
+See [controlled releases](controlled-releases.md) for the exact operator sequence, evidence checks, shared locks, interruption recovery, manual data refresh and monitoring limits.
 
 ## Deployment runner
 
@@ -85,7 +83,7 @@ readlink -f /home/u304629909/domains/tinggaljalan.com/tinggaljalan-app
 curl -fsS https://tinggaljalan.com/up
 ```
 
-After verification, set `PRODUCTION_DEPLOY_ENABLED=true`. A manually requested publish on `main` can now proceed through validation and production approval.
+After verification, set `PRODUCTION_DEPLOY_ENABLED=true`. Promotion of a verified preview run can now proceed through production approval.
 
 ## Deployment behavior
 
@@ -117,7 +115,7 @@ The `/up` endpoint returns JSON containing `status` and the active `revision` re
 
 After the Hostinger-side gate succeeds, the `Verify deployed production` job independently checks `/up`, the homepage, Vite JavaScript and CSS assets, `robots.txt`, sitemap, admin login, one route detail, and one news detail from a GitHub-hosted runner. A failure marks the workflow failed and uploads response bodies, headers, and status codes, but does not run a second rollback after the deployment session has ended.
 
-The separate `Production monitoring` workflow runs the same read-only test every 15 minutes. Successful checks emit no custom summary. Failed checks retain diagnostics for seven days and use normal GitHub Actions failure notifications. The scheduled monitor checks the currently active revision without expecting a particular commit; the post-deployment check requires the exact packaged SHA.
+The separate `Production monitoring` workflow is scheduled to run the same read-only HTTP test every 15 minutes; actual GitHub scheduling is best-effort. Its capacity job can apply only bounded obsolete-code retention under the shared hosting lock. Successful checks emit no custom summary. Failed checks retain diagnostics for seven days and use normal GitHub Actions failure notifications. The scheduled monitor checks the currently active revision without expecting a particular commit; the post-deployment check requires the exact packaged SHA.
 
 ## One-time About content seed
 
