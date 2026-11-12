@@ -87,7 +87,7 @@ class DB {
     def run_deployment(self, previous, fail):
         with tempfile.TemporaryDirectory() as temporary:
             work = Path(temporary)
-            root = work / "preview.tinggaljalan.com"
+            root = work / "domains/preview.tinggaljalan.com"
             public = root / "public_html"
             shared = root / "deployments/shared"
             incoming = root / "deployments/incoming"
