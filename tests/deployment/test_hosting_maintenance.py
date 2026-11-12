@@ -20,6 +20,37 @@ spec.loader.exec_module(m)
 
 
 class HostingMaintenanceTests(unittest.TestCase):
+    def test_maintenance_leaves_normal_usage_alone(self):
+        with patch.object(m, 'usage', return_value=(100000, 1024**3)), patch.object(m, 'retention') as clean:
+            self.assertTrue(m.maintain(reserve=True)['allowed'])
+            clean.assert_not_called()
+
+    def test_maintenance_remeasures_after_bounded_real_retention(self):
+        releases = [self.release(i) for i in range(1, 7)]
+        self.current(releases[-1])
+        with patch.object(m, 'DOMAINS', {'preview': 'preview.tinggaljalan.com'}), patch.object(
+            m, 'usage', side_effect=[(330000, 1024**3), (200000, 1024**3)]
+        ):
+            self.assertTrue(m.maintain(reserve=True, alert=True)['allowed'])
+        self.assertEqual(sum(path.exists() for path in releases), 3)
+        self.assertTrue(releases[-1].exists())
+        self.assertEqual((self.shared / '.env').read_text(), 'secret-fixture')
+        self.assertEqual((self.shared / 'storage/app/public/logo.png').read_text(), 'real-logo')
+        self.assertTrue((self.shared / 'backups/database.sql.gz').exists())
+
+    def test_maintenance_incomplete_scan_never_authorizes_deletion(self):
+        with patch.object(m, 'usage', side_effect=RuntimeError('incomplete scan')), patch.object(m, 'retention') as clean:
+            with self.assertRaises(RuntimeError):
+                m.maintain(reserve=True)
+            clean.assert_not_called()
+
+    def test_maintenance_does_not_escalate_if_usage_remains_high(self):
+        with patch.object(m, 'usage', return_value=(350000, 1024**3)), patch.object(m, 'retention') as clean:
+            with self.assertRaises(m.CapacityError):
+                m.maintain(reserve=True, alert=True)
+            self.assertEqual(clean.call_count, 2)
+            self.assertEqual([call.args[0] for call in clean.call_args_list], ['production', 'preview'])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

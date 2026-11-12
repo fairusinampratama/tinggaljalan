@@ -153,7 +153,7 @@ Rollback changes code only. It deliberately does not reverse migrations or resto
 ## Recovery and operations
 
 - Database backups are stored under `deployments/shared/backups/database` and must remain outside the public document root.
-- Failed release directories are retained for diagnosis; pruning happens only after a successful health check.
+- Failed candidates owned by the deployment journal are removed after successful code recovery. Unowned or ambiguous candidates are retained for investigation. See [deployment recovery](deployment-recovery.md).
 - A release is identifiable by its `REVISION` file and the GitHub Actions deployment summary.
 - A queued deployment should receive a GitHub-hosted runner automatically. Check GitHub Actions availability and repository billing limits before changing runner configuration.
 - A failed Hostinger health gate restores the previous code release automatically. A failed independent or scheduled smoke test requires investigation and an explicit rollback decision.

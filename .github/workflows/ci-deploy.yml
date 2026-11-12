@@ -134,7 +134,9 @@ jobs:
             scripts/deployment/rollback-hostinger.sh
 
       - name: Test account capacity and release retention safety
-        run: python3 tests/deployment/test_hosting_maintenance.py
+        run: |
+          python3 tests/deployment/test_hosting_maintenance.py
+          python3 tests/deployment/test_production_recovery.py
 
       - name: Test release control safety
         run: |
@@ -348,7 +350,7 @@ jobs:
           python3 scripts/deployment/hosting-maintenance.py archive-budget "$RUNNER_TEMP/release/release-$GITHUB_SHA.tar.gz"
           ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
             -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
-            "$SSH_USER@$SSH_HOST" 'python3 - capacity --reserve' \
+            "$SSH_USER@$SSH_HOST" 'python3 - maintain --reserve' \
             < scripts/deployment/hosting-maintenance.py
 
       - name: Upload release
