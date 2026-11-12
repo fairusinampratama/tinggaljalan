@@ -1,7 +1,13 @@
-name: CI and production deployment
+name: Validate changes and publish production
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_production:
+        description: 'Publish this main revision after validation and production approval'
+        type: boolean
+        required: true
+        default: false
   pull_request:
   push:
     branches:
@@ -9,6 +15,12 @@ on:
 
 permissions:
   contents: read
+
+# Only obsolete PR validation is cancelled. A manually requested release has its
+# own run identity and must never be interrupted by another push or request.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   frontend-build:
@@ -124,6 +136,11 @@ jobs:
       - name: Test account capacity and release retention safety
         run: python3 tests/deployment/test_hosting_maintenance.py
 
+      - name: Test release control safety
+        run: |
+          python3 -m pip install --disable-pip-version-check PyYAML==6.0.3
+          python3 tests/deployment/test_release_controls.py
+
       - name: Run Laravel tests
         run: composer test
 
@@ -181,10 +198,21 @@ jobs:
       - name: Run responsive tests
         run: npm run test:browser
 
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: warn
+          retention-days: 7
+
   package-release:
     name: Package immutable release
     needs: [frontend-build, php-tests, browser-tests]
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_production && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
@@ -241,7 +269,7 @@ jobs:
   deploy:
     name: Deploy production
     needs: package-release
-    if: vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_production && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: production
