@@ -1,0 +1,22 @@
+name: Check production approval gate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  approval:
+    name: Approval check only - no hosting access
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    environment:
+      name: production
+      deployment: false
+    steps:
+      - name: Record approval without deployment
+        run: |
+          echo 'Production environment approval was granted.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'This check has no checkout, SSH setup, secrets references, or hosting operations.' >> "$GITHUB_STEP_SUMMARY"

@@ -51,7 +51,7 @@ The deployment job also requires the repository-level `PRODUCTION_DEPLOY_ENABLED
 
 `main` requires a pull request, current passing Frontend/PHP/browser checks from GitHub Actions, resolved conversations, and applies these rules to administrators. Force pushes and branch deletion are blocked. A second PR reviewer is not required because the repository currently has a sole maintainer; production approval is a separate deliberate action.
 
-This is the first release-control increment. Promoting one preview-verified artifact without rebuilding, interruption recovery, automatic bounded maintenance, independent monitoring, and the refresh branch reconciliation remain separate implementation steps. Do not claim these are enabled by this change.
+Deployment interruption recovery and bounded capacity cleanup are described in [deployment recovery](deployment-recovery.md). Promoting one preview-verified artifact without rebuilding, independent monitoring, and the refresh branch reconciliation remain separate implementation steps.
 
 ## Deployment runner
 

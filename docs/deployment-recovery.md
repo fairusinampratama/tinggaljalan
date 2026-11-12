@@ -72,9 +72,10 @@ unowned candidate preservation, foreign active release refusal and housekeeping
 failure. Maintenance tests exercise real retention, lock behavior, incomplete
 scans, remeasurement and unresolved capacity. PHP/database behavior is covered by
 the normal application suite; these shell fixtures deliberately do not claim to
-exercise a live MySQL restore.
+exercise a live MySQL restore. The additional **Deployment recovery safety** workflow runs the actual Laravel backup command against a fresh MySQL 8.4 service, restores into a second empty disposable database, verifies the migrated application schema, fixture values and foreign keys, and checks failed-dump cleanup. It has no hosting secrets and refuses non-local or existing databases.
 
-Still to implement and verify separately: disposable MySQL backup restore,
-off-account backup coverage, manual rollback SIGKILL recovery, trusted shared
+Still to implement and verify separately: off-account backup coverage, manual rollback SIGKILL recovery, trusted shared
 preview/promotion controller, mandatory preview evidence for production, PR #29
 refresh integration, independent uptime alerts, and obsolete workflow retirement.
+
+The **Check production approval gate** manual workflow requests production approval but never checks out code, references secrets, or contacts hosting. Use it to verify a waiting approval without risking an application publication; cancel the waiting run after inspection.
