@@ -3,6 +3,8 @@
 import argparse
 import contextlib
 import fcntl
+import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -58,7 +60,7 @@ def usage():
     values = []
     for options in [['--inodes'], ['--block-size=1']]:
         result = subprocess.run(['du', '-sx', *options, str(ACCOUNT)],
-                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True)
         require(result.returncode == 0, 'Account usage scan incomplete; refusing to assume capacity')
         values.append(int(result.stdout.split()[0]))
     return values
@@ -169,10 +171,41 @@ def plan(environment, previous=''):
     return dict(environment=environment, active=active.name, releases=records)
 
 
-def retention(environment, apply=False, previous='', lock_fd=None):
+def plan_digest(result):
+    return hashlib.sha256(json.dumps(result, sort_keys=True).encode()).hexdigest()
+
+
+def archive_obsolete(environment):
+    """Stream recoverable obsolete immutable code, excluding all runtime/private state."""
+    deployment = ACCOUNT / 'domains' / DOMAINS[environment] / 'deployments'
+    with lock(deployment / '.lock'):
+        result = plan(environment)
+        manifest = json.dumps(dict(plan=result, digest=plan_digest(result))).encode()
+        with tarfile.open(fileobj=sys.stdout.buffer, mode='w|gz') as archive:
+            entry = tarfile.TarInfo('MANIFEST.json')
+            entry.size = len(manifest)
+            archive.addfile(entry, io.BytesIO(manifest))
+            for record in result['releases']:
+                if record['action'] != 'remove':
+                    continue
+                sha = record['sha']
+                def safe_member(member):
+                    parts = Path(member.name).parts[1:]
+                    if (any(part == '.env' or part.startswith('.env.') or part == 'storage'
+                            for part in parts) or parts[:2] == ('bootstrap', 'cache')
+                            or member.issym() or member.islnk()):
+                        return None
+                    return member
+                archive.add(str(deployment / 'releases' / sha), arcname=sha,
+                            recursive=True, filter=safe_member)
+
+
+def retention(environment, apply=False, previous='', lock_fd=None, expected_plan=''):
     deployment = ACCOUNT / 'domains' / DOMAINS[environment] / 'deployments'
     with lock(deployment / '.lock', lock_fd):
         result = plan(environment, previous)
+        if expected_plan:
+            require(plan_digest(result) == expected_plan, 'Archived retention plan changed; rerun plan/archive')
         print(json.dumps(result), flush=True)
         if not apply:
             return result
@@ -195,26 +228,33 @@ def retention(environment, apply=False, previous='', lock_fd=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    sub = parser.add_subparsers(dest='command', required=True)
+    sub = parser.add_subparsers(dest='command')
+    sub.required = True  # Hostinger's system Python is 3.6.
     check = sub.add_parser('capacity')
     check.add_argument('--reserve', action='store_true')
     check.add_argument('--alert', action='store_true')
     archive = sub.add_parser('archive-budget')
     archive.add_argument('archive', type=Path)
+    obsolete = sub.add_parser('archive-obsolete')
+    obsolete.add_argument('environment', choices=DOMAINS)
     clean = sub.add_parser('retention')
     clean.add_argument('environment', choices=DOMAINS)
     clean.add_argument('--apply', action='store_true')
     clean.add_argument('--previous', default='')
     clean.add_argument('--lock-fd', type=int)
     clean.add_argument('--account-lock-fd', type=int)
+    clean.add_argument('--expected-plan', default='')
     args = parser.parse_args()
     if args.command == 'archive-budget':
         archive_budget(args.archive)
     elif args.command == 'capacity':
         capacity(args.reserve, args.alert)
+    elif args.command == 'archive-obsolete':
+        with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
+            archive_obsolete(args.environment)
     else:
         with lock(ACCOUNT / '.tinggaljalan-maintenance.lock', args.account_lock_fd):
-            retention(args.environment, args.apply, args.previous, args.lock_fd)
+            retention(args.environment, args.apply, args.previous, args.lock_fd, args.expected_plan)
 
 
 if __name__ == '__main__':

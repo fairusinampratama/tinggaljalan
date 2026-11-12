@@ -9,6 +9,7 @@ import subprocess
 import tarfile
 import tempfile
 import time
+import types
 import unittest
 from unittest.mock import patch
 
@@ -185,6 +186,51 @@ class HostingMaintenanceTests(unittest.TestCase):
         with patch.object(m, 'RESERVE_BYTES', 100):
             with self.assertRaises(RuntimeError):
                 m.archive_budget(archive)
+
+    def test_recovery_archive_excludes_secrets_and_contains_exact_expired_plan(self):
+        releases = [self.release(i) for i in range(1, 6)]
+        self.current(releases[0])
+        for path in releases:
+            (path / 'bootstrap/cache').mkdir(parents=True)
+            (path / 'bootstrap/cache/config.php').write_text('private-config-fixture')
+            (path / '.env.example').write_text('template')
+        output = io.BytesIO()
+        with patch.object(m.sys, 'stdout', types.SimpleNamespace(buffer=output)):
+            m.archive_obsolete('preview')
+        output.seek(0)
+        with tarfile.open(fileobj=output) as archive:
+            names = archive.getnames()
+            self.assertIn(releases[-1].name + '/vendor/autoload.php', names)
+            self.assertFalse(any('.env' in name or '/storage' in name or '/bootstrap/cache' in name for name in names))
+            self.assertNotIn(releases[0].name, names)
+            manifest = __import__('json').load(archive.extractfile('MANIFEST.json'))
+            self.assertEqual(manifest['digest'], m.plan_digest(m.plan('preview')))
+        self.assertTrue(all(path.exists() for path in releases))
+
+    def test_changed_archived_plan_aborts_before_deleting_anything(self):
+        releases = [self.release(i) for i in range(1, 6)]
+        self.current(releases[0])
+        digest = m.plan_digest(m.plan('preview'))
+        self.current(releases[-1])
+        with self.assertRaisesRegex(RuntimeError, 'Archived retention plan changed'):
+            m.retention('preview', apply=True, expected_plan=digest)
+        self.assertTrue(all(path.exists() for path in releases))
+
+    def test_real_cli_accepts_shell_inherited_locks(self):
+        # Exercise the same fd 8/9 hand-off used by deploy-staging/hostinger.
+        self.current(self.release(1))
+        script = self.account / 'maintenance.py'
+        script.write_text((SOURCE / 'scripts/deployment/hosting-maintenance.py').read_text()
+                          .replace('/home/u304629909', str(self.account)))
+        shell = '''set -e
+exec 8>"$1/.tinggaljalan-maintenance.lock"
+flock -n 8
+exec 9>"$1/domains/preview.tinggaljalan.com/deployments/.lock"
+flock -n 9
+python3 "$1/maintenance.py" retention preview --apply --account-lock-fd 8 --lock-fd 9
+'''
+        result = subprocess.run(['bash', '-c', shell, 'fixture', str(self.account)], capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
 
 
 if __name__ == '__main__':

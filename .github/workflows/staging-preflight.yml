@@ -150,51 +150,110 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'hosting-capacity' || inputs.operation == 'retention-plan' || inputs.operation == 'retention-apply')
     needs: validate
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     environment: staging
     concurrency:
       group: hosting-account
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Check hosting capacity or apply reviewed retention
+      - name: Prepare pinned hosting access
         env:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
           SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
           SSH_USER: ${{ secrets.STAGING_SSH_USER }}
           PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
           KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
-          OPERATION: ${{ inputs.operation }}
         run: |
           set -euo pipefail
           [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
           test -n "$PRIVATE_KEY" && test -n "$KNOWN_HOSTS"
           umask 077
-          mkdir -p "$RUNNER_TEMP/hosting-ssh"
-          trap 'rm -rf -- "$RUNNER_TEMP/hosting-ssh"' EXIT
+          mkdir -p "$RUNNER_TEMP/hosting-ssh" "$RUNNER_TEMP/hosting-recovery"
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/hosting-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/hosting-ssh/known_hosts"
-          SSH=(ssh -i "$RUNNER_TEMP/hosting-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/hosting-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST")
-          case "$OPERATION" in
-            hosting-capacity) COMMAND='capacity --alert' ;;
-            retention-plan) COMMAND='retention' ;;
-            retention-apply) COMMAND='retention'; APPLY='--apply' ;;
-            *) echo 'Unsupported maintenance operation.' >&2; exit 1 ;;
-          esac
-          if [[ "$COMMAND" == retention ]]; then
-            bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com
-            for environment in preview production; do
-              "${SSH[@]}" "python3 - retention $environment ${APPLY:-}" < scripts/deployment/hosting-maintenance.py
-            done
-            bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com
-            if [[ "${APPLY:-}" == --apply ]]; then
-              "${SSH[@]}" 'python3 - capacity --reserve' < scripts/deployment/hosting-maintenance.py
-            fi
-          else
-            "${SSH[@]}" "python3 - $COMMAND" < scripts/deployment/hosting-maintenance.py
-          fi
+          cat > "$RUNNER_TEMP/hosting-ssh/config" <<CONFIG
+          Host hosting
+              HostName $SSH_HOST
+              Port $SSH_PORT
+              User $SSH_USER
+              IdentityFile $RUNNER_TEMP/hosting-ssh/key
+              UserKnownHostsFile $RUNNER_TEMP/hosting-ssh/known_hosts
+              StrictHostKeyChecking yes
+              IdentitiesOnly yes
+              BatchMode yes
+              ConnectTimeout 20
+              ServerAliveInterval 10
+              ServerAliveCountMax 3
+          CONFIG
+      - name: Read-only capacity alert
+        if: inputs.operation == 'hosting-capacity'
+        run: |
+          ssh -F "$RUNNER_TEMP/hosting-ssh/config" hosting 'python3 - capacity --alert' < scripts/deployment/hosting-maintenance.py
+      - name: Verify production and print retention plans
+        if: inputs.operation != 'hosting-capacity'
+        run: |
+          set -euo pipefail
+          bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com
+          for environment in preview production; do
+            ssh -F "$RUNNER_TEMP/hosting-ssh/config" hosting "python3 - retention $environment" < scripts/deployment/hosting-maintenance.py
+          done
+      - name: Archive expired immutable releases without private runtime data
+        if: inputs.operation == 'retention-apply'
+        run: |
+          set -euo pipefail
+          for environment in preview production; do
+            ssh -F "$RUNNER_TEMP/hosting-ssh/config" hosting "python3 - archive-obsolete $environment" \
+              < scripts/deployment/hosting-maintenance.py > "$RUNNER_TEMP/hosting-recovery/$environment.tar.gz"
+            gzip -t "$RUNNER_TEMP/hosting-recovery/$environment.tar.gz"
+          done
+          python3 - <<'PYCODE'
+          import json, os, re, tarfile
+          from pathlib import Path
+          for environment in ['preview', 'production']:
+              path = Path(os.environ['RUNNER_TEMP']) / 'hosting-recovery' / (environment + '.tar.gz')
+              with tarfile.open(path) as archive:
+                  manifest = json.load(archive.extractfile('MANIFEST.json'))
+                  assert re.fullmatch('[0-9a-f]{64}', manifest['digest'])
+                  allowed = {r['sha'] for r in manifest['plan']['releases'] if r['action'] == 'remove'}
+                  for member in archive.getmembers():
+                      if member.name == 'MANIFEST.json': continue
+                      parts = Path(member.name).parts
+                      assert parts[0] in allowed and '..' not in parts and not member.name.startswith('/')
+                      assert not member.issym() and not member.islnk() and not member.isdev()
+                      assert not any(p == '.env' or p.startswith('.env.') or p == 'storage' for p in parts[1:])
+                      assert parts[1:3] != ('bootstrap', 'cache')
+                  print(environment, 'recovery archive verified; expired releases:', len(allowed))
+          PYCODE
+      - name: Preserve verified recovery archives before deleting expired releases
+        if: inputs.operation == 'retention-apply'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosting-expired-release-recovery-${{ github.run_id }}
+          path: ${{ runner.temp }}/hosting-recovery/*.tar.gz
+          retention-days: 90
+          if-no-files-found: error
+      - name: Apply exactly the archived retention plans
+        if: inputs.operation == 'retention-apply'
+        run: |
+          set -euo pipefail
+          for environment in preview production; do
+            DIGEST="$(python3 -c 'import json,sys,tarfile; a=tarfile.open(sys.argv[1]); print(json.load(a.extractfile("MANIFEST.json"))["digest"])' "$RUNNER_TEMP/hosting-recovery/$environment.tar.gz")"
+            [[ "$DIGEST" =~ ^[0-9a-f]{64}$ ]]
+            ssh -F "$RUNNER_TEMP/hosting-ssh/config" hosting "python3 - retention $environment --apply --expected-plan $DIGEST" < scripts/deployment/hosting-maintenance.py
+          done
+      - name: Verify production after retention review or cleanup
+        if: inputs.operation != 'hosting-capacity'
+        run: bash scripts/deployment/production-smoke-test.sh https://tinggaljalan.com
+      - name: Verify headroom for the next deployment
+        if: inputs.operation == 'retention-apply'
+        run: |
+          ssh -F "$RUNNER_TEMP/hosting-ssh/config" hosting 'python3 - capacity --reserve' < scripts/deployment/hosting-maintenance.py
       - name: Record maintenance result
         if: always()
         run: |
           echo '## Hosting maintenance' >> "$GITHUB_STEP_SUMMARY"
           echo 'Operation: ${{ inputs.operation }}; result: ${{ job.status }}. See sanitized capacity and release-policy output in job logs.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove runner credentials
+        if: always()
+        run: rm -rf -- "$RUNNER_TEMP/hosting-ssh"

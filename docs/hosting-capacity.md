@@ -8,7 +8,7 @@ resolved by archiving and removing an inactive preview dependency copy.
 
 ## Policy
 
-`scripts/deployment/hosting-maintenance.py` is a Python 3 standard-library tool. It
+`scripts/deployment/hosting-maintenance.py` is a Python 3 standard-library tool (compatible with the host's Python 3.6). It
 never boots Laravel, reads environment contents, queries databases, sends messages,
 changes integrations, or removes shared uploads/configuration/backups.
 
@@ -70,9 +70,10 @@ review. Cleanup deliberately does not touch legacy application directories,
 incoming archives, shared database backups, private/public media, sessions or logs.
 
 Routine retention permanently removes expired immutable application releases;
-rollback remains available for the retained two. Before the one-time backlog
-cleanup, preserve dependency/build archives for expired releases on the runner if
-extra recovery history is required. Archives must exclude `.env`, bootstrap config
+rollback remains available for the retained two. The manual apply operation first streams immutable expired-release recovery archives
+to the runner, verifies them, and uploads them with 90-day retention. It then requires
+the exact archived plan digest before removing anything. These code/build archives
+exclude all symlinks and runtime/private state. Archives must exclude `.env`, bootstrap config
 cache, shared storage, logs, sessions, and database content. GitHub artifact retention
 is finite and is not a long-term backup strategy.
 
