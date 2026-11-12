@@ -35,6 +35,18 @@ gzip -t "$ARCHIVE" || { echo "Release archive failed gzip integrity validation."
 test ! -e "$RELEASE" || { echo "Release $SHA already exists." >&2; exit 1; }
 test "$(df -Pk "$DOMAIN_ROOT" | awk 'NR==2 {print $4}')" -gt 262144 || { echo "At least 256 MB of free disk space is required." >&2; exit 1; }
 
+[[ "$DOMAIN_ROOT" == /home/u304629909/domains/tinggaljalan.com ]]
+[[ "$(readlink -f "$DOMAIN_ROOT")" == "$DOMAIN_ROOT" ]]
+[[ "$(readlink -f "$DEPLOY_ROOT")" == "$DEPLOY_ROOT" ]]
+# Serialize production, preview and retention on the same hosting account.
+[[ ! -L /home/u304629909/.tinggaljalan-maintenance.lock ]]
+exec 8>/home/u304629909/.tinggaljalan-maintenance.lock
+flock -n 8 || { echo 'Hosting maintenance/deployment already running.' >&2; exit 1; }
+[[ ! -L "$DEPLOY_ROOT/.lock" ]]
+exec 9>"$DEPLOY_ROOT/.lock"
+flock -n 9 || { echo 'Production deployment/retention already running.' >&2; exit 1; }
+tar -xOf "$ARCHIVE" ./scripts/deployment/hosting-maintenance.py | python3 - capacity --reserve
+
 "$PHP_BIN" "$(command -v composer)" --version >/dev/null
 PREVIOUS="$(readlink -f "$CURRENT")"
 mkdir -p "$RELEASE"
@@ -133,16 +145,8 @@ while IFS= read -r old_backup; do
 done < "$BACKUP_LIST"
 rm -f "$BACKUP_LIST"
 
-RELEASE_LIST="$(mktemp)"
-find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2- > "$RELEASE_LIST"
-release_number=0
-while IFS= read -r old_release; do
-    release_number=$((release_number + 1))
-    if (( release_number > 5 )); then
-        [[ "$(readlink -f "$CURRENT")" == "$(readlink -f "$old_release")" ]] || rm -rf -- "$old_release"
-    fi
-done < "$RELEASE_LIST"
-rm -f "$RELEASE_LIST"
+python3 "$RELEASE/scripts/deployment/hosting-maintenance.py" retention production --apply \
+    --previous "$(basename "$PREVIOUS")" --account-lock-fd 8 --lock-fd 9
 
 rm -f "$ARCHIVE"
 echo "Deployment completed for $SHA."

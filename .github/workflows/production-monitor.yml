@@ -46,3 +46,39 @@ jobs:
             echo "- Checked at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
             echo '- Response bodies, headers, and status codes are attached as workflow artifacts.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  capacity:
+    name: Monitor shared hosting capacity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: staging
+    concurrency:
+      group: hosting-capacity-monitor
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect account file and byte budgets
+        env:
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+          SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STAGING_SSH_KNOWN_HOSTS }}
+          OPERATION: hosting-capacity
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" == 153.92.9.54 && "$SSH_PORT" == 65002 && "$SSH_USER" == u304629909 ]]
+          test -n "$PRIVATE_KEY" && test -n "$KNOWN_HOSTS"
+          umask 077
+          mkdir -p "$RUNNER_TEMP/hosting-ssh"
+          trap 'rm -rf -- "$RUNNER_TEMP/hosting-ssh"' EXIT
+          printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/hosting-ssh/key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/hosting-ssh/known_hosts"
+          SSH=(ssh -i "$RUNNER_TEMP/hosting-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/hosting-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST")
+          "${SSH[@]}" 'python3 - capacity --alert' < scripts/deployment/hosting-maintenance.py
+      - name: Record capacity alert
+        if: failure()
+        run: |
+          echo '::error::Hosting capacity check failed. Inspect usage, prune reviewed obsolete releases, or check SSH availability. Public HTTP health alone does not establish safe capacity.'
+          echo '## Hosting capacity needs attention' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The capacity check failed or exceeded its warning budget. See job logs. No hosting data was deleted.' >> "$GITHUB_STEP_SUMMARY"

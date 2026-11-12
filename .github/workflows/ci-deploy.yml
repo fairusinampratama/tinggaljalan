@@ -121,6 +121,9 @@ jobs:
             scripts/deployment/seo-smoke-test.sh \
             scripts/deployment/rollback-hostinger.sh
 
+      - name: Test account capacity and release retention safety
+        run: python3 tests/deployment/test_hosting_maintenance.py
+
       - name: Run Laravel tests
         run: composer test
 
@@ -243,7 +246,7 @@ jobs:
     timeout-minutes: 90
     environment: production
     concurrency:
-      group: production
+      group: hosting-account
       cancel-in-progress: false
     outputs:
       deployed_sha: ${{ steps.release.outputs.deployed_sha }}
@@ -311,6 +314,14 @@ jobs:
             "if test -f '$DOMAIN_ROOT/deployments/current/REVISION'; then tr -d '[:space:]' < '$DOMAIN_ROOT/deployments/current/REVISION'; fi")"
           [[ -z "$previous_sha" || "$previous_sha" =~ ^[0-9a-f]{40}$ ]]
           echo "previous_sha=$previous_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Check account capacity before uploading a release
+        run: |
+          python3 scripts/deployment/hosting-maintenance.py archive-budget "$RUNNER_TEMP/release/release-$GITHUB_SHA.tar.gz"
+          ssh -i "$HOME/.ssh/production" -p "$SSH_PORT" \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 \
+            "$SSH_USER@$SSH_HOST" 'python3 - capacity --reserve' \
+            < scripts/deployment/hosting-maintenance.py
 
       - name: Upload release
         env:

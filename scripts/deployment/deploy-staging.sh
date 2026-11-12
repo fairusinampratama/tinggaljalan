@@ -37,6 +37,11 @@ for directory in "$SHARED/storage" "$SHARED/storage/app" "$SHARED/storage/app/pu
     "$SHARED/storage/framework/sessions" "$SHARED/storage/framework/views" "$SHARED/storage/logs"; do
     [[ ! -L "$directory" ]]
 done
+# Serialize production, preview and retention on the same hosting account.
+[[ ! -L /home/u304629909/.tinggaljalan-maintenance.lock ]]
+exec 8>/home/u304629909/.tinggaljalan-maintenance.lock
+flock -n 8 || { echo 'Hosting maintenance/deployment already running.' >&2; exit 1; }
+[[ ! -L "$DEPLOY/.lock" ]]
 exec 9>"$DEPLOY/.lock"
 flock -n 9 || { echo 'Another staging deployment holds the lock.' >&2; exit 1; }
 chmod 600 "$CONFIG"
@@ -56,6 +61,8 @@ tar -tzf "$ARCHIVE" | "$PHP" -r '
 foreach (explode("\n", stream_get_contents(STDIN)) as $path) {
     if (str_starts_with($path, "/") || in_array("..", explode("/", $path), true)) exit(1);
 }'
+# Recheck under the account lock before allocating the unpacked release.
+tar -xOf "$ARCHIVE" ./scripts/deployment/hosting-maintenance.py | python3 - capacity --reserve
 mkdir "$RELEASE"
 CREATED=1
 tar -xzf "$ARCHIVE" -C "$RELEASE"
@@ -223,5 +230,9 @@ for path in /.env /.htpasswd; do
 done
 trap - ERR
 COMPLETED=1
+RETENTION_ARGS=()
+[[ -z "$PREVIOUS" ]] || RETENTION_ARGS=(--previous "$PREVIOUS_SHA")
+python3 "$RELEASE/scripts/deployment/hosting-maintenance.py" retention preview --apply \
+    --account-lock-fd 8 --lock-fd 9 "${RETENTION_ARGS[@]}"
 rm -f -- "$ARCHIVE"
 echo "Protected staging deployment passed for $SHA."

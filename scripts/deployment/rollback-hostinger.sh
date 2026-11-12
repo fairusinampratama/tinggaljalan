@@ -19,6 +19,13 @@ recycle_litespeed_workers() {
     kill $worker_pids >/dev/null 2>&1 || true
 }
 
+[[ "$DOMAIN_ROOT" == /home/u304629909/domains/tinggaljalan.com ]]
+[[ ! -L /home/u304629909/.tinggaljalan-maintenance.lock && ! -L "$DEPLOY_ROOT/.lock" ]]
+exec 8>/home/u304629909/.tinggaljalan-maintenance.lock
+flock -n 8 || { echo 'Hosting maintenance/deployment already running.' >&2; exit 1; }
+exec 9>"$DEPLOY_ROOT/.lock"
+flock -n 9 || exit 1
+test -f "$TARGET/vendor/autoload.php" || { echo 'Rollback dependencies are missing.' >&2; exit 1; }
 test -L "$CURRENT" || { echo "Current release symlink is missing." >&2; exit 1; }
 test -d "$TARGET" && test -f "$TARGET/REVISION" || { echo "Target release does not exist." >&2; exit 1; }
 test "$(tr -d '[:space:]' < "$TARGET/REVISION")" == "$TARGET_SHA" || { echo "Target revision mismatch." >&2; exit 1; }

@@ -87,7 +87,7 @@ class DB {
     def run_deployment(self, previous, fail):
         with tempfile.TemporaryDirectory() as temporary:
             work = Path(temporary)
-            root = work / "preview.tinggaljalan.com"
+            root = work / "domains/preview.tinggaljalan.com"
             public = root / "public_html"
             shared = root / "deployments/shared"
             incoming = root / "deployments/incoming"
@@ -103,6 +103,13 @@ class DB {
                 old = releases / ("b" * 40)
                 old.mkdir()
                 (old / 'REVISION').write_text('b' * 40)
+                (old / 'vendor').mkdir()
+                (old / 'vendor/autoload.php').write_text('')
+                (old / 'public/build').mkdir(parents=True)
+                (old / 'public/build/manifest.json').write_text('{}')
+                (old / '.env').symlink_to(shared / '.env')
+                (old / 'storage').symlink_to(shared / 'storage')
+                (old / 'public/storage').symlink_to(shared / 'storage/app/public')
                 (public / ('index-' + 'b' * 40 + '.php')).write_text('previous-wrapper')
                 (root / "deployments/current").symlink_to(old)
             package = work / "package"
@@ -113,6 +120,9 @@ class DB {
             for image in ["hero-bromo.jpg", "destination-tumpak-sewu.jpg"]:
                 (package / "public/images" / image).write_text("image")
             (package / "public/build/manifest.json").write_text(json.dumps({"resources/js/app.jsx": {"file": "assets/app.js", "css": ["assets/app.css"]}}))
+            (package / 'scripts/deployment/hosting-maintenance.py').write_text(
+                (SOURCE / 'scripts/deployment/hosting-maintenance.py').read_text()
+                .replace('/home/u304629909', str(work)))
             (package / "REVISION").write_text(SHA + "\n")
             archive = incoming / f"release-{SHA}.tar.gz"
             with tarfile.open(archive, "w:gz") as output:
@@ -145,7 +155,8 @@ class DB {
             script = work / "deploy.sh"
             script.write_text((SOURCE / "scripts/deployment/deploy-staging.sh").read_text()
                               .replace("/home/u304629909/domains/preview.tinggaljalan.com", str(root))
-                              .replace("/opt/alt/php84/usr/bin/php", str(php)))
+                              .replace("/opt/alt/php84/usr/bin/php", str(php))
+                              .replace("/home/u304629909", str(work)))
             environment = {**os.environ, "PATH": str(adapters) + ":" + os.environ["PATH"], "FAIL_HTTP": str(int(fail))}
             result = subprocess.run(["bash", str(script), str(root), SHA, str(archive), digest, str(config)],
                                     env=environment, capture_output=True, text=True)
