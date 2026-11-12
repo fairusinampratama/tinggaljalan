@@ -89,6 +89,19 @@ class ReleaseControlTest(unittest.TestCase):
         self.assertIn('test-results', evidence['with']['path'])
         self.assertEqual(evidence['with']['retention-days'], '7')
 
+    def test_approval_probe_has_no_hosting_operations_or_credentials(self):
+        workflow = yaml.load((ROOT / '.github/workflows/release-approval-check.yml').read_text(),
+                             Loader=yaml.BaseLoader)
+        self.assertEqual(set(workflow['on']), {'workflow_dispatch'})
+        approval = workflow['jobs']['approval']
+        self.assertEqual(approval['if'], "github.ref == 'refs/heads/main'")
+        self.assertEqual(approval['environment'], {'name': 'production', 'deployment': 'false'})
+        self.assertEqual(len(approval['steps']), 1)
+        self.assertNotIn('uses', approval['steps'][0])
+        self.assertNotIn('${{', approval['steps'][0]['run'])
+        self.assertTrue(all(line.strip().startswith('echo ')
+                            for line in approval['steps'][0]['run'].splitlines()))
+
 
 if __name__ == '__main__':
     unittest.main()

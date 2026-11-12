@@ -51,7 +51,7 @@ The deployment job also requires the repository-level `PRODUCTION_DEPLOY_ENABLED
 
 `main` requires a pull request, current passing Frontend/PHP/browser checks from GitHub Actions, resolved conversations, and applies these rules to administrators. Force pushes and branch deletion are blocked. A second PR reviewer is not required because the repository currently has a sole maintainer; production approval is a separate deliberate action.
 
-This is the first release-control increment. Promoting one preview-verified artifact without rebuilding, interruption recovery, automatic bounded maintenance, independent monitoring, and the refresh branch reconciliation remain separate implementation steps. Do not claim these are enabled by this change.
+Deployment interruption recovery and bounded capacity cleanup are described in [deployment recovery](deployment-recovery.md). Promoting one preview-verified artifact without rebuilding, independent monitoring, and the refresh branch reconciliation remain separate implementation steps.
 
 ## Deployment runner
 
@@ -153,7 +153,7 @@ Rollback changes code only. It deliberately does not reverse migrations or resto
 ## Recovery and operations
 
 - Database backups are stored under `deployments/shared/backups/database` and must remain outside the public document root.
-- Failed release directories are retained for diagnosis; pruning happens only after a successful health check.
+- Failed candidates owned by the deployment journal are removed after successful code recovery. Unowned or ambiguous candidates are retained for investigation. See [deployment recovery](deployment-recovery.md).
 - A release is identifiable by its `REVISION` file and the GitHub Actions deployment summary.
 - A queued deployment should receive a GitHub-hosted runner automatically. Check GitHub Actions availability and repository billing limits before changing runner configuration.
 - A failed Hostinger health gate restores the previous code release automatically. A failed independent or scheduled smoke test requires investigation and an explicit rollback decision.

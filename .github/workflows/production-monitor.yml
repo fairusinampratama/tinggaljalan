@@ -51,13 +51,14 @@ jobs:
     name: Monitor shared hosting capacity
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    if: github.ref == 'refs/heads/main'
     environment: staging
     concurrency:
-      group: hosting-capacity-monitor
+      group: hosting-account
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect account file and byte budgets
+      - name: Inspect capacity and apply bounded release retention
         env:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
           SSH_PORT: ${{ secrets.STAGING_SSH_PORT }}
@@ -75,10 +76,10 @@ jobs:
           printf '%s\n' "$PRIVATE_KEY" > "$RUNNER_TEMP/hosting-ssh/key"
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/hosting-ssh/known_hosts"
           SSH=(ssh -i "$RUNNER_TEMP/hosting-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/hosting-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=3 "$SSH_USER@$SSH_HOST")
-          "${SSH[@]}" 'python3 - capacity --alert' < scripts/deployment/hosting-maintenance.py
+          "${SSH[@]}" 'python3 - maintain --alert' < scripts/deployment/hosting-maintenance.py
       - name: Record capacity alert
         if: failure()
         run: |
           echo '::error::Hosting capacity check failed. Inspect usage, prune reviewed obsolete releases, or check SSH availability. Public HTTP health alone does not establish safe capacity.'
           echo '## Hosting capacity needs attention' >> "$GITHUB_STEP_SUMMARY"
-          echo 'The capacity check failed or exceeded its warning budget. See job logs. No hosting data was deleted.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The capacity check failed or exceeded its warning budget. See job logs. Bounded obsolete-release retention may have run. Active releases, two rollbacks per site, unknown files, shared storage, and databases are excluded.' >> "$GITHUB_STEP_SUMMARY"

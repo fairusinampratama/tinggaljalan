@@ -19,7 +19,11 @@ recycle_litespeed_workers() {
     kill $worker_pids >/dev/null 2>&1 || true
 }
 
+[[ "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'A full rollback revision is required.' >&2; exit 1; }
 [[ "$DOMAIN_ROOT" == /home/u304629909/domains/tinggaljalan.com ]]
+[[ "$(readlink -f "$DOMAIN_ROOT")" == "$DOMAIN_ROOT" && "$(readlink -f "$DEPLOY_ROOT")" == "$DEPLOY_ROOT" ]]
+[[ "$(readlink -f "$TARGET")" == "$TARGET" && ! -L "$TARGET" ]]
+[[ ! -e "$DEPLOY_ROOT/.production-deployment-state" && ! -L "$DEPLOY_ROOT/.production-deployment-state" ]] || { echo 'Resolve the interrupted deployment before manual rollback.' >&2; exit 1; }
 [[ ! -L /home/u304629909/.tinggaljalan-maintenance.lock && ! -L "$DEPLOY_ROOT/.lock" ]]
 exec 8>/home/u304629909/.tinggaljalan-maintenance.lock
 flock -n 8 || { echo 'Hosting maintenance/deployment already running.' >&2; exit 1; }
@@ -31,10 +35,12 @@ test -d "$TARGET" && test -f "$TARGET/REVISION" || { echo "Target release does n
 test "$(tr -d '[:space:]' < "$TARGET/REVISION")" == "$TARGET_SHA" || { echo "Target revision mismatch." >&2; exit 1; }
 
 PREVIOUS="$(readlink -f "$CURRENT")"
-"$PHP_BIN" "$PREVIOUS/artisan" down --retry=60
+[[ "$(dirname "$PREVIOUS")" == "$DEPLOY_ROOT/releases" && ! -L "$PREVIOUS" ]]
+[[ "$(basename "$PREVIOUS")" =~ ^[0-9a-f]{40}$ ]]
+[[ ! -e "$CURRENT.rollback" && ! -L "$CURRENT.rollback" ]]
 SWITCHED=0
 rollback_on_error() {
-    if [[ "$SWITCHED" == "1" ]]; then
+    if [[ "$(readlink -f "$CURRENT")" == "$TARGET" ]]; then
         rm -f "$CURRENT.rollback"
         ln -s "$PREVIOUS" "$CURRENT.rollback"
         mv -Tf "$CURRENT.rollback" "$CURRENT"
@@ -42,7 +48,18 @@ rollback_on_error() {
     "$PHP_BIN" "$PREVIOUS/artisan" up >/dev/null 2>&1 || true
     recycle_litespeed_workers
 }
-trap rollback_on_error ERR
+finish_rollback() {
+    local status=$?
+    trap - EXIT HUP INT TERM
+    if [[ "$status" != 0 ]]; then rollback_on_error; fi
+    exit "$status"
+}
+trap finish_rollback EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+# Recovery must be installed before down can create a maintenance marker.
+"$PHP_BIN" "$PREVIOUS/artisan" down --retry=60
 
 "$PHP_BIN" "$TARGET/artisan" optimize:clear
 "$PHP_BIN" "$TARGET/artisan" config:cache
@@ -56,6 +73,6 @@ SWITCHED=1
 "$PHP_BIN" "$TARGET/artisan" up
 recycle_litespeed_workers
 "$TARGET/scripts/deployment/health-check.sh" "$BASE_URL" "$TARGET_SHA" "$CURRENT" "$PHP_BIN"
-trap - ERR
+trap - EXIT HUP INT TERM
 
 echo "Rolled back code to $TARGET_SHA. Database migrations were not reversed."

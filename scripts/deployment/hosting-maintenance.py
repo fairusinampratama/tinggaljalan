@@ -27,6 +27,10 @@ BYTE_BUDGET = 10 * 1024**3
 GRACE_SECONDS = 3600
 
 
+class CapacityError(RuntimeError):
+    """A complete usage scan exceeded a reviewed operational threshold."""
+
+
 def require(condition, message):
     if not condition:
         raise RuntimeError(message)
@@ -79,8 +83,10 @@ def capacity(reserve=False, alert=False):
                   reserve_bytes=RESERVE_BYTES if reserve else 0,
                   warning=warning, allowed=allowed)
     print(json.dumps(result), flush=True)
-    require(allowed, 'Account safety budget exceeded; clean obsolete releases before deployment')
-    require(not (alert and warning), 'Account capacity warning threshold reached (80% of safety budget)')
+    if not allowed:
+        raise CapacityError('Account safety budget exceeded; clean obsolete releases before deployment')
+    if alert and warning:
+        raise CapacityError('Account capacity warning threshold reached (80% of safety budget)')
     return result
 
 
@@ -226,6 +232,22 @@ def retention(environment, apply=False, previous='', lock_fd=None, expected_plan
         return result
 
 
+def maintain(reserve=False, alert=False):
+    """Bounded retention only, then remeasure. Never boot Laravel or touch DBs."""
+    with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
+        try:
+            return capacity(reserve=reserve, alert=True)
+        except CapacityError:
+            # A failed/incomplete scan is not a capacity diagnosis and must not
+            # authorize deletion. Only the threshold-specific error reaches here.
+            pass
+        for environment in DOMAINS:
+            retention(environment, apply=True)
+        # Exhaustion or an unresolved warning remains an error. There is no
+        # escalating deletion of uploads, backups, runtime files or unknown data.
+        return capacity(reserve=reserve, alert=alert)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command')
@@ -233,6 +255,9 @@ def main():
     check = sub.add_parser('capacity')
     check.add_argument('--reserve', action='store_true')
     check.add_argument('--alert', action='store_true')
+    maintenance = sub.add_parser('maintain')
+    maintenance.add_argument('--reserve', action='store_true')
+    maintenance.add_argument('--alert', action='store_true')
     archive = sub.add_parser('archive-budget')
     archive.add_argument('archive', type=Path)
     obsolete = sub.add_parser('archive-obsolete')
@@ -249,6 +274,8 @@ def main():
         archive_budget(args.archive)
     elif args.command == 'capacity':
         capacity(args.reserve, args.alert)
+    elif args.command == 'maintain':
+        maintain(args.reserve, args.alert)
     elif args.command == 'archive-obsolete':
         with lock(ACCOUNT / '.tinggaljalan-maintenance.lock'):
             archive_obsolete(args.environment)
