@@ -64,6 +64,7 @@ class InertiaPublicData
         $site = SiteSetting::first();
 
         $contact = [
+            'actionsEnabled' => ! app()->environment('staging'),
             'email' => $site?->contact_email,
             'address' => $site?->business_address,
             'map_url' => $site?->google_maps_url,
@@ -78,6 +79,12 @@ class InertiaPublicData
         if (! empty($site->whatsapp_number)) {
             $number = preg_replace('/\D+/', '', $site->whatsapp_number);
             $contact['whatsapp_url'] = 'tel:+'.$number;
+        }
+        if (app()->environment('staging')) {
+            // Preserve public display values, but never create real contact actions.
+            $contact['email_url'] = '#';
+            $contact['emailHref'] = '#';
+            $contact['whatsapp_url'] = '#';
         }
 
         return [

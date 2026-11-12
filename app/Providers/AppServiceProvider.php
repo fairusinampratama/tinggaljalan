@@ -10,6 +10,7 @@ use App\Payments\ExchangeRates\ExchangeRateClient;
 use App\Payments\ExchangeRates\FrankfurterExchangeRateClient;
 use App\Payments\Midtrans\HttpMidtransClient;
 use App\Payments\Midtrans\MidtransClient;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +32,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Preview must fail closed even for an overlooked HTTP integration.
+        if ($this->app->environment('staging')) {
+            Http::preventStrayRequests();
+        }
+
         // The public tunnel uses HTTPS, while local Docker remains HTTP-only.
         if (! app()->runningInConsole() && request()->isSecure()) {
             URL::forceScheme('https');

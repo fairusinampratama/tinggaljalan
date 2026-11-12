@@ -458,11 +458,15 @@ class ServerPageContent
 
     private static function coreLinks(): array
     {
-        return [
+        $links = [
             ['label' => 'Indonesia tour packages', 'url' => '/routes'],
             ['label' => 'Travel guides and news', 'url' => '/news'],
             ['label' => 'About Tinggal Jalan', 'url' => '/about-us'],
             ['label' => 'Privacy & cookies', 'url' => '/privacy-policy'],
         ];
+
+        return app()->environment('staging')
+            ? array_values(array_filter($links, fn ($link) => ! str_starts_with($link['url'], 'https://wa.me/')))
+            : $links;
     }
 }
