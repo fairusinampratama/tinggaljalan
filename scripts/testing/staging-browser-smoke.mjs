@@ -20,7 +20,8 @@ const priorityRoutes = [
 ];
 const publicRoutes = new Set([...priorityRoutes.map(([, route]) => route), '/?lang=id', '/news?lang=cn', '/routes?destination=bromo']);
 const observations = [];
-const redact = value => Object.values(config).filter(value => typeof value === 'string' && value.length).reduce(
+const sensitiveValues = [...Object.values(config), Buffer.from(`reviewer:${config.review_password}`).toString('base64')];
+const redact = value => sensitiveValues.filter(value => typeof value === 'string' && value.length).reduce(
     (text, secret) => text.replaceAll(secret, '[redacted]'), String(value),
 );
 try {
@@ -210,7 +211,7 @@ try {
 } catch (error) {
     // Retain only public route/status information; never credentials or cookies.
     await writeFile(path.join(output, 'failure.txt'), redact(error.message) + '\n', { mode: 0o600 });
-    throw error;
+    throw new Error(redact(error.message));
 } finally {
     await writeFile(path.join(output, 'completed-checks.txt'), results.join('\n') + '\n', { mode: 0o600 });
     await writeFile(path.join(output, 'observations.json'), JSON.stringify(observations, null, 2), { mode: 0o600 });
