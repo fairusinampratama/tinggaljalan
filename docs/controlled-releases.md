@@ -215,3 +215,23 @@ Source/runtime isolation remains separate databases on a shared Hostinger Unix
 account. The deployment key is therefore not a strong account-level boundary
 between production and preview. Separate hosting credentials/accounts would be
 additional infrastructure work, not a property of this pipeline.
+
+## Read-only public media diagnosis
+
+Preview preparation run `43461102287` passed at `0bbc7f1`, including 11-route
+hosting crawler parity, desktop/mobile, media, booking/admin verification and
+unchanged production smoke. Refresh run `43465212509` passed all 54 disposable
+MySQL safety tests, then rejected an allowlisted source image. It restored the
+previous preview database and matching media and cleaned temporary credentials.
+This is not a successful data refresh; production data was not modified.
+Promotion run `43466176014` subsequently validated that preview receipt and
+stopped at the production approval hold. It was cancelled without approval;
+the production deployment job executed zero steps.
+
+The main-only `Staging SSH preflight` operation `public-media-audit` diagnoses
+that remaining blocker. It reads only the reviewed media-bearing CMS columns
+in a production read-only transaction and inspects canonical public image
+files. It emits field names and counts in fixed categories, never row values,
+IDs, filenames, image bytes, credentials or raw exception messages. It does
+not copy media, write hosting files, change database rows, alter the sanitizer
+or relax image/path checks. Inspection is needed before choosing a media fix.

@@ -20,4 +20,10 @@ if (( ${#FILES[@]} == 0 )); then
     exit 0
 fi
 
-vendor/bin/pint --test "${FILES[@]}"
+if ! vendor/bin/pint --test "${FILES[@]}"; then
+    # Show the exact required formatting in the disposable CI checkout. Keep
+    # the check failed; never commit or publish formatter changes from CI.
+    vendor/bin/pint "${FILES[@]}"
+    git diff -- "${FILES[@]}"
+    exit 1
+fi

@@ -168,6 +168,7 @@ jobs:
       - name: Verify staging configuration and deployment regressions
         run: |
           php tests/deployment/test_staging_config.php
+          php tests/deployment/test_preview_media_audit.php
           python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
           node --test tests/deployment/test_public_review_routes.mjs
