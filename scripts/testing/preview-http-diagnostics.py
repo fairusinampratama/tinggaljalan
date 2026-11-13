@@ -101,16 +101,18 @@ def verify_crawler(payload, opener=None):
                 raise ValueError("Public response exceeds the verification budget.")
             if "noindex" not in response.headers.get("X-Robots-Tag", "").lower():
                 raise ValueError("Preview index protection is missing.")
-            return data.decode("utf-8")
+            return data.decode("utf-8"), response.headers.get("X-Robots-Tag", "")
 
-    health = json.loads(fetch("/up", AGENTS["ordinary"]))
+    health = json.loads(fetch("/up", AGENTS["ordinary"])[0])
     if health.get("status") != "up" or health.get("revision") != revision:
         raise ValueError("Unexpected preview runtime revision.")
     fallback = re.compile(r'<main\b[^>]*class="[^"]*server-seo-content[^"]*"[^>]*>[\s\S]*?</main>')
     canonical = re.compile(r'<link\b[^>]*rel="canonical"[^>]*href="([^"]+)"')
     robots = re.compile(r'<meta\b[^>]*name="robots"[^>]*content="([^"]+)"')
     for route in routes:
-        ordinary, crawler = (fetch(route, AGENTS[kind]) for kind in ("ordinary", "crawler"))
+        (ordinary, ordinary_robots), (crawler, crawler_robots) = (fetch(route, AGENTS[kind]) for kind in ("ordinary", "crawler"))
+        if ordinary_robots != crawler_robots:
+            raise ValueError("Crawler and visitor index-protection headers differ.")
         first, second = fallback.findall(ordinary), fallback.findall(crawler)
         if len(first) != 1 or first != second:
             raise ValueError("Crawler and visitor public content differ.")

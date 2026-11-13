@@ -92,6 +92,8 @@ class CrawlerParityTests(unittest.TestCase):
                     body = body.replace("Public CMS content", "Different content")
                 if bot and failure == "metadata":
                     body = body.replace("index,follow", "noindex")
+                if bot and failure == "header":
+                    headers = {"X-Robots-Tag": "noindex"}
                 if failure == "noindex":
                     headers = {}
                 return Response(403 if bot and failure == "403" else 200, body.encode(), headers)
@@ -112,7 +114,7 @@ class CrawlerParityTests(unittest.TestCase):
             module.verify_crawler(self.payload, self.opener("403"))
 
     def test_content_metadata_index_protection_or_runtime_mismatch_fail(self):
-        for failure in ("content", "metadata", "noindex", "revision"):
+        for failure in ("content", "metadata", "header", "noindex", "revision"):
             with self.subTest(failure=failure), self.assertRaises(ValueError):
                 module.verify_crawler(self.payload, self.opener(failure))
 
