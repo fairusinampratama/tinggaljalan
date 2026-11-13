@@ -9,6 +9,7 @@ on:
         options:
           - connection
           - readiness
+          - crawler-parity
           - export-host-record
           - hosting-capacity
           - retention-plan
@@ -19,6 +20,7 @@ on:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/staging-preflight.sh
       - scripts/testing/preview-http-diagnostics.py
+      - scripts/testing/verify-preview-crawler.py
       - tests/deployment/test_preview_http_diagnostics.py
       - scripts/deployment/prepare-staging-secrets.py
       - scripts/deployment/hosting-maintenance.py
@@ -39,10 +41,10 @@ jobs:
           python3 tests/deployment/test_hosting_maintenance.py
 
   connection:
-    if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'connection' || inputs.operation == 'readiness')
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.operation == 'connection' || inputs.operation == 'readiness' || inputs.operation == 'crawler-parity')
     needs: validate
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     environment: staging
     concurrency:
       group: staging
@@ -72,7 +74,7 @@ jobs:
           [[ "$SSH_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
           test -n "$PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
-          if [[ "$OPERATION" == readiness ]]; then
+          if [[ "$OPERATION" == readiness || "$OPERATION" == crawler-parity ]]; then
             [[ "$STAGING_ROOT" =~ ^/home/[a-zA-Z0-9_-]+/domains/preview[.]tinggaljalan[.]com$ ]]
           fi
           umask 077
@@ -81,13 +83,16 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/staging-ssh/known_hosts"
       - name: Inspect staging prerequisites without changing hosting
         run: |
+          CHECK_MODE="$OPERATION"
+          if [[ "$CHECK_MODE" == crawler-parity ]]; then CHECK_MODE=readiness; fi
           ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
-            "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
+            "$SSH_USER@$SSH_HOST" "bash -s -- '$CHECK_MODE' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
       - name: Compare preview HTTP responses without changing hosting
+        if: inputs.operation != 'crawler-parity'
         env:
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
         run: |
@@ -120,6 +125,37 @@ jobs:
                   print(json.dumps(record, sort_keys=True))
           except Exception:
               raise SystemExit('Host-side HTTP diagnostics failed; request details withheld.')
+          PYCODE
+      - name: Diagnose current preview crawler parity without publishing
+        if: inputs.operation == 'crawler-parity'
+        env:
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util, json, os, shlex, subprocess
+          from pathlib import Path
+          spec = importlib.util.spec_from_file_location('crawler', 'scripts/testing/verify-preview-crawler.py')
+          crawler = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(crawler)
+          directory = Path(os.environ['RUNNER_TEMP']) / 'staging-ssh'
+          source = Path('scripts/testing/preview-http-diagnostics.py').read_text()
+          command = 'python3 -c ' + shlex.quote(source) + ' --probe-crawler'
+          arguments = ['ssh', '-i', str(directory / 'key'), '-p', os.environ['SSH_PORT'],
+                       '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes',
+                       '-o', 'UserKnownHostsFile=' + str(directory / 'known_hosts'),
+                       '-o', 'ConnectTimeout=20', '-o', 'ServerAliveInterval=10', '-o', 'ServerAliveCountMax=2',
+                       os.environ['SSH_USER'] + '@' + os.environ['SSH_HOST'], command]
+          try:
+              result = subprocess.run(arguments, input=json.dumps({'review_password': os.environ['STAGING_REVIEW_PASSWORD']}),
+                                      capture_output=True, text=True, timeout=300)
+              print(json.dumps(crawler.parse_evidence(result), sort_keys=True))
+          except crawler.http.CrawlerCheckError as error:
+              print(json.dumps({'failure': crawler.http.safe_crawler_failure(error.evidence)}, sort_keys=True))
+              raise SystemExit('Crawler parity diagnosis failed; private request details withheld.')
+          except subprocess.TimeoutExpired:
+              raise SystemExit('Crawler parity diagnosis timed out; private request details withheld.')
+          except Exception:
+              raise SystemExit('Crawler parity diagnosis failed; untrusted output withheld.')
           PYCODE
       - name: Record result
         run: |

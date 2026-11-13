@@ -115,6 +115,29 @@ using a skip/fallback path. It does not certify real search-engine access throug
 the public edge; preview intentionally requires a password and is not indexable.
 Production browser reviews retain their direct crawler check.
 
+Preview preparation run `43386574422` passed browser rendering, initial/hydrated
+metadata, no-JavaScript content and blocked-JavaScript checks, then stopped at the
+mandatory host-side crawler check. Automatic code rollback passed; no data refresh
+or production publication occurred. Its old generic error did not establish the
+exact cause, so do not claim this failure was an application outage or assume a
+particular HTTP status.
+
+Crawler failures now report only a reviewed category, one-based public route
+index (zero for runtime/input), request kind and numeric HTTP status when known.
+Raw exceptions, SSH stderr, URLs, credentials, cookies and HTML remain withheld.
+The runner validates this strict schema before printing remote diagnostic facts;
+failure still prevents a receipt and triggers rollback.
+
+For a quicker read-only investigation, run **Staging SSH preflight** from `main`
+with operation `crawler-parity`. It reads current preview health and its public
+sitemap over authenticated fixed-origin HTTP, then exercises the same parity
+verifier on core hubs, language/filter cases and sitemap-selected package/article
+pages. Sitemap entries cannot change the request origin or select private routes.
+This writes no hosting files, does not publish code or refresh data, and creates
+no promotion receipt. Its observed current runtime is diagnostic information;
+release verification still requires the exact selected candidate revision and
+the routes selected by the full browser checks.
+
 ## Database and media refresh
 
 Run **Refresh Preview Data** from `main` only when an explicit production-shaped
