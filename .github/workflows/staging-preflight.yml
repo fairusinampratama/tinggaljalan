@@ -10,6 +10,7 @@ on:
           - connection
           - readiness
           - crawler-parity
+          - public-media-audit
           - export-host-record
           - hosting-capacity
           - retention-plan
@@ -19,6 +20,8 @@ on:
     paths:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/staging-preflight.sh
+      - scripts/deployment/preview-media-audit.php
+      - tests/deployment/test_preview_media_audit.php
       - scripts/testing/preview-http-diagnostics.py
       - scripts/testing/verify-preview-crawler.py
       - tests/deployment/test_preview_http_diagnostics.py
@@ -34,14 +37,21 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4; verified CI revision
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2; verified CI revision
+        with:
+          php-version: '8.4'
+          extensions: pdo_sqlite, dom
+          coverage: none
       - name: Validate script syntax
         run: |
           bash -n scripts/deployment/staging-preflight.sh
           python3 tests/deployment/test_preview_http_diagnostics.py
           python3 tests/deployment/test_hosting_maintenance.py
+          php -l scripts/deployment/preview-media-audit.php
+          php tests/deployment/test_preview_media_audit.php
 
   connection:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.operation == 'connection' || inputs.operation == 'readiness' || inputs.operation == 'crawler-parity')
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.operation == 'connection' || inputs.operation == 'readiness' || inputs.operation == 'crawler-parity' || inputs.operation == 'public-media-audit')
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -74,7 +84,7 @@ jobs:
           [[ "$SSH_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
           test -n "$PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
-          if [[ "$OPERATION" == readiness || "$OPERATION" == crawler-parity ]]; then
+          if [[ "$OPERATION" == readiness || "$OPERATION" == crawler-parity || "$OPERATION" == public-media-audit ]]; then
             [[ "$STAGING_ROOT" =~ ^/home/[a-zA-Z0-9_-]+/domains/preview[.]tinggaljalan[.]com$ ]]
           fi
           umask 077
@@ -84,7 +94,7 @@ jobs:
       - name: Inspect staging prerequisites without changing hosting
         run: |
           CHECK_MODE="$OPERATION"
-          if [[ "$CHECK_MODE" == crawler-parity ]]; then CHECK_MODE=readiness; fi
+          if [[ "$CHECK_MODE" == crawler-parity || "$CHECK_MODE" == public-media-audit ]]; then CHECK_MODE=readiness; fi
           ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
@@ -92,7 +102,7 @@ jobs:
             "$SSH_USER@$SSH_HOST" "bash -s -- '$CHECK_MODE' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
       - name: Compare preview HTTP responses without changing hosting
-        if: inputs.operation != 'crawler-parity'
+        if: inputs.operation != 'crawler-parity' && inputs.operation != 'public-media-audit'
         env:
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
         run: |
@@ -157,6 +167,15 @@ jobs:
           except Exception:
               raise SystemExit('Crawler parity diagnosis failed; untrusted output withheld.')
           PYCODE
+      - name: Audit public image references without changing hosting
+        if: inputs.operation == 'public-media-audit'
+        run: |
+          ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
+            -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
+            "$SSH_USER@$SSH_HOST" '/opt/alt/php84/usr/bin/php /dev/stdin' \
+            < scripts/deployment/preview-media-audit.php
       - name: Record result
         run: |
           printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
