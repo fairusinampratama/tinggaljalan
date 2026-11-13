@@ -50,7 +50,7 @@ def main():
                             capture_output=True, text=True, timeout=300)
     evidence = parse_evidence(result, revision, len(routes))
     path = output / "crawler-verification.json"
-    with path.open("w", opener=lambda name, flags: os.open(name, flags, 0o600)) as file:
+    with open(path, "x", opener=lambda name, flags: os.open(name, flags | os.O_NOFOLLOW, 0o600)) as file:
         json.dump(evidence, file, sort_keys=True)
     print("Host-side crawler parity passed for the exact browser routes and preview revision.")
 
