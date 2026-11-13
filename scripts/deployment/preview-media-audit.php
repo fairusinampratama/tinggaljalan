@@ -32,7 +32,7 @@ function previewMediaAuditCategory(mixed $value, string $root): string
         return 'unreadable-file';
     }
     try {
-        return @ refreshValidImage($file) ? 'valid-image' : 'invalid-image';
+        return @refreshValidImage($file) ? 'valid-image' : 'invalid-image';
     } catch (Throwable) {
         return 'image-validator-error';
     }
@@ -47,6 +47,7 @@ function previewMediaAuditValues(mixed $raw, ?string $nested): array
     refreshAssert(is_array($value));
     if ($nested === '*') {
         refreshAssert(array_is_list($value));
+
         return array_values($value);
     }
     if ($nested === '*.images.*.path') {
