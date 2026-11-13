@@ -295,7 +295,9 @@ subdomain, database, files, or a deployment. The separate protected staging depl
 implement the publication and browser verification described above.
 
 Connection/readiness also compare authenticated ordinary and Googlebot-style
-homepage requests from GitHub and from the hosting account. Requests are pinned
+homepage requests from GitHub and from the hosting account, with both preemptive
+Basic authentication and a normal 401 challenge exchange. Each pair shares a
+private in-memory cookie jar. Requests are pinned
 to the preview HTTPS origin and never follow redirects. Output contains only
 status, fixed response categories, noindex and Basic-challenge booleans. Request
 credentials travel through SSH standard input, remain in memory on Hostinger,

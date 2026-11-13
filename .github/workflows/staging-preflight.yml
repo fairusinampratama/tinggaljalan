@@ -108,9 +108,10 @@ jobs:
                                       capture_output=True, text=True, timeout=90)
               assert result.returncode == 0 and len(result.stdout) < 4096
               records = [json.loads(line) for line in result.stdout.splitlines()]
-              assert len(records) == 2
+              assert len(records) == 4
               for record in records:
-                  assert set(record) == {'location', 'kind', 'status', 'category', 'noindex', 'basic_challenge'}
+                  assert set(record) == {'location', 'kind', 'authentication', 'status', 'category', 'noindex', 'basic_challenge'}
+                  assert record['authentication'] in ('preemptive', 'challenge')
                   assert record['location'] == 'hosting' and record['kind'] in ('ordinary', 'crawler')
                   assert type(record['status']) is int and 0 <= record['status'] <= 599
                   assert record['category'] in ('http-response', 'transport-error', 'security-screen', 'litespeed-forbidden')

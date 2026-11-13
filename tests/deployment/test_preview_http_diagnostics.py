@@ -45,6 +45,16 @@ class DiagnosticsTests(unittest.TestCase):
     def test_redirect_cannot_forward_credentials(self):
         self.assertIsNone(module.NoRedirect().redirect_request(None, None, 302, "", Message(), "https://example.org/"))
 
+    def test_challenge_mode_waits_for_basic_challenge(self):
+        requests = []
+        class Opener:
+            def open(self, request, timeout):
+                requests.append(request)
+                return Response(401, headers={"WWW-Authenticate": "Basic realm=preview"})
+        result = module.inspect("credential-canary", "github", Opener(), mode="challenge")
+        self.assertTrue(all(r.get_header("Authorization") is None for r in requests))
+        self.assertTrue(all(r["authentication"] == "challenge" and r["basic_challenge"] for r in result))
+
     def test_transport_exception_cannot_expose_headers(self):
         class Opener:
             def open(self, request, timeout):

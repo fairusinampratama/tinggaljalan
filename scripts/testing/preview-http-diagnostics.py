@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only, origin-pinned preview HTTP checks with bounded, private output."""
 import base64
+import http.cookiejar
 import json
 import os
 import sys
@@ -19,22 +20,31 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def inspect(password, location, opener=None):
+def inspect(password, location, opener=None, mode="preemptive"):
     if not isinstance(password, str) or not password:
         raise ValueError("Preview review credential is required.")
-    opener = opener or urllib.request.build_opener(NoRedirect)
+    if mode not in ("preemptive", "challenge"):
+        raise ValueError("Unsupported authentication mode.")
+    if opener is None:
+        handlers = [NoRedirect, urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar())]
+        if mode == "challenge":
+            manager = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+            manager.add_password(None, URL, "reviewer", password)
+            handlers.append(urllib.request.HTTPBasicAuthHandler(manager))
+        opener = urllib.request.build_opener(*handlers)
     token = base64.b64encode(("reviewer:" + password).encode()).decode()
     reports = []
     for kind, agent in AGENTS.items():
-        request = urllib.request.Request(URL, headers={
-            "Authorization": "Basic " + token, "User-Agent": agent,
-        })
+        headers = {"User-Agent": agent}
+        if mode == "preemptive":
+            headers["Authorization"] = "Basic " + token
+        request = urllib.request.Request(URL, headers=headers)
         try:
             response = opener.open(request, timeout=25)
         except urllib.error.HTTPError as error:
             response = error
         except Exception:
-            reports.append({"location": location, "kind": kind, "status": 0,
+            reports.append({"location": location, "kind": kind, "authentication": mode, "status": 0,
                             "category": "transport-error", "noindex": False,
                             "basic_challenge": False})
             continue
@@ -48,7 +58,7 @@ def inspect(password, location, opener=None):
                 category = "security-screen"
             elif response.status == 403 and "litespeed" in body:
                 category = "litespeed-forbidden"
-            reports.append({"location": location, "kind": kind,
+            reports.append({"location": location, "kind": kind, "authentication": mode,
                             "status": response.status, "category": category,
                             "noindex": "noindex" in response.headers.get("X-Robots-Tag", "").lower(),
                             "basic_challenge": "basic" in response.headers.get("WWW-Authenticate", "").lower()})
@@ -60,8 +70,9 @@ def main():
     if sys.argv[1:] and not remote:
         raise ValueError("Unsupported diagnostics mode.")
     password = json.load(sys.stdin)["review_password"] if remote else os.environ["STAGING_REVIEW_PASSWORD"]
-    for report in inspect(password, "hosting" if remote else "github"):
-        print(json.dumps(report, sort_keys=True))
+    for mode in ("preemptive", "challenge"):
+        for report in inspect(password, "hosting" if remote else "github", mode=mode):
+            print(json.dumps(report, sort_keys=True))
 
 
 if __name__ == "__main__":
