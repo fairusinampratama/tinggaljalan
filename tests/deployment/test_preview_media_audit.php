@@ -4,8 +4,8 @@
 define('PREVIEW_MEDIA_AUDIT_LIBRARY_ONLY', true);
 require __DIR__.'/../../scripts/deployment/preview-db-refresh-lib.php';
 require __DIR__.'/../../scripts/deployment/preview-media-audit.php';
-set_exception_handler(static function (Throwable): void {
-    fwrite(STDERR, "Public media audit safety test failed.\n");
+set_exception_handler(static function (Throwable $error): void {
+    fwrite(STDERR, 'Public media audit safety test failed at line '.$error->getLine().'.'.PHP_EOL);
     exit(1);
 });
 $root = sys_get_temp_dir().'/media-audit-'.bin2hex(random_bytes(8));

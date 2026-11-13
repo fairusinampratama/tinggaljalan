@@ -32,7 +32,7 @@ function previewMediaAuditCategory(mixed $value, string $root): string
         return 'unreadable-file';
     }
     try {
-        return @refreshValidImage($file) ? 'valid-image' : 'invalid-image';
+        return @ refreshValidImage($file) ? 'valid-image' : 'invalid-image';
     } catch (Throwable) {
         return 'image-validator-error';
     }
