@@ -15,7 +15,7 @@ class Response:
         self.status, self.body, self.headers = status, body, headers or {}
 
     def read(self, limit):
-        assert limit == 65536
+        assert limit in (65536, 2097153)
         return self.body[:limit]
 
     def __enter__(self):
@@ -70,6 +70,62 @@ class DiagnosticsTests(unittest.TestCase):
         result = module.inspect("credential-canary", "github", Opener())
         self.assertTrue(all(r["category"] == "litespeed-forbidden" and r["basic_challenge"] for r in result))
         self.assertNotIn("credential-canary", json.dumps(result))
+
+
+class CrawlerParityTests(unittest.TestCase):
+    def setUp(self):
+        self.payload = {"review_password": "credential-canary", "revision": "a" * 40,
+                        "routes": ["/", "/routes", "/news", "/about-us", "/privacy-policy", "/routes/real-package", "/news/real-article"]}
+        self.requests = []
+
+    def opener(self, failure=None):
+        outer = self
+        class Opener:
+            def open(self, request, timeout):
+                outer.requests.append(request)
+                bot = "Googlebot" in request.get_header("User-agent")
+                headers = {"X-Robots-Tag": "noindex, nofollow"}
+                if request.full_url.endswith("/up"):
+                    return Response(200, json.dumps({"status": "up", "revision": ("b" if failure == "revision" else "a") * 40}).encode(), headers)
+                body = '<link rel="canonical" href="https://preview.tinggaljalan.com/"><meta name="robots" content="index,follow"><main class="server-seo-content"><h1>Public CMS content</h1></main>'
+                if bot and failure == "content":
+                    body = body.replace("Public CMS content", "Different content")
+                if bot and failure == "metadata":
+                    body = body.replace("index,follow", "noindex")
+                if failure == "noindex":
+                    headers = {}
+                return Response(403 if bot and failure == "403" else 200, body.encode(), headers)
+        return Opener()
+
+    def test_actual_http_content_metadata_runtime_and_noindex_are_required(self):
+        evidence = module.verify_crawler(self.payload, self.opener())
+        self.assertEqual(evidence["route_count"], 7)
+        self.assertTrue(evidence["content_parity"] and evidence["metadata_parity"] and evidence["noindex"])
+        self.assertEqual(len(self.requests), 15)
+        self.assertTrue(all(r.full_url.startswith(module.URL) for r in self.requests))
+        self.assertTrue(all(r.get_header("Authorization").startswith("Basic ") for r in self.requests))
+        self.assertNotIn("credential-canary", json.dumps(evidence))
+        self.assertNotIn("Public CMS content", json.dumps(evidence))
+
+    def test_crawler_403_is_never_accepted(self):
+        with self.assertRaises(ValueError):
+            module.verify_crawler(self.payload, self.opener("403"))
+
+    def test_content_metadata_index_protection_or_runtime_mismatch_fail(self):
+        for failure in ("content", "metadata", "noindex", "revision"):
+            with self.subTest(failure=failure), self.assertRaises(ValueError):
+                module.verify_crawler(self.payload, self.opener(failure))
+
+    def test_external_private_and_traversal_routes_fail_before_network(self):
+        for route in ("https://example.org/", "//example.org/", "/admin/bookings", "/news/%2e%2e/admin", "/news/test\n", "/news/a#fragment"):
+            with self.subTest(route=route), self.assertRaises(ValueError):
+                module.verify_crawler(dict(self.payload, routes=self.payload["routes"] + [route]), self.opener())
+        self.assertEqual(self.requests, [])
+
+    def test_missing_real_public_detail_or_core_route_fails(self):
+        for routes in ([], self.payload["routes"][:5], self.payload["routes"][1:] + ["/news/extra"]):
+            with self.assertRaises(ValueError):
+                module.verify_crawler(dict(self.payload, routes=routes), self.opener())
 
 
 if __name__ == "__main__":

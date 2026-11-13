@@ -164,6 +164,7 @@ jobs:
       - name: Verify desktop, mobile, booking submission and preview admin
         run: |
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review"
+          python3 scripts/testing/verify-preview-crawler.py "$RUNNER_TEMP/preview-refresh/ssh_config" staging "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review"
           node scripts/testing/staging-media-browser.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review"
           node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/preview-refresh/config.json" "$PREVIEW_REVISION" "$RUNNER_TEMP/staging-review" "$GITHUB_RUN_ID"
       - name: Confirm production remains healthy at the same revision

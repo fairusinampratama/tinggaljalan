@@ -78,7 +78,7 @@ class ReleaseControlTest(unittest.TestCase):
         self.assertNotIn('functional_checks', str(preview['on']))
         publication = preview['jobs']['preview']
         commands = '\n'.join(step.get('run', '') for step in publication['steps'])
-        for helper in ('staging-browser-smoke.mjs', 'staging-media-browser.mjs', 'staging-functional-browser.mjs'):
+        for helper in ('staging-browser-smoke.mjs', 'verify-preview-crawler.py', 'staging-media-browser.mjs', 'staging-functional-browser.mjs'):
             self.assertIn(helper, commands)
         self.assertIn('rollback', commands)
         receipt = next(step for step in publication['steps'] if step.get('name') == 'Save promotion evidence after every required check succeeds')
@@ -86,6 +86,17 @@ class ReleaseControlTest(unittest.TestCase):
         for job in ('recover', 'preview'):
             self.assertEqual(preview['jobs'][job]['concurrency'],
                              {'group': 'hosting-account', 'cancel-in-progress': 'false'})
+
+    def test_real_crawler_parity_is_mandatory_before_finalize_in_both_paths(self):
+        for name, job in [('prepare-preview-release.yml', 'preview'), ('preview-database-refresh.yml', 'refresh')]:
+            steps = workflow(name)['jobs'][job]['steps']
+            gate = next(step for step in steps if 'verify-preview-crawler.py' in step.get('run', ''))
+            self.assertNotIn('if', gate)
+            self.assertNotIn('continue-on-error', gate)
+            self.assertNotIn('|| true', gate['run'])
+            self.assertLess(gate['run'].index('staging-browser-smoke.mjs'), gate['run'].index('verify-preview-crawler.py'))
+            finalized = next(step for step in steps if ' finalize ' in step.get('run', ''))
+            self.assertLess(steps.index(gate), steps.index(finalized))
 
     def test_old_staging_entry_delegates_to_current_controller(self):
         staging = workflow('staging-deploy.yml')

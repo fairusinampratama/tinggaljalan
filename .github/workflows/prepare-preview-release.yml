@@ -184,6 +184,7 @@ jobs:
       - name: Require desktop, mobile, media, booking and admin checks
         run: |
           node scripts/testing/staging-browser-smoke.mjs "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review"
+          python3 scripts/testing/verify-preview-crawler.py "$RUNNER_TEMP/preview-access/config" preview "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review"
           node scripts/testing/staging-media-browser.mjs "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review"
           node scripts/testing/staging-functional-browser.mjs "$RUNNER_TEMP/preview-access/app.json" "$SOURCE_SHA" "$RUNNER_TEMP/preview-review" "$GITHUB_RUN_ID"
       - name: Confirm production remains healthy at the original revision

@@ -13,7 +13,7 @@ import urllib.request
 REPOSITORY = 'fairusinampratama/tinggaljalan'
 SHA = re.compile(r'[0-9a-f]{40}')
 DIGEST = re.compile(r'[0-9a-f]{64}')
-CHECKS = {'runtime', 'desktop', 'mobile', 'booking', 'admin', 'media', 'integration_isolation'}
+CHECKS = {'runtime', 'desktop', 'mobile', 'booking', 'admin', 'media', 'integration_isolation', 'crawler_parity'}
 POLICY_FILES = (
     '.github/workflows/prepare-preview-release.yml',
     '.github/workflows/ci-deploy.yml',
@@ -29,6 +29,8 @@ POLICY_FILES = (
     'scripts/deployment/preview-release-state.py',
     'scripts/deployment/deploy-staging.sh',
     'scripts/testing/staging-browser-smoke.mjs',
+    'scripts/testing/preview-http-diagnostics.py',
+    'scripts/testing/verify-preview-crawler.py',
     'scripts/testing/public-review-routes.mjs',
     'scripts/testing/staging-functional-browser.mjs',
     'scripts/testing/staging-functional-guard.php',

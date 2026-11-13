@@ -128,13 +128,15 @@ try {
     for (const [index, route] of [...publicRoutes].entries()) {
         const target = `${base}${route}`;
         const normal = await initialContext.request.get(target);
-        const bot = await initialContext.request.get(target, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' } });
-        if (!normal.ok() || !bot.ok()) throw new VerificationError(`Initial public HTML request failed for ${route}: normal=${normal.status()}, bot=${bot.status()}.`);
+        // Preview crawler parity runs separately from the hosting account. A
+        // GitHub IP claiming Googlebot is rejected before reaching the app.
+        const bot = productionReview ? await initialContext.request.get(target, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' } }) : undefined;
+        if (!normal.ok() || (bot && !bot.ok())) throw new VerificationError(`Initial public HTML request failed for ${route}: normal=${normal.status()}, bot=${bot?.status() ?? 'host-side-required'}.`);
         const raw = await normal.text();
-        const botRaw = await bot.text();
-        if ((!productionReview && !/noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || (productionReview && /noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || normal.headers()['x-robots-tag'] !== bot.headers()['x-robots-tag']) throw new VerificationError(`Preview index protection differs for ${route}.`);
+        const botRaw = bot ? await bot.text() : undefined;
+        if ((!productionReview && !/noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || (productionReview && /noindex/i.test(normal.headers()['x-robots-tag'] ?? '')) || (bot && normal.headers()['x-robots-tag'] !== bot.headers()['x-robots-tag'])) throw new VerificationError(`Preview index protection differs for ${route}.`);
         const fallback = html => html.match(/<main\b[^>]*class="[^"]*server-seo-content[^"]*"[^>]*>[\s\S]*?<\/main>/)?.[0];
-        if (!fallback(raw) || fallback(raw) !== fallback(botRaw)) throw new VerificationError(`Crawler fallback parity failed for ${route}.`);
+        if (!fallback(raw) || (bot && fallback(raw) !== fallback(botRaw))) throw new VerificationError(`Crawler fallback parity failed for ${route}.`);
         await writeFile(path.join(output, `initial-${index}.html`), raw, { mode: 0o600 });
         await initial.goto(target, { waitUntil: 'networkidle' });
         if (!await initial.locator('.server-seo-content').isVisible() || await initial.locator('h1').count() !== 1) throw new VerificationError(`No-JavaScript content failed for ${route}.`);
@@ -159,7 +161,7 @@ try {
         });
         const baseline = tags(productionRaw);
         const metadata = tags(raw);
-        if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0].replace(base, 'https://tinggaljalan.com') !== baseline.canonical[0] || JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots) || JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new VerificationError(`Canonical/robots parity failed for ${route}.`);
+        if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0].replace(base, 'https://tinggaljalan.com') !== baseline.canonical[0] || JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots) || (bot && JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata))) throw new VerificationError(`Canonical/robots parity failed for ${route}.`);
         if (!expected.links.length || expected.links.some(link => /^javascript:/i.test(link.href))) throw new VerificationError(`Crawlable fallback links failed for ${route}.`);
         await visitor.goto(target, { waitUntil: 'networkidle' });
         await visitor.locator('.server-seo-content').waitFor({ state: 'detached' });
@@ -188,8 +190,9 @@ try {
             results.push(`article: ${route} ${cms.length} exact CMS H2 sections, complete ordered paragraphs/BRs, visitor parity and fragment links passed`);
         }
         observations.push({ route, metadata, baseline, crawlableLinks: expected.links.length });
-        results.push(`semantic: ${route} initial HTML, Googlebot parity, no-JS, visitor H1 and no duplicate fallback passed`);
+        results.push(`semantic: ${route} initial HTML, no-JS, visitor H1 and no duplicate fallback passed`);
     }
+    if (!productionReview) await writeFile(path.join(output, 'crawler-routes.json'), JSON.stringify([...publicRoutes]), { mode: 0o600 });
     if (!articleRoute) throw new VerificationError('No deployed article was available for semantic verification.');
     for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mobile', { width: 390, height: 844 }]]) {
         const failedContext = await browser.newContext({ httpCredentials: credentials, viewport });
