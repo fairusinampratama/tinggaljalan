@@ -1,7 +1,7 @@
 import { chromium } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { discoverReviewRoutes } from './public-review-routes.mjs';
+import { discoverReviewRoutes, isPublicDetailRoute, assertPublicDetailMetadata, reviewArticleSectionId } from './public-review-routes.mjs';
 
 class VerificationError extends Error {}
 
@@ -152,19 +152,35 @@ try {
                 paragraphs: [...section.querySelectorAll(':scope > p')].map(p => ({ text: p.textContent, breaks: p.querySelectorAll('br').length })),
             })) };
         });
-        const production = await initialContext.request.get(`https://tinggaljalan.com${route}`);
-        if (!production.ok()) throw new VerificationError(`Production baseline is unavailable for ${route}.`);
-        const productionRaw = await production.text();
         const tags = html => ({
             canonical: [...html.matchAll(/<link\b[^>]*rel="canonical"[^>]*href="([^"]+)"/g)].map(match => match[1]),
             robots: [...html.matchAll(/<meta\b[^>]*name="robots"[^>]*content="([^"]+)"/g)].map(match => match[1]),
         });
-        const baseline = tags(productionRaw);
         const metadata = tags(raw);
-        if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0].replace(base, 'https://tinggaljalan.com') !== baseline.canonical[0] || JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots) || (bot && JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata))) throw new VerificationError(`Canonical/robots parity failed for ${route}.`);
+        let baseline = null;
+        if (isPublicDetailRoute(route)) {
+            try {
+                assertPublicDetailMetadata(route, base, metadata, expected.page.props.seo);
+            } catch {
+                throw new VerificationError(`Public detail canonical/robots policy failed for ${route}.`);
+            }
+        } else {
+            // Shared public hubs have matching URLs in both environments. A
+            // preview-only detail must not be compared with a production redirect.
+            const production = await initialContext.request.get(`https://tinggaljalan.com${route}`);
+            if (!production.ok()) throw new VerificationError(`Production baseline is unavailable for ${route}.`);
+            baseline = tags(await production.text());
+            if (metadata.canonical.length !== 1 || baseline.canonical.length !== 1 || metadata.canonical[0].replace(base, 'https://tinggaljalan.com') !== baseline.canonical[0] || JSON.stringify(metadata.robots) !== JSON.stringify(baseline.robots)) throw new VerificationError(`Canonical/robots parity failed for ${route}.`);
+        }
+        if (bot && JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new VerificationError(`Crawler canonical/robots parity failed for ${route}.`);
         if (!expected.links.length || expected.links.some(link => /^javascript:/i.test(link.href))) throw new VerificationError(`Crawlable fallback links failed for ${route}.`);
         await visitor.goto(target, { waitUntil: 'networkidle' });
         await visitor.locator('.server-seo-content').waitFor({ state: 'detached' });
+        const visitorMetadata = await visitor.evaluate(() => ({
+            canonical: [...document.querySelectorAll('link[rel="canonical"]')].map(link => link.href),
+            robots: [...document.querySelectorAll('meta[name="robots"]')].map(meta => meta.content),
+        }));
+        if (JSON.stringify(visitorMetadata) !== JSON.stringify(metadata)) throw new VerificationError(`Visitor canonical/robots parity failed for ${route}.`);
         const normalize = text => text.replace(/\s+/g, ' ').trim();
         if (await visitor.locator('h1').count() !== 1 || normalize(await visitor.locator('h1').textContent()) !== normalize(expected.h1)) throw new VerificationError(`Visitor H1 parity failed for ${route}.`);
         if (expected.page.component === 'NewsDetailPage') {
@@ -178,7 +194,7 @@ try {
                 const heading = localized(section.heading).trim();
                 const body = localized(section.body).replace(/\r\n?/g, '\n').trim();
                 const paragraphs = body.split(/\n[\t ]*\n+/).filter(Boolean).map(text => ({ text: text.replaceAll('\n', ''), breaks: text.split('\n').length - 1 }));
-                if (actual.heading?.trim() !== heading || actual.id !== heading.toLowerCase().replace(/[^a-z0-9]+/g, '-') || JSON.stringify(actual.paragraphs) !== JSON.stringify(paragraphs)) throw new VerificationError('Initial article structure/text differs from CMS.');
+                if (actual.heading?.trim() !== heading || actual.id !== reviewArticleSectionId(section) || JSON.stringify(actual.paragraphs) !== JSON.stringify(paragraphs)) throw new VerificationError('Initial article structure/text differs from CMS.');
                 const rendered = await visitor.locator(`article section[id="${actual.id}"]`).evaluate(element => ({
                     heading: element.querySelector('h2').textContent,
                     paragraphs: [...element.querySelectorAll(':scope > p')].map(p => ({ text: p.textContent, breaks: p.querySelectorAll('br').length })),

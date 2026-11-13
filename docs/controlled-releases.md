@@ -39,6 +39,16 @@ exact source commit can be selected for preview.
    raw bodies, cookies, or credentials are saved by this check. Failure blocks
    finalize and triggers the existing rollback in both code publication and data
    refresh. Promotion receipts explicitly require `crawler_parity`.
+   Detail pages are checked against their exact self-canonical route, the reviewed
+   language robots policy, server page props and rendered head. Preview-only CMS
+   articles/packages need not exist in production. Shared public hub metadata
+   still compares with production. In run `43352458871`, an old preview-only inline
+   photo fixture redirected to `/news` on production, exposing the previous
+   incorrect cross-database baseline assumption; the existing code rollback passed.
+   Article fragment checks use the application's stable English-heading IDs even
+   when visible headings are translated; both the initial and hydrated heads must
+   retain identical canonical/robots declarations. These checks change no content
+   and do not relax preview authentication or noindex protection.
 6. Browser failure restores the previous preview code and access protection. Database
    migrations are not reversed. A successful result commits the preview publication,
    retains rollback code and saves a small `preview-receipt-<run-id>` artifact. It
