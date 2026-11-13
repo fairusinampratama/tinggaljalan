@@ -138,6 +138,19 @@ no promotion receipt. Its observed current runtime is diagnostic information;
 release verification still requires the exact selected candidate revision and
 the routes selected by the full browser checks.
 
+Run `43437463664` passed the read-only ten-route probe on the restored preview;
+run `43440376092` also passed it on candidate `6079906` during publication.
+The full preparation run `43437807278` still failed in its crawler step and
+rolled preview code back successfully. Local reproduction then established a
+runner defect: `Path.open()` does not support the `opener` argument. Even a
+successful remote result crashed while saving `crawler-verification.json`.
+Use the built-in `open()` with exclusive creation and a 0600, no-follow opener.
+An existing report or symlink is refused. Real CLI regression tests exercise
+successful remote evidence through report creation, rejected HTTP evidence with
+no report, stdin-only credential transfer and preservation of existing files.
+This changes no HTTP/parity/noindex requirements; the fixed controller still
+needs a fresh complete hosted verification before a promotion receipt is valid.
+
 ## Database and media refresh
 
 Run **Refresh Preview Data** from `main` only when an explicit production-shaped

@@ -1,7 +1,9 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
+import tempfile
 import unittest
 import urllib.error
 from types import SimpleNamespace
@@ -227,6 +229,80 @@ runpy.run_path(sys.argv[0], run_name='__main__')
         self.assertEqual(json.loads(result.stdout), {"failure": {"category": "transport", "route_index": 0, "kind": "health", "status": 0}})
         for private in ("credential-canary", "private-cookie", "response-body", "Authorization", "Basic "):
             self.assertNotIn(private, result.stdout + result.stderr)
+
+
+class CrawlerCommandTests(unittest.TestCase):
+    """Exercise the real runner entry point and report write without hosting access."""
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.output = self.root / "review"
+        self.output.mkdir(mode=0o700)
+        self.config = self.root / "private.json"
+        self.config.write_text(json.dumps({"review_password": "review-credential-canary", "admin_password": "admin-canary", "db_password": "database-canary"}))
+        self.config.chmod(0o600)
+        self.routes = ["/", "/routes", "/news", "/about-us", "/privacy-policy", "/?lang=id", "/news?lang=cn", "/routes?destination=bromo", "/routes/BROMO", "/news/preview-inline-photos", "/news/Bromo-wildfire"]
+        (self.output / "crawler-routes.json").write_text(json.dumps(self.routes))
+        self.evidence = {"revision": "a" * 40, "route_count": 11, "noindex": True, "content_parity": True, "metadata_parity": True, "authenticated": True}
+        binary = self.root / "bin"
+        binary.mkdir()
+        ssh = binary / "ssh"
+        ssh.write_text("#!" + sys.executable + "\n" + '''import json, os, sys
+from pathlib import Path
+payload = json.load(sys.stdin)
+Path(os.environ['CRAWLER_TEST_CAPTURE']).write_text(json.dumps({'arguments': sys.argv[1:], 'payload': payload}))
+print(os.environ['CRAWLER_TEST_RESPONSE'])
+sys.exit(int(os.environ['CRAWLER_TEST_EXIT']))
+''')
+        ssh.chmod(0o700)
+        self.environment = dict(os.environ, PATH=str(binary) + os.pathsep + os.environ.get("PATH", ""), CRAWLER_TEST_CAPTURE=str(self.root / "request.json"))
+
+    def run_command(self, evidence=None, code=0):
+        environment = dict(self.environment, CRAWLER_TEST_RESPONSE=json.dumps(self.evidence if evidence is None else evidence), CRAWLER_TEST_EXIT=str(code))
+        return subprocess.run([sys.executable, str(Path(wrapper.__file__).resolve()), str(self.root / "ssh-config"), "preview", str(self.config), "a" * 40, str(self.output)],
+                              text=True, capture_output=True, timeout=10, env=environment)
+
+    def assert_private_values_absent(self, text):
+        for secret in ("review-credential-canary", "admin-canary", "database-canary"):
+            self.assertNotIn(secret, text)
+
+    def test_real_command_saves_success_with_private_permissions(self):
+        result = self.run_command()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = self.output / "crawler-verification.json"
+        self.assertEqual(json.loads(report.read_text()), self.evidence)
+        self.assertEqual(report.stat().st_mode & 0o777, 0o600)
+        self.assertIn("Host-side crawler parity passed", result.stdout)
+        self.assert_private_values_absent(result.stdout + result.stderr + report.read_text())
+        request = json.loads((self.root / "request.json").read_text())
+        self.assertEqual(request["payload"], {"review_password": "review-credential-canary", "revision": "a" * 40, "routes": self.routes})
+        self.assert_private_values_absent(json.dumps(request["arguments"]))
+
+    def test_real_command_rejects_failed_remote_verification_without_report(self):
+        failure = {"category": "http", "route_index": 11, "kind": "crawler", "status": 403}
+        result = self.run_command({"failure": failure}, 1)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(json.loads(result.stdout), {"failure": failure})
+        self.assertFalse((self.output / "crawler-verification.json").exists())
+        self.assert_private_values_absent(result.stdout + result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_existing_report_and_symlink_target_are_never_overwritten(self):
+        report = self.output / "crawler-verification.json"
+        report.write_text("previous-public-evidence")
+        result = self.run_command()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(report.read_text(), "previous-public-evidence")
+        report.unlink()
+        victim = self.root / "unrelated.txt"
+        victim.write_text("unrelated-content")
+        report.symlink_to(victim)
+        result = self.run_command()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(report.is_symlink())
+        self.assertEqual(victim.read_text(), "unrelated-content")
+        self.assert_private_values_absent(result.stdout + result.stderr)
 
 
 if __name__ == "__main__":
