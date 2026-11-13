@@ -18,6 +18,8 @@ on:
     paths:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/staging-preflight.sh
+      - scripts/testing/preview-http-diagnostics.py
+      - tests/deployment/test_preview_http_diagnostics.py
       - scripts/deployment/prepare-staging-secrets.py
       - scripts/deployment/hosting-maintenance.py
       - tests/deployment/test_hosting_maintenance.py
@@ -33,6 +35,7 @@ jobs:
       - name: Validate script syntax
         run: |
           bash -n scripts/deployment/staging-preflight.sh
+          python3 tests/deployment/test_preview_http_diagnostics.py
           python3 tests/deployment/test_hosting_maintenance.py
 
   connection:
@@ -84,29 +87,40 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" "bash -s -- '$OPERATION' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
-      - name: Inspect existing preview authentication without changing hosting
+      - name: Compare preview HTTP responses without changing hosting
         env:
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
         run: |
-          python3 - <<'PY'
-          import base64, os, urllib.request, urllib.error
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, *args, **kwargs):
-                  return None
-          request = urllib.request.Request('https://preview.tinggaljalan.com/')
-          token = base64.b64encode(('reviewer:' + os.environ['STAGING_REVIEW_PASSWORD']).encode()).decode()
-          request.add_header('Authorization', 'Basic ' + token)
+          python3 scripts/testing/preview-http-diagnostics.py
+          python3 - <<'PYCODE'
+          import json, os, shlex, subprocess
+          from pathlib import Path
+          directory = Path(os.environ['RUNNER_TEMP']) / 'staging-ssh'
+          source = Path('scripts/testing/preview-http-diagnostics.py').read_text()
+          command = 'python3 -c ' + shlex.quote(source) + ' --stdin-password'
+          arguments = ['ssh', '-i', str(directory / 'key'), '-p', os.environ['SSH_PORT'],
+                       '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes',
+                       '-o', 'UserKnownHostsFile=' + str(directory / 'known_hosts'),
+                       '-o', 'ConnectTimeout=20', '-o', 'ServerAliveInterval=10', '-o', 'ServerAliveCountMax=2',
+                       os.environ['SSH_USER'] + '@' + os.environ['SSH_HOST'], command]
           try:
-              response = urllib.request.build_opener(NoRedirect).open(request, timeout=30)
-              code = response.status
-          except urllib.error.HTTPError as error:
-              code = error.code
-              response = error
-          print('Existing preview authenticated HTTP status:', code)
-          print('Preview PHP header:', response.headers.get('X-Powered-By', 'not advertised'))
-          body = response.read(16384)
-          print('Preview setup placeholder returned:', b'Preview setup incomplete' in body)
-          PY
+              result = subprocess.run(arguments, input=json.dumps({'review_password': os.environ['STAGING_REVIEW_PASSWORD']}),
+                                      capture_output=True, text=True, timeout=90)
+              assert result.returncode == 0 and len(result.stdout) < 4096
+              records = [json.loads(line) for line in result.stdout.splitlines()]
+              assert len(records) == 4
+              for record in records:
+                  assert set(record) == {'location', 'kind', 'authentication', 'status', 'category', 'noindex', 'basic_challenge'}
+                  assert record['authentication'] in ('preemptive', 'challenge')
+                  assert record['location'] == 'hosting' and record['kind'] in ('ordinary', 'crawler')
+                  assert type(record['status']) is int and 0 <= record['status'] <= 599
+                  assert record['category'] in ('http-response', 'transport-error', 'security-screen', 'litespeed-forbidden')
+                  assert type(record['noindex']) is bool and type(record['basic_challenge']) is bool
+              for record in records:
+                  print(json.dumps(record, sort_keys=True))
+          except Exception:
+              raise SystemExit('Host-side HTTP diagnostics failed; request details withheld.')
+          PYCODE
       - name: Record result
         run: |
           printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"

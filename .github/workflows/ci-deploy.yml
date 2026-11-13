@@ -158,6 +158,7 @@ jobs:
           python3 tests/deployment/test_production_recovery.py
           python3 tests/deployment/test_release_provenance.py
           python3 tests/deployment/test_preview_release_state.py
+          python3 tests/deployment/test_preview_http_diagnostics.py
 
       - name: Test release control safety
         run: |
