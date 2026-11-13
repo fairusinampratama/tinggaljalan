@@ -32,6 +32,8 @@ POLICY_FILES = (
     'scripts/testing/preview-http-diagnostics.py',
     'scripts/testing/verify-preview-crawler.py',
     'scripts/testing/public-review-routes.mjs',
+    'resources/js/utils/text.js',
+    'resources/js/utils/localization.js',
     'scripts/testing/staging-functional-browser.mjs',
     'scripts/testing/staging-functional-guard.php',
     'scripts/testing/staging-media-browser.mjs',
