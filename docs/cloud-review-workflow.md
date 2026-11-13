@@ -264,7 +264,7 @@ checkpoint above. Preserve the separate staging layout and production workflow.
 
 ## Staging SSH preflight
 
-The new `staging-preflight.yml` workflow has a syntax-only PR check and a manual
+The `staging-preflight.yml` workflow has an unprivileged validation job and a manual
 SSH job. The manual job uses the `staging` GitHub environment and requires:
 
 | Setting | Type | Purpose |
@@ -283,21 +283,30 @@ with a `.tinggaljalan-staging` file containing `preview.tinggaljalan.com`.
 If Hostinger uses a different document-root layout, inspect and review that layout
 before changing the guard; do not point it to the production domain directory.
 
-Run the workflow from the feature branch after GitHub recognizes the manual
-workflow. GitHub requires a workflow_dispatch workflow to exist on the default
-branch for normal manual dispatch; adding this file to a feature branch alone
-may not expose its Run workflow button. Any workflow-only merge needs separate
-release authorization because the current main push triggers production CI.
+Run hosting operations from reviewed `main`; the staging environment accepts
+only that branch. Main pushes run validation and do not publish production.
+Production publishing uses the separate protected promotion workflow described
+in `controlled-releases.md`.
 
 A successful SSH connection followed by a missing-directory error proves only
 connection, not hosting readiness. Completion requires runtime, staging marker,
 canonical directory and disk checks to pass. This preflight does not create a
 subdomain, database, files, or a deployment. The separate protected staging deployment script and build/test pipeline now
-implement the publication and browser verification described above. The production workflow is unchanged.
+implement the publication and browser verification described above.
+
+Connection/readiness also compare authenticated ordinary and Googlebot-style
+homepage requests from GitHub and from the hosting account. Requests are pinned
+to the preview HTTPS origin and never follow redirects. Output contains only
+status, fixed response categories, noindex and Basic-challenge booleans. Request
+credentials travel through SSH standard input, remain in memory on Hostinger,
+and are never placed in command arguments, hosting files or artifacts. Bodies,
+cookies and raw errors are not logged. These are diagnostics: an SSH/readiness
+pass does not mean HTTP or crawler verification passed. A crawler 403 must be
+investigated; do not bypass access controls or remove the release verification.
 
 ## Revised bootstrap sequence
 
-The preflight now offers three explicit manual operations:
+The bootstrap operations are:
 
 1. `export-host-record`: references the existing production environment only to
    compare its host/port to staging's hPanel-confirmed endpoint and extract a
@@ -318,7 +327,5 @@ from staging. Resolve that mismatch before changing its comparison. Production
 protection rules still apply to the export job. Exported host records need a
 reviewed transfer into the staging environment; no admin API token is introduced.
 
-The workflow must be made available on main before manual dispatch. The existing
-main-push pipeline may redeploy production when this PR merges. Do not merge as
-an implicit setup step: review checks and obtain approval for that concrete effect.
-The production deployment workflow itself remains unchanged.
+The workflow must be available on main before manual dispatch. Capacity and
+retention operations are documented separately in `hosting-capacity.md`.
