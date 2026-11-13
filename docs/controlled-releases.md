@@ -30,6 +30,15 @@ exact source commit can be selected for preview.
    providers, synthetic booking submission and dedicated preview admin login are
    mandatory. There is no functional-check opt-out. Production smoke tests must pass
    before and afterward at the same production revision.
+   The browser checks run from GitHub. Preview crawler parity runs as real
+   authenticated HTTP requests from the hosting account through pinned SSH; it
+   requires status 200, matching public fallback HTML and canonical/robots tags,
+   noindex protection, and the exact preview runtime revision. It uses the same
+   public routes discovered by the browser, including real package/article pages.
+   The review password is sent in SSH stdin and stays in memory. No hosting files,
+   raw bodies, cookies, or credentials are saved by this check. Failure blocks
+   finalize and triggers the existing rollback in both code publication and data
+   refresh. Promotion receipts explicitly require `crawler_parity`.
 6. Browser failure restores the previous preview code and access protection. Database
    migrations are not reversed. A successful result commits the preview publication,
    retains rollback code and saves a small `preview-receipt-<run-id>` artifact. It
@@ -74,6 +83,27 @@ Production credentials are never referenced by validation or preview build jobs.
 The `staging` environment must be restricted to the `main` branch so an old feature
 branch's workflow cannot access hosting credentials; selecting an application SHA
 as input does not change the trusted controller ref.
+
+### Preview crawler verification transport
+
+Read-only readiness run `43347470117` compared ordinary and Googlebot-style HTTP
+requests with preemptive Basic authentication and the normal 401 challenge flow:
+
+| Request origin | Ordinary | Googlebot-style |
+|---|---|---|
+| GitHub runner, either authentication mode | 200 | 403 |
+| Hosting account, either authentication mode | 200 | 200 |
+
+This establishes a request-path-dependent block, rather than a failure of the
+application to render its public homepage or a missing-password retry alone.
+The exact hosting/network rule was not identified through dashboard access.
+Hostinger documents that [crawler identity is verified beyond the user-agent](https://www.hostinger.com/support/hostinger-cdn-search-engine-crawlers-and-seo/).
+Changing a user-agent on a GitHub IP is not proof of verified Googlebot access.
+The required origin-side parity check tests application behavior without
+disabling firewall rules, exposing preview, spoofing an IP, accepting a 403, or
+using a skip/fallback path. It does not certify real search-engine access through
+the public edge; preview intentionally requires a password and is not indexable.
+Production browser reviews retain their direct crawler check.
 
 ## Database and media refresh
 
