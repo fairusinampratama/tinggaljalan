@@ -40,7 +40,7 @@ Branch: `fix/preview-responsive-media-verification`.
 ## Test/acceptance gates
 
 1. Validate diagnostic syntax, privacy/query-only tests, actual JPEG/PNG/WebP generation and shared verification against disposable MySQL; retain all source/sanitization/DB-media rollback tests. Test header-only corrupt raster, disguised unsupported format, wrong storage, missing/wrong-format/wrong-width derivatives, batch continuation and output canaries.
-2. Run required PHP/frontend/browser CI on the reviewed commit. Record exact run IDs/results in this PR and update this record before pausing.
+2. Run required PHP/frontend/browser CI on the reviewed commit. Record exact run IDs/results and the next action in PR metadata after checks; do not change the tested commit merely to record its own CI result.
 3. The diagnostic needs an approved main merge because hosting access is main-only. Do not bypass that environment boundary or run a full refresh to obtain the diagnostic evidence.
 4. Run `Staging SSH preflight` on current main with operation `public-media-generation-check`. Preserve fixed aggregate evidence and verify workspace cleanup. Establish/reproduce the exact failed rule before proposing a correction.
 5. Consolidate an evidence-backed correction with a regression test. After approved merge, run one fresh full refresh and verify DB separation, public-content fidelity, sanitized private/auth/runtime/payment data, disabled integrations, admin login, media, desktop/mobile/functional/crawler checks and unchanged production health.
