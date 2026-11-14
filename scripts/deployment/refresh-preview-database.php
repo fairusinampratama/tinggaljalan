@@ -64,6 +64,9 @@ try {
     refreshAssert($effective['mail']['default'] === 'log' && $effective['cache']['default'] === 'file' && $effective['session']['driver'] === 'file');
     $app = require $release.'/bootstrap/app.php';
     $app->make(Kernel::class)->bootstrap();
+    $stage = 'preview generator storage boundary';
+    refreshVerifyGeneratorStorage($shared, $operation);
+    $stage = 'preview runtime safety guards';
     refreshAssert(Http::preventingStrayRequests());
     refreshAssert(PublicSite::whatsappBase() === '#');
     refreshAssert(InertiaPublicData::site()['contactDetails']['actionsEnabled'] === false);
@@ -210,7 +213,9 @@ try {
     $target = null;
     $stage = 'responsive tourism images';
     $variantCount = refreshGenerateMedia($mediaPaths, $shared, new ResponsiveImageGenerator);
+    echo 'Responsive generation completed: originals='.count($mediaPaths).'; new variants='.$variantCount.PHP_EOL;
     $stage = 'responsive media verification';
+    $GLOBALS['refreshDetail'] = 'reconnected-preview-schema';
     $target = $connectPreview();
     refreshAssert(refreshSchema($target) === $schema);
     refreshVerifyMedia($target, $shared, $release, true);
@@ -247,6 +252,7 @@ try {
     }
     echo "Preview reopened with sanitized committed data; backup retained pending functional verification.\n";
 } catch (Throwable $error) {
+    $failureDetail = $GLOBALS['refreshDetail'] ?? null;
     if ($target instanceof PDO) {
         try {
             if ($target->inTransaction()) {
@@ -273,8 +279,8 @@ try {
             unlink($shared.'/storage/framework/down');
         }
     }
-    if (isset($GLOBALS['refreshDetail'])) {
-        fwrite(STDERR, 'Safe failure category: '.$GLOBALS['refreshDetail'].PHP_EOL);
+    if ($failureDetail !== null) {
+        fwrite(STDERR, 'Safe failure category: '.$failureDetail.PHP_EOL);
     }
     if ($error instanceof PDOException) {
         fwrite(STDERR, 'Database diagnostic code: '.(int) ($error->errorInfo[1] ?? 0).PHP_EOL);

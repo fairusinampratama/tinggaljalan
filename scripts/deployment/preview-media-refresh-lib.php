@@ -284,36 +284,66 @@ function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previe
     return count($copied);
 }
 
+function refreshVerifyGeneratorStorage(string $previewShared, string $operation): void
+{
+    refreshAssert(in_array($operation, ['refresh', 'rollback', 'finalize'], true));
+    // Recovery uses explicit backup/media paths and must not depend on a
+    // working image generator or its process-local application storage path.
+    if ($operation === 'refresh') {
+        refreshAssert(realpath(storage_path('app/public')) === $previewShared.'/storage/app/public');
+    }
+}
+
+function refreshVerifyResponsiveImage(string $public, string $relative): void
+{
+    $GLOBALS['refreshDetail'] = 'canonical-media-file';
+    $file = refreshCanonicalFile($public, $relative);
+    foreach ([480, 768, 960, 1200, 1600] as $width) {
+        $variantPath = 'generated/storage/'.preg_replace('/\.[a-z0-9]+$/', '', $relative).'-'.$width.'.webp';
+        $GLOBALS['refreshDetail'] = 'responsive-variant-file';
+        $variant = refreshCanonicalFile($public, $variantPath);
+        $GLOBALS['refreshDetail'] = 'responsive-variant-format';
+        $info = getimagesize($variant);
+        refreshAssert($info !== false && $info['mime'] === 'image/webp');
+        $GLOBALS['refreshDetail'] = 'responsive-variant-width';
+        refreshAssert($info[0] === min($width, getimagesize($file)[0]));
+    }
+    unset($GLOBALS['refreshDetail']);
+}
+
 function refreshVerifyMedia(PDO $db, string $previewShared, string $release, bool $derived = false): array
 {
     $public = $previewShared.'/storage/app/public';
     $static = $release.'/public';
+    $GLOBALS['refreshDetail'] = 'media-root-canonical';
     refreshAssert(realpath($public) === $public && realpath($static) === $static);
     $uploads = [];
     refreshVisitMedia($db, function ($value) use ($public, $static, $derived, &$uploads) {
         refreshAssert($value === null || is_string($value));
+        $GLOBALS['refreshDetail'] = 'media-reference-policy';
         $media = refreshMediaPath($value);
         if ($media === null || $media[0] === 'external') {
             return $value;
         }
+        $GLOBALS['refreshDetail'] = 'canonical-media-file';
         $file = refreshCanonicalFile($media[0] === 'static' ? $static : $public, $media[1]);
+        $GLOBALS['refreshDetail'] = 'canonical-media-image';
         refreshAssert($media[0] === 'static' && str_ends_with($media[1], '.svg') || refreshValidImage($file));
         if ($media[0] === 'upload') {
+            $GLOBALS['refreshDetail'] = 'canonical-media-name';
             refreshAssert(preg_match('~^admin/preview-refresh/([a-f0-9]{64})\.(?:jpg|jpeg|png|webp|svg)$~', $media[1], $matches) === 1);
+            $GLOBALS['refreshDetail'] = 'canonical-media-integrity';
             refreshAssert(hash_file('sha256', $file) === $matches[1]);
             $uploads[$media[1]] = true;
             if ($derived && ! str_ends_with($media[1], '.svg')) {
-                foreach ([480, 768, 960, 1200, 1600] as $width) {
-                    $relative = 'generated/storage/'.preg_replace('/\.[a-z0-9]+$/', '', $media[1]).'-'.$width.'.webp';
-                    $variant = refreshCanonicalFile($public, $relative);
-                    $info = getimagesize($variant);
-                    refreshAssert($info !== false && $info['mime'] === 'image/webp' && $info[0] === min($width, getimagesize($file)[0]));
-                }
+                refreshVerifyResponsiveImage($public, $media[1]);
             }
         }
 
         return $value;
     });
+
+    unset($GLOBALS['refreshDetail']);
 
     return array_keys($uploads);
 }

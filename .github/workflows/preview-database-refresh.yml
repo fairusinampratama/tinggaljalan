@@ -9,6 +9,8 @@ on:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/preview-db-*.php
       - scripts/deployment/preview-media-refresh-lib.php
+      - scripts/deployment/preview-media-generation-check.php
+      - scripts/deployment/preview-media-audit.php
       - scripts/testing/staging-media-browser.mjs
       - scripts/deployment/preview-db-schema.json
       - scripts/deployment/refresh-preview-database.php
