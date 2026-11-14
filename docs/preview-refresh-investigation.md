@@ -33,7 +33,7 @@ Branch: `fix/preview-responsive-media-verification`.
 - Add manual, main-only `public-media-generation-check` to the existing staging preflight workflow. It is a **private scratch generation diagnostic**, not the existing zero-file-write `public-media-audit`.
 - Inspect preview schema through query-only connections before and after generation. Read only reviewed production media columns in a read-only consistent snapshot; close both connections before CPU work.
 - Copy only allowlisted public originals into a new run-owned private directory under preview `deployments/incoming`. Use the actual deployed preview generator with a process-local scratch storage override, then the same responsive verifier used by refresh. Do not modify running configuration, existing public storage, either database, production files, or integrations.
-- Hold the hosting account lock and refuse pending database/code recovery journals. Never generate while a refresh/publication is pending.
+- Hold the hosting account lock, require the existing read-only capacity reserve check, and refuse pending database/code recovery journals. Never generate while a refresh/publication is pending. The capacity check does not apply retention or delete files.
 - Collect all field/category counts in one pass. No paths, filenames, row values, credentials, content hashes or image bytes in reports/artifacts. Known temporary handles are reported as runtime state; no temporary/private upload file is accessed.
 - Remove only this run's scratch workspace. Do not clean an existing workspace whose creation was refused. Existing `public-media-audit` remains read-only.
 

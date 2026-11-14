@@ -189,7 +189,7 @@ jobs:
           "${SSH[@]}" "$SSH_USER@$SSH_HOST" "umask 077; test ! -e '$REMOTE' && test ! -L '$REMOTE' && mkdir '$REMOTE' && test \"\$(readlink -f '$REMOTE')\" = '$REMOTE'"
           echo "MEDIA_CHECK_REMOTE=$REMOTE" >> "$GITHUB_ENV"
           scp -i "$RUNNER_TEMP/staging-ssh/key" -P "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
-            scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-media-refresh-lib.php scripts/deployment/preview-db-schema.json scripts/deployment/preview-media-audit.php scripts/deployment/preview-media-generation-check.php "$SSH_USER@$SSH_HOST:$REMOTE/"
+            scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-media-refresh-lib.php scripts/deployment/preview-db-schema.json scripts/deployment/preview-media-audit.php scripts/deployment/preview-media-generation-check.php scripts/deployment/hosting-maintenance.py "$SSH_USER@$SSH_HOST:$REMOTE/"
           "${SSH[@]}" "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php '$REMOTE/preview-media-generation-check.php'"
       - name: Remove this run's private diagnostic workspace
         if: always() && inputs.operation == 'public-media-generation-check'

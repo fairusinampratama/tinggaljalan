@@ -1,5 +1,11 @@
 <?php
 
+use App\Support\ResponsiveImageGenerator;
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Psr\Log\NullLogger;
+
 // Fixed categories only. Source rows, paths, image bytes and hashes stay private.
 function previewCheckGeneratedImage(mixed $value, string $source, string $public, object $generator): string
 {
@@ -137,13 +143,18 @@ try {
     foreach (['.database-refresh-pending.json', '.preview-release-pending.json'] as $journal) {
         refreshAssert(! file_exists($preview.'/deployments/'.$journal) && ! is_link($preview.'/deployments/'.$journal));
     }
+    $stage = 'read-only-capacity-reserve';
+    exec('python3 '.escapeshellarg(__DIR__.'/hosting-maintenance.py').' capacity --reserve 2>/dev/null', $capacityOutput, $capacityStatus);
+    refreshAssert($capacityStatus === 0);
+    echo "Read-only hosting capacity reserve check passed under account lock.\n";
+    $stage = 'runtime-boundaries';
     $release = realpath($preview.'/deployments/current');
     refreshAssert(is_string($release) && preg_match('~^'.preg_quote($preview, '~').'/deployments/releases/[a-f0-9]{40}$~', $release) === 1);
     require $release.'/vendor/autoload.php';
     $app = require $release.'/bootstrap/app.php';
-    $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-    Illuminate\Support\Facades\Log::swap(new Psr\Log\NullLogger);
-    refreshAssert(app()->environment('staging') && config('app.url') === 'https://preview.tinggaljalan.com' && Illuminate\Support\Facades\Http::preventingStrayRequests());
+    $app->make(Kernel::class)->bootstrap();
+    Log::swap(new NullLogger);
+    refreshAssert(app()->environment('staging') && config('app.url') === 'https://preview.tinggaljalan.com' && Http::preventingStrayRequests());
     $shared = $preview.'/deployments/shared';
     refreshAssert(realpath(storage_path('app/public')) === $shared.'/storage/app/public');
     $effective = require $release.'/bootstrap/cache/config.php';
@@ -184,7 +195,7 @@ try {
     $public = $scratch.'/storage/app/public';
     refreshAssert(mkdir($public, 0700, true) && realpath($public) === $public);
     $app->useStoragePath($scratch.'/storage');
-    $generator = new App\Support\ResponsiveImageGenerator;
+    $generator = new ResponsiveImageGenerator;
     refreshAssert($generator->isSupported());
     $result = previewCheckMediaReferences($references, $production.'/deployments/shared/storage/app/public', $public, $generator);
     $exit = $result['failed'] ? 2 : 0;
