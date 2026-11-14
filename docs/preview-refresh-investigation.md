@@ -20,9 +20,15 @@
 | PR #62 and refresh `43560991919` | Closing copy connections during filesystem work and reconnecting for verification/recovery removed the reported disconnect; in-process recovery worked. The next verification failure remains unidentified. |
 | Complete public-media inspection in this investigation | 164 distinct public uploaded originals across 39 sitemap routes fully decoded using Pillow: 160 JPEG, 4 PNG, no reported decode failures. This covers the discoverable public set and a different decoder; it does not establish Hostinger GD compatibility or coverage of unpublished database references. |
 
-## Unresolved question
+## Confirmed remaining failure class
 
-The latest failed phase includes the reconnected preview schema check and canonical/responsive media verification. Existing logs do **not** identify which assertion failed. Missing variants, bad WebP output, width mismatch and storage-path mismatch remain hypotheses, not established causes. Do not claim an image has been identified or that the refresh works.
+PR #63 was approved and merged as `7d821cfa9903265ce651816ed205bc5ff985771f`. Targeted Hostinger run `43568113149`, job `132366392326`, inspected the whole reviewed source media manifest without refreshing either database. It verified 183 uploaded references and identified exactly one `tour_packages.gallery` reference as `unsupported-raster-decoder`. Four static references, six empty values and one known temporary upload handle were also classified. Preview schema was unchanged across generation. Capacity reserve passed; scratch workspace and runner credential cleanup succeeded. Full production smoke passed again at unchanged runtime `41ff00f`.
+
+The header validator accepts a real raster type that the generator's three-case JPEG/PNG/WebP decoder dispatch rejects. The file passed the existing allowed-path/image-header policy but cannot reach successful responsive generation under that dispatch. The initial diagnostic intentionally did not log filenames, paths or type values; the exact stored type and its authoring history are not established. Do not guess that it is GIF, AVIF, BMP or corrupt. The public HTTP/Pillow inspection did not establish the complete on-disk database-reference set.
+
+Current correction branch: `fix/preview-native-raster-decoding`. Use GD's byte-based decoder as a fallback for additional native raster types while preserving explicit JPEG/PNG/WebP paths, the existing filename/path allowlist, canonical-byte hashes and strict WebP/width verification. Reject bytes the installed GD cannot decode. Preserve original bytes; generated derivatives remain still images. The diagnostic will report fixed fallback-format labels, allowing actual host verification to identify the type without exposing the source reference.
+
+**Required execution order after an approved correction merge:** prepare and verify the new application code on preview first, then rerun the targeted diagnostic using that deployed generator. Its implementation intentionally uses the deployed application's generator, so running it against old preview code would repeat the known decoder rejection. Only after that diagnostic verifies every reviewed image should a new full DB/media refresh be dispatched. No production deployment is authorized. The remaining refresh is not yet fixed on the real environment.
 
 ## Current diagnostic change
 
