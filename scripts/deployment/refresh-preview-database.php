@@ -65,7 +65,8 @@ try {
     $app = require $release.'/bootstrap/app.php';
     $app->make(Kernel::class)->bootstrap();
     $stage = 'preview generator storage boundary';
-    refreshAssert(realpath(storage_path('app/public')) === $shared.'/storage/app/public');
+    refreshVerifyGeneratorStorage($shared, $operation);
+    $stage = 'preview runtime safety guards';
     refreshAssert(Http::preventingStrayRequests());
     refreshAssert(PublicSite::whatsappBase() === '#');
     refreshAssert(InertiaPublicData::site()['contactDetails']['actionsEnabled'] === false);

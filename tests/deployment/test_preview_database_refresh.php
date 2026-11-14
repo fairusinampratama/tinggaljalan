@@ -244,6 +244,8 @@ refreshAssert(count($paths) === 1);
 $checks++;
 $originalStoragePath = $app->storagePath();
 $app->useStoragePath($previewShared.'/storage');
+refreshVerifyGeneratorStorage($previewShared, 'refresh');
+$checks++;
 // Reproduce a lost shared-host connection without waiting for an idle timeout.
 // The committed media manifest allows filesystem work to finish with no PDO.
 $connectionId = (int) $target->query('SELECT CONNECTION_ID()')->fetchColumn();
@@ -317,6 +319,11 @@ refreshAssert(file_get_contents($sourceImages.'/public.png') === $image);
 $checks++;
 $expectFailure(fn () => previewCheckMediaReferences(['private-canary' => ['invalid' => 0, 'values' => []]], $sourcePublic, $diagnosticPublic, $generator));
 $app->useStoragePath($originalStoragePath);
+// A generator storage mismatch must block copying, but never backup recovery.
+$expectFailure(fn () => refreshVerifyGeneratorStorage($previewShared, 'refresh'));
+refreshVerifyGeneratorStorage($previewShared, 'rollback');
+refreshVerifyGeneratorStorage($previewShared, 'finalize');
+$checks++;
 refreshAssert(previewCheckGeneratedImage('/storage/admin/hero/public.png', $sourcePublic, $diagnosticPublic, $generator) === 'diagnostic-storage-boundary');
 $checks++;
 $checks++;

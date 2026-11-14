@@ -284,6 +284,16 @@ function refreshCopyPublicImages(PDO $db, string $productionRoot, string $previe
     return count($copied);
 }
 
+function refreshVerifyGeneratorStorage(string $previewShared, string $operation): void
+{
+    refreshAssert(in_array($operation, ['refresh', 'rollback', 'finalize'], true));
+    // Recovery uses explicit backup/media paths and must not depend on a
+    // working image generator or its process-local application storage path.
+    if ($operation === 'refresh') {
+        refreshAssert(realpath(storage_path('app/public')) === $previewShared.'/storage/app/public');
+    }
+}
+
 function refreshVerifyResponsiveImage(string $public, string $relative): void
 {
     $GLOBALS['refreshDetail'] = 'canonical-media-file';
