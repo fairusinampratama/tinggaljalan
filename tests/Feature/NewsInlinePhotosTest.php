@@ -128,6 +128,7 @@ class NewsInlinePhotosTest extends TestCase
         $article = $this->article();
         $sections = [$article->sections[0]];
         $sections[0]['images'] = [null, 'broken', ['path' => []], $this->photo(''), $this->photo('javascript:alert(1)'),
+            $this->photo('livewire-file:synthetic-pending.jpg'), $this->photo('livewire-files:["synthetic-pending.jpg"]'),
             $this->photo('admin/../private.jpg'), $this->photo('//example.org/x.jpg'),
             [...$this->photo(), 'alt' => []], $this->photo(), $this->photo('/images/hero-bromo.jpg')];
         $article->update(['sections' => $sections]);

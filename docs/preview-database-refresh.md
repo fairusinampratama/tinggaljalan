@@ -99,3 +99,17 @@ After sanitization, the host helper compares source-snapshot and preview public 
 Business contact data may be present for display/admin review, but contact actions are inert on staging and outbound HTTP remains blocked. Arbitrary prose or external public business links are not blindly rewritten; intentionally published personal information cannot be detected semantically by this policy. Private voucher codes/labels never become public promotions.
 
 Public article section photographs are now included through the reviewed `sections[*].images[*].path` structure used by the current Filament form and frontend. Only image paths are remapped; headings, body text, alt descriptions and captions remain unchanged. The same canonical-image, responsive-variant and coordinated rollback rules apply. Browser media verification includes current sitemap-selected package and article detail pages.
+
+An exception is a persisted Livewire temporary-upload handle (`livewire-file:`
+or `livewire-files:`) in an inline photo's `path`. The read-only Hostinger audit
+and production admin inspection found one such runtime reference. Livewire
+4.3.1 `TemporaryUploadedFile::serializeForLivewireResponse` and
+`canUnserialize` confirm these prefixes represent temporary uploads, not public
+storage. The public article renderer already excludes them. The preview-only
+sanitizer sets just those path values to null before media copying and verifies
+no handles remain. Article prose, photo order, alt text, captions and valid
+photo paths stay intact; empty JSON objects retain their type. No temporary or
+private upload is read/copied, and production rows/files are not repaired or
+modified. All other unreviewed, traversal, symlink, missing and invalid image
+paths continue to fail closed. A production authoring fix/re-upload is separate
+follow-up work.
