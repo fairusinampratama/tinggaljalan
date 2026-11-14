@@ -4,6 +4,8 @@
 define('PREVIEW_MEDIA_AUDIT_LIBRARY_ONLY', true);
 require __DIR__.'/../../scripts/deployment/preview-db-refresh-lib.php';
 require __DIR__.'/../../scripts/deployment/preview-media-audit.php';
+define('PREVIEW_MEDIA_GENERATION_LIBRARY_ONLY', true);
+require __DIR__.'/../../scripts/deployment/preview-media-generation-check.php';
 set_exception_handler(static function (Throwable $error): void {
     fwrite(STDERR, 'Public media audit safety test failed at line '.$error->getLine().'.'.PHP_EOL);
     exit(1);
@@ -69,6 +71,12 @@ try {
 }
 refreshAssert($rejectedWrite);
 $records = previewMediaAudit($db, $root);
+$references = previewCollectMediaReferences($db);
+refreshAssert($references['news_articles.sections']['values'] === ['/storage/admin/site/good.png']);
+refreshAssert($references['about_pages.story']['invalid'] === 1);
+foreach (['private-prose-canary', 'private-caption-canary', 'private-about-canary'] as $canary) {
+    refreshAssert(! str_contains(json_encode($references), $canary));
+}
 refreshAssert($before === $db->query('SELECT * FROM news_articles')->fetchAll(PDO::FETCH_ASSOC));
 $fields = array_column($records, 'categories', 'field');
 refreshAssert($fields['site_settings.logo_url'] === ['valid-image' => 1]);

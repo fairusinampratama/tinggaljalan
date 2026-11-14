@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\DB;
 // Runs against disposable MySQL/MariaDB databases in CI, never Hostinger.
 require __DIR__.'/../../vendor/autoload.php';
 require __DIR__.'/../../scripts/deployment/preview-db-refresh-lib.php';
+define('PREVIEW_MEDIA_AUDIT_LIBRARY_ONLY', true);
+require __DIR__.'/../../scripts/deployment/preview-media-audit.php';
+define('PREVIEW_MEDIA_GENERATION_LIBRARY_ONLY', true);
+require __DIR__.'/../../scripts/deployment/preview-media-generation-check.php';
 $app = require __DIR__.'/../../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
 // Laravel's console bootstrap can otherwise render an uncaught exception and
@@ -252,7 +256,69 @@ refreshAssert(refreshSchema($target) === $schema);
 $checks++;
 $expectFailure(fn () => refreshGenerateMedia(['admin/payments/private.png'], $previewShared, new ResponsiveImageGenerator));
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true);
+// Failure categories reveal the failed rule, never paths, IDs or image bytes.
+$variant = $previewShared.'/storage/app/public/'.(new ResponsiveImageGenerator)->generatedPublicDiskPath($paths[0], 480);
+$validVariant = file_get_contents($variant);
+unlink($variant);
+clearstatcache(true, $variant);
+$expectFailure(fn () => refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true));
+refreshAssert($GLOBALS['refreshDetail'] === 'responsive-variant-file');
+file_put_contents($variant, $image);
+clearstatcache(true, $variant);
+$expectFailure(fn () => refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true));
+refreshAssert($GLOBALS['refreshDetail'] === 'responsive-variant-format');
+$wrongSize = imagecreatetruecolor(1, 1);
+imagewebp($wrongSize, $variant);
+imagedestroy($wrongSize);
+clearstatcache(true, $variant);
+$expectFailure(fn () => refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true));
+refreshAssert($GLOBALS['refreshDetail'] === 'responsive-variant-width');
+file_put_contents($variant, $validVariant);
+clearstatcache(true, $variant);
+refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true);
+refreshAssert(! isset($GLOBALS['refreshDetail']));
+// Diagnose every source reference without replacing a DB or emitting values.
+$sourcePublic = $media.'/production/deployments/shared/storage/app/public';
+$diagnosticPublic = $previewShared.'/storage/app/public';
+$generator = new ResponsiveImageGenerator;
+refreshAssert(previewCheckGeneratedImage('/storage/admin/hero/public.png', $sourcePublic, $diagnosticPublic, $generator) === 'responsive-image-verified');
+$checks++;
+$wrongSize = imagecreatetruecolor(2, 2);
+imagegif($wrongSize, $sourceImages.'/unsupported.png');
+imagedestroy($wrongSize);
+refreshAssert(previewCheckGeneratedImage('/storage/admin/hero/unsupported.png', $sourcePublic, $diagnosticPublic, $generator) === 'unsupported-raster-decoder');
+unlink($sourceImages.'/unsupported.png');
+$checks++;
+file_put_contents($sourceImages.'/header-only.png', substr($image, 0, 33));
+refreshAssert(previewCheckGeneratedImage('/storage/admin/hero/header-only.png', $sourcePublic, $diagnosticPublic, $generator) === 'raster-decode-failed');
+unlink($sourceImages.'/header-only.png');
+$checks++;
+foreach (['jpg' => 'imagejpeg', 'webp' => 'imagewebp'] as $extension => $encoder) {
+    $raster = imagecreatetruecolor(2401, 801);
+    $path = $sourceImages.'/format.'.$extension;
+    $encoder($raster, $path);
+    imagedestroy($raster);
+    $originalBytes = file_get_contents($path);
+    refreshAssert(previewCheckGeneratedImage('/storage/admin/hero/format.'.$extension, $sourcePublic, $diagnosticPublic, $generator) === 'responsive-image-verified');
+    refreshAssert(file_get_contents($path) === $originalBytes);
+    unlink($path);
+    $checks++;
+}
+$report = previewCheckMediaReferences(['hero_slides.desktop_image' => ['invalid' => 0, 'values' => [
+    '/storage/private/customer-canary.png', '/storage/admin/hero/missing-canary.png', '/storage/admin/hero/public.png', 'livewire-file:temporary-canary',
+]]], $sourcePublic, $diagnosticPublic, $generator);
+refreshAssert($report['failed'] && $report['records'][0]['categories'] === [
+    'missing-file' => 1, 'path-policy-rejected' => 1, 'responsive-image-verified' => 1, 'temporary-upload-handle' => 1,
+]);
+foreach (['canary', '/storage/', $sourcePublic, $diagnosticPublic] as $canary) {
+    refreshAssert(! str_contains(json_encode($report), $canary));
+}
+refreshAssert(file_get_contents($sourceImages.'/public.png') === $image);
+$checks++;
+$expectFailure(fn () => previewCheckMediaReferences(['private-canary' => ['invalid' => 0, 'values' => []]], $sourcePublic, $diagnosticPublic, $generator));
 $app->useStoragePath($originalStoragePath);
+refreshAssert(previewCheckGeneratedImage('/storage/admin/hero/public.png', $sourcePublic, $diagnosticPublic, $generator) === 'diagnostic-storage-boundary');
+$checks++;
 $checks++;
 $expectFailure(fn () => refreshMediaRoots($media.'/production', $media.'/production/deployments/shared'));
 $expectFailure(fn () => refreshMediaPath('/storage/admin/payments/receipt.png'));

@@ -11,6 +11,7 @@ on:
           - readiness
           - crawler-parity
           - public-media-audit
+          - public-media-generation-check
           - export-host-record
           - hosting-capacity
           - retention-plan
@@ -21,6 +22,7 @@ on:
       - .github/workflows/staging-preflight.yml
       - scripts/deployment/staging-preflight.sh
       - scripts/deployment/preview-media-audit.php
+      - scripts/deployment/preview-media-generation-check.php
       - tests/deployment/test_preview_media_audit.php
       - scripts/testing/preview-http-diagnostics.py
       - scripts/testing/verify-preview-crawler.py
@@ -47,11 +49,12 @@ jobs:
           bash -n scripts/deployment/staging-preflight.sh
           python3 tests/deployment/test_preview_http_diagnostics.py
           python3 tests/deployment/test_hosting_maintenance.py
+          php -l scripts/deployment/preview-media-generation-check.php
           php -l scripts/deployment/preview-media-audit.php
           php tests/deployment/test_preview_media_audit.php
 
   connection:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.operation == 'connection' || inputs.operation == 'readiness' || inputs.operation == 'crawler-parity' || inputs.operation == 'public-media-audit')
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.operation == 'connection' || inputs.operation == 'readiness' || inputs.operation == 'crawler-parity' || inputs.operation == 'public-media-audit' || inputs.operation == 'public-media-generation-check')
     needs: validate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -84,7 +87,7 @@ jobs:
           [[ "$SSH_USER" =~ ^[a-zA-Z0-9_-]+$ ]]
           test -n "$PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
-          if [[ "$OPERATION" == readiness || "$OPERATION" == crawler-parity || "$OPERATION" == public-media-audit ]]; then
+          if [[ "$OPERATION" == readiness || "$OPERATION" == crawler-parity || "$OPERATION" == public-media-audit || "$OPERATION" == public-media-generation-check ]]; then
             [[ "$STAGING_ROOT" =~ ^/home/[a-zA-Z0-9_-]+/domains/preview[.]tinggaljalan[.]com$ ]]
           fi
           umask 077
@@ -94,7 +97,7 @@ jobs:
       - name: Inspect staging prerequisites without changing hosting
         run: |
           CHECK_MODE="$OPERATION"
-          if [[ "$CHECK_MODE" == crawler-parity || "$CHECK_MODE" == public-media-audit ]]; then CHECK_MODE=readiness; fi
+          if [[ "$CHECK_MODE" == crawler-parity || "$CHECK_MODE" == public-media-audit || "$CHECK_MODE" == public-media-generation-check ]]; then CHECK_MODE=readiness; fi
           ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
@@ -102,7 +105,7 @@ jobs:
             "$SSH_USER@$SSH_HOST" "bash -s -- '$CHECK_MODE' '$STAGING_ROOT'" \
             < scripts/deployment/staging-preflight.sh
       - name: Compare preview HTTP responses without changing hosting
-        if: inputs.operation != 'crawler-parity' && inputs.operation != 'public-media-audit'
+        if: inputs.operation != 'crawler-parity' && inputs.operation != 'public-media-audit' && inputs.operation != 'public-media-generation-check'
         env:
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
         run: |
@@ -176,9 +179,33 @@ jobs:
             -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 \
             "$SSH_USER@$SSH_HOST" '/opt/alt/php84/usr/bin/php /dev/stdin' \
             < scripts/deployment/preview-media-audit.php
+      - name: Check actual responsive generation in private preview scratch storage
+        if: inputs.operation == 'public-media-generation-check'
+        run: |
+          set -euo pipefail
+          [[ "$STAGING_ROOT" == /home/u304629909/domains/preview.tinggaljalan.com ]]
+          REMOTE="$STAGING_ROOT/deployments/incoming/media-check-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          SSH=(ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2)
+          "${SSH[@]}" "$SSH_USER@$SSH_HOST" "umask 077; test ! -e '$REMOTE' && test ! -L '$REMOTE' && mkdir '$REMOTE' && test \"\$(readlink -f '$REMOTE')\" = '$REMOTE'"
+          echo "MEDIA_CHECK_REMOTE=$REMOTE" >> "$GITHUB_ENV"
+          scp -i "$RUNNER_TEMP/staging-ssh/key" -P "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+            scripts/deployment/preview-db-refresh-lib.php scripts/deployment/preview-media-refresh-lib.php scripts/deployment/preview-db-schema.json scripts/deployment/preview-media-audit.php scripts/deployment/preview-media-generation-check.php "$SSH_USER@$SSH_HOST:$REMOTE/"
+          "${SSH[@]}" "$SSH_USER@$SSH_HOST" "/opt/alt/php84/usr/bin/php '$REMOTE/preview-media-generation-check.php'"
+      - name: Remove this run's private diagnostic workspace
+        if: always() && inputs.operation == 'public-media-generation-check'
+        run: |
+          if test -n "${MEDIA_CHECK_REMOTE:-}" && test -f "$RUNNER_TEMP/staging-ssh/key"; then
+            [[ "$MEDIA_CHECK_REMOTE" == "/home/u304629909/domains/preview.tinggaljalan.com/deployments/incoming/media-check-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" ]]
+            ssh -i "$RUNNER_TEMP/staging-ssh/key" -p "$SSH_PORT" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/staging-ssh/known_hosts" \
+              "$SSH_USER@$SSH_HOST" "if test -d '$MEDIA_CHECK_REMOTE' && test ! -L '$MEDIA_CHECK_REMOTE' && test \"\$(readlink -f '$MEDIA_CHECK_REMOTE')\" = '$MEDIA_CHECK_REMOTE'; then rm -rf -- '$MEDIA_CHECK_REMOTE'; fi"
+          fi
       - name: Record result
         run: |
-          printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$OPERATION" == public-media-generation-check ]]; then
+            printf '## Media generation diagnostic\n\nActual preview generator and responsive verification passed in private scratch storage. Both databases were query-only; running preview content/configuration and production files were unchanged. Temporary copies were removed.\n' >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '## Staging preflight\n\nSelected read-only check passed. Connection mode does not establish staging readiness. No hosting files were changed.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Remove runner credentials
         if: always()
         run: rm -rf -- "$RUNNER_TEMP/staging-ssh"
