@@ -70,18 +70,26 @@ try {
     foreach (['SESSION_DRIVER' => 'file', 'CACHE_STORE' => 'file', 'SESSION_DOMAIN' => 'preview.tinggaljalan.com', 'SESSION_COOKIE' => 'tinggaljalan_preview_session', 'APP_MAINTENANCE_DRIVER' => 'file', 'FILESYSTEM_DISK' => 'local', 'BROADCAST_CONNECTION' => 'log'] as $key => $value) {
         refreshAssert(($env[$key] ?? null) === $value);
     }
-    $target = new PDO('mysql:host=localhost;dbname=u304629909_tj_preview;charset=utf8mb4', 'u304629909_tj_preview', $input['db_password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-    refreshAssert($target->query('SELECT DATABASE()')->fetchColumn() === 'u304629909_tj_preview');
+    $connectPreview = function () use ($input): PDO {
+        $connection = new PDO('mysql:host=localhost;dbname=u304629909_tj_preview;charset=utf8mb4', 'u304629909_tj_preview', $input['db_password'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        refreshAssert($connection->query('SELECT DATABASE()')->fetchColumn() === 'u304629909_tj_preview');
+
+        return $connection;
+    };
+    $target = $connectPreview();
     $policy = json_decode(file_get_contents(__DIR__.'/preview-db-schema.json'), true, flags: JSON_THROW_ON_ERROR);
     $schema = refreshSchema($target);
-    $restore = function () use ($target, $schema, $pending, $offline, $deploy, $shared): void {
+    $restore = function () use ($connectPreview, $schema, $pending, $offline, $deploy, $shared): void {
         $record = json_decode(file_get_contents($pending), true, flags: JSON_THROW_ON_ERROR);
         $closed = "# Preview database restore: fail closed\nRewriteEngine On\nRewriteRule ^ - [R=503,L]\n".base64_decode($record['htaccess'], true);
         refreshAssert(file_put_contents($offline.'.refresh-next', $closed) === strlen($closed));
         chmod($offline.'.refresh-next', 0644);
         refreshAssert(rename($offline.'.refresh-next', $offline));
         refreshAssert(preg_match('/^preview-before-[0-9]+-[0-9]+\.jsonl\.gz$/', $record['backup']) === 1);
-        refreshRestore($target, $schema, $deploy.'/database-backups/'.$record['backup'], $record['digest']);
+        // A failed operation may have lost its DB connection. Never reuse it.
+        $restoreTarget = $connectPreview();
+        refreshAssert(refreshSchema($restoreTarget) === $schema);
+        refreshRestore($restoreTarget, $schema, $deploy.'/database-backups/'.$record['backup'], $record['digest']);
         if (isset($record['media_baseline'])) {
             refreshRestoreMedia($shared, $record['media_baseline']);
         }
@@ -186,7 +194,7 @@ try {
     $stage = 'public tourism images';
     $imageCount = refreshCopyPublicImages($target, $productionRoot, $shared);
     $stage = 'canonical media consistency';
-    refreshVerifyMedia($target, $shared, $release);
+    $mediaPaths = refreshVerifyMedia($target, $shared, $release);
     $stage = 'functional route selection';
     $GLOBALS['refreshDetail'] = 'functional-route-format';
     $route = refreshFunctionalRoute($target);
@@ -196,8 +204,16 @@ try {
     $target->commit();
     $target->exec('SET FOREIGN_KEY_CHECKS=1');
     $source->rollBack();
+    // CPU/filesystem work can outlast a shared-host DB idle timeout. No DB
+    // transaction or connection is needed while generating responsive files.
+    $source = null;
+    $target = null;
     $stage = 'responsive tourism images';
-    $variantCount = refreshGenerateMedia($target, $shared, $release, new ResponsiveImageGenerator);
+    $variantCount = refreshGenerateMedia($mediaPaths, $shared, new ResponsiveImageGenerator);
+    $stage = 'responsive media verification';
+    $target = $connectPreview();
+    refreshAssert(refreshSchema($target) === $schema);
+    refreshVerifyMedia($target, $shared, $release, true);
     // Existing immutable media bytes must remain intact throughout the refresh.
     foreach ($mediaBaseline as $relative => $digest) {
         refreshAssert(hash_file('sha256', refreshCanonicalFile($shared.'/storage/app/public', $relative)) === $digest);
@@ -231,8 +247,15 @@ try {
     }
     echo "Preview reopened with sanitized committed data; backup retained pending functional verification.\n";
 } catch (Throwable $error) {
-    if ($target instanceof PDO && $target->inTransaction()) {
-        $target->rollBack();
+    if ($target instanceof PDO) {
+        try {
+            if ($target->inTransaction()) {
+                $target->rollBack();
+            }
+        } catch (Throwable) {
+            // Closing a dead operation connection must not block backup recovery.
+        }
+        $target = null;
     }
     if ($operation === 'refresh' && isset($restore) && is_file($pending)) {
         try {

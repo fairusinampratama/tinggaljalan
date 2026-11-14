@@ -318,10 +318,16 @@ function refreshVerifyMedia(PDO $db, string $previewShared, string $release, boo
     return array_keys($uploads);
 }
 
-function refreshGenerateMedia(PDO $db, string $previewShared, string $release, object $generator): int
+function refreshGenerateMedia(array $paths, string $previewShared, object $generator): int
 {
     refreshAssert($generator->isSupported());
-    $paths = refreshVerifyMedia($db, $previewShared, $release);
+    $public = $previewShared.'/storage/app/public';
+    refreshAssert(realpath($public) === $public);
+    foreach ($paths as $path) {
+        refreshAssert(is_string($path) && preg_match('~^admin/preview-refresh/([a-f0-9]{64})\.(?:jpg|jpeg|png|webp|svg)$~', $path, $matches) === 1);
+        $file = refreshCanonicalFile($public, $path);
+        refreshAssert(hash_file('sha256', $file) === $matches[1] && refreshValidImage($file));
+    }
     refreshEnsureMediaDirectory($previewShared.'/storage/app/public', 'generated/storage/admin/preview-refresh');
     $mask = umask(0022);
     $count = 0;
@@ -334,7 +340,6 @@ function refreshGenerateMedia(PDO $db, string $previewShared, string $release, o
     } finally {
         umask($mask);
     }
-    refreshVerifyMedia($db, $previewShared, $release, true);
 
     return $count;
 }

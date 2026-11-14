@@ -137,7 +137,8 @@ $checks++;
 $expectFailure(fn () => refreshRestore($db, $schema, $backup, str_repeat('0', 64)));
 // Copy a real schema from a read-only snapshot into a separate disposable DB.
 $db->exec('CREATE DATABASE preview_refresh_target');
-$target = new PDO('mysql:host=127.0.0.1;dbname=preview_refresh_target;charset=utf8mb4', 'root', 'test-password', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$connectTarget = fn (): PDO => new PDO('mysql:host=127.0.0.1;dbname=preview_refresh_target;charset=utf8mb4', 'root', 'test-password', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$target = $connectTarget();
 $target->exec('SET FOREIGN_KEY_CHECKS=0');
 foreach ($schema as $table => $columns) {
     $create = $db->query('SHOW CREATE TABLE '.refreshIdentifier($table))->fetch(PDO::FETCH_NUM)[1];
@@ -239,7 +240,17 @@ refreshAssert(count($paths) === 1);
 $checks++;
 $originalStoragePath = $app->storagePath();
 $app->useStoragePath($previewShared.'/storage');
-refreshAssert(refreshGenerateMedia($target, $previewShared, dirname(__DIR__, 2), new ResponsiveImageGenerator) === 5);
+// Reproduce a lost shared-host connection without waiting for an idle timeout.
+// The committed media manifest allows filesystem work to finish with no PDO.
+$connectionId = (int) $target->query('SELECT CONNECTION_ID()')->fetchColumn();
+$killer = $connectTarget();
+$killer->exec('KILL CONNECTION '.$connectionId);
+$expectFailure(fn () => $target->query('SELECT 1'));
+refreshAssert(refreshGenerateMedia($paths, $previewShared, new ResponsiveImageGenerator) === 5);
+$target = $connectTarget();
+refreshAssert(refreshSchema($target) === $schema);
+$checks++;
+$expectFailure(fn () => refreshGenerateMedia(['admin/payments/private.png'], $previewShared, new ResponsiveImageGenerator));
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true);
 $app->useStoragePath($originalStoragePath);
 $checks++;
@@ -282,6 +293,13 @@ file_put_contents($sourceImages.'/active.svg', '<svg xmlns="http://www.w3.org/20
 refreshAssert(refreshValidImage($sourceImages.'/active.svg'));
 unlink($sourceImages.'/active.svg');
 $checks++;
+// Recovery must use a fresh connection even when the failed one is gone.
+$target->exec('DELETE FROM bookings');
+$connectionId = (int) $target->query('SELECT CONNECTION_ID()')->fetchColumn();
+$killer->exec('KILL CONNECTION '.$connectionId);
+$expectFailure(fn () => $target->query('SELECT 1'));
+$target = $connectTarget();
+refreshAssert(refreshSchema($target) === $schema);
 // A committed new DB plus media is restored as one logical snapshot.
 refreshRestore($target, $schema, $targetBackup, $targetDigest);
 refreshRestoreMedia($previewShared, $baseline);
@@ -323,7 +341,7 @@ refreshAssert(str_starts_with($copiedSection['images'][0]['path'], '/storage/adm
 refreshAssert(file_get_contents($inlineDirectory.'/public.png') === $inlineBytes);
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2));
 $app->useStoragePath($previewShared.'/storage');
-refreshAssert(refreshGenerateMedia($target, $previewShared, dirname(__DIR__, 2), new ResponsiveImageGenerator) === 5);
+refreshAssert(refreshGenerateMedia(refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2)), $previewShared, new ResponsiveImageGenerator) === 5);
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2), true);
 $app->useStoragePath($originalStoragePath);
 $target->rollBack();

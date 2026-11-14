@@ -113,3 +113,9 @@ private upload is read/copied, and production rows/files are not repaired or
 modified. All other unreviewed, traversal, symlink, missing and invalid image
 paths continue to fail closed. A production authoring fix/re-upload is separate
 follow-up work.
+
+### Database connections during responsive media generation
+
+Hostinger run `43536854773` completed copying and sanitization, then reported MySQL diagnostic `2006` during responsive generation. Its in-process restore reused the failed connection; the separate workflow recovery process successfully restored the previous DB and matching media. The hosting disconnect reason is not established by that diagnostic alone.
+
+Responsive generation now consumes an already verified public-image manifest and performs only filesystem work. After the sanitized transaction commits, both source and target PDO connections are closed before image generation. A fresh, identity-checked preview-only connection verifies the schema and all derived images before reopening. Backup recovery always opens a fresh preview-only connection rather than reusing the failed operation connection. No transaction is retried, no server timeout/global setting is changed, and production is never reconnected for media generation or recovery. Disposable MySQL tests kill the target connection before media generation and before committed-copy recovery, and verify generation, fresh-connection validation, backup restoration, media rollback and source preservation.
