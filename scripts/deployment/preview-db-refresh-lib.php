@@ -139,6 +139,7 @@ function refreshSanitize(PDO $db, string $adminPassword): void
     refreshUpdate($db, 'bookings', ['whatsapp' => null, 'whatsapp_country' => null, 'pickup' => 'Preview pickup', 'notes' => null, 'selected_add_ons' => null, 'voucher_code' => null, 'payment_gateway' => null, 'travel_date' => null, 'admin_notification_attempted_at' => null, 'admin_whatsapp_sent_at' => null, 'admin_whatsapp_failed_at' => null, 'admin_email_sent_at' => null, 'admin_email_failed_at' => null, 'admin_notification_error' => null]);
     // Public CMS reviews/testimonials/reasons/business display data stay realistic.
     refreshValidatePublicContentShapes($db);
+    refreshSanitizeTemporaryArticleUploads($db);
     refreshUpdate($db, 'package_availabilities', ['notes' => null]);
     refreshUpdate($db, 'route_filters', ['description' => null]);
     $db->exec("UPDATE hero_slides SET admin_label = CONCAT('Preview hero ', id)");
@@ -153,6 +154,9 @@ function refreshSanitize(PDO $db, string $adminPassword): void
 
 function refreshVerifySanitized(PDO $db, string $adminPassword): void
 {
+    foreach ($db->query('SELECT sections FROM news_articles')->fetchAll(PDO::FETCH_COLUMN) as $sections) {
+        refreshAssert($sections === refreshArticleSectionsWithoutUploadHandles($sections));
+    }
     foreach (['password_reset_tokens', 'sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'booking_payments', 'settings'] as $table) {
         refreshAssert((int) $db->query('SELECT COUNT(*) FROM '.refreshIdentifier($table))->fetchColumn() === 0);
     }

@@ -68,6 +68,46 @@ function refreshVisitMedia(PDO $db, callable $visit): void
     }
 }
 
+function refreshArticleSectionsWithoutUploadHandles(?string $raw): ?string
+{
+    if ($raw === null || $raw === '') {
+        return $raw;
+    }
+    // Livewire's temporary-upload serialization is runtime state, not a public
+    // disk path. Preserve every other CMS value, including empty JSON objects.
+    $sections = json_decode($raw, flags: JSON_THROW_ON_ERROR);
+    refreshAssert(is_array($sections) && array_is_list($sections));
+    $changed = false;
+    foreach ($sections as $section) {
+        refreshAssert($section instanceof stdClass);
+        if (! isset($section->images)) {
+            continue;
+        }
+        refreshAssert(is_array($section->images) && array_is_list($section->images));
+        foreach ($section->images as $image) {
+            refreshAssert($image instanceof stdClass);
+            $path = $image->path ?? null;
+            if (is_string($path) && (str_starts_with($path, 'livewire-file:') || str_starts_with($path, 'livewire-files:'))) {
+                $image->path = null;
+                $changed = true;
+            }
+        }
+    }
+
+    return $changed ? json_encode($sections, JSON_THROW_ON_ERROR) : $raw;
+}
+
+function refreshSanitizeTemporaryArticleUploads(PDO $db): void
+{
+    $update = $db->prepare('UPDATE news_articles SET sections = ? WHERE id = ?');
+    foreach ($db->query('SELECT id, sections FROM news_articles')->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $sanitized = refreshArticleSectionsWithoutUploadHandles($row['sections']);
+        if ($sanitized !== $row['sections']) {
+            $update->execute([$sanitized, $row['id']]);
+        }
+    }
+}
+
 function refreshMediaPath(?string $value): ?array
 {
     if ($value === null || $value === '') {

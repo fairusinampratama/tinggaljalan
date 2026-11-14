@@ -83,6 +83,16 @@ refreshInsert($db, 'package_availabilities', ['tour_package_id' => $firstTour, '
 refreshUpdate($db, 'route_filters', ['description' => '{"us":"Private internal taxonomy note"}']);
 refreshUpdate($db, 'hero_slides', ['admin_label' => 'Private campaign planning name']);
 refreshInsert($db, 'vouchers', ['code' => 'PRIVATE-CUSTOMER-CODE', 'label' => 'Private customer gift', 'is_public' => 0, 'discount_type' => 'percent', 'discount_value' => 10, 'public_title' => '{"us":"Private draft"}', 'public_description' => '{"us":"Private draft description"}']);
+$temporarySections = '[{"heading":{"us":"Public heading"},"body":{"us":"Public prose"},"images":[{"path":"livewire-file:synthetic-pending.jpg","alt":{"us":"Public alt"},"caption":{}},{"path":"livewire-files:[\"synthetic-pending.jpg\"]","alt":{"us":"Public alt"},"caption":{"us":"Public credit"}}]}]';
+refreshUpdate($db, 'news_articles', ['sections' => $temporarySections]);
+$temporarySections = $db->query('SELECT sections FROM news_articles LIMIT 1')->fetchColumn();
+$expectedTemporarySections = json_decode($temporarySections);
+foreach ($expectedTemporarySections[0]->images as $temporaryImage) {
+    $temporaryImage->path = null;
+}
+refreshAssert(json_decode(refreshArticleSectionsWithoutUploadHandles($temporarySections)) == $expectedTemporarySections);
+refreshAssert(refreshArticleSectionsWithoutUploadHandles(refreshArticleSectionsWithoutUploadHandles($temporarySections)) === refreshArticleSectionsWithoutUploadHandles($temporarySections));
+$checks++;
 $publicSnapshot = refreshPublicContentSnapshot($db);
 $backup = sys_get_temp_dir().'/preview-refresh-test-'.bin2hex(random_bytes(8)).'.jsonl.gz';
 $digest = refreshBackup($db, $schema, $backup);
@@ -92,6 +102,7 @@ $db->exec('SET FOREIGN_KEY_CHECKS=0');
 $db->beginTransaction();
 refreshSanitize($db, $adminPassword);
 refreshVerifySanitized($db, $adminPassword);
+refreshAssert(json_decode($db->query('SELECT sections FROM news_articles LIMIT 1')->fetchColumn()) == $expectedTemporarySections);
 refreshAssert(refreshPublicContentSnapshot($db) === $publicSnapshot);
 refreshAssert($db->query('SELECT reason FROM package_availabilities ORDER BY id DESC LIMIT 1')->fetchColumn() === 'Public local closure explanation');
 refreshAssert($db->query('SELECT notes FROM package_availabilities ORDER BY id DESC LIMIT 1')->fetchColumn() === null);
@@ -141,6 +152,9 @@ $counts = refreshCopy($db, $target, $schema);
 refreshSanitize($target, $adminPassword);
 refreshVerifySanitized($target, $adminPassword);
 refreshVerifyPublicContent($db, $target);
+refreshAssert($db->query('SELECT sections FROM news_articles LIMIT 1')->fetchColumn() === $temporarySections);
+refreshAssert(json_decode($target->query('SELECT sections FROM news_articles LIMIT 1')->fetchColumn()) == $expectedTemporarySections);
+$checks++;
 $checks++;
 // Public fidelity verification must detect accidental CMS redaction.
 $reviewId = (int) $target->query('SELECT id FROM reviews ORDER BY id LIMIT 1')->fetchColumn();
@@ -238,6 +252,8 @@ $expectFailure(fn () => refreshMediaPath('/storage/framework/sessions/customer.p
 $expectFailure(fn () => refreshMediaPath('/storage/private/passport.png'));
 $expectFailure(fn () => refreshMediaPath('/storage/admin/hero/../../private.png'));
 $expectFailure(fn () => refreshMediaPath('/storage/admin/hero/missing.exe'));
+$expectFailure(fn () => refreshMediaPath('livewire-file:synthetic-pending.jpg'));
+$expectFailure(fn () => refreshMediaPath('livewire-files:["synthetic-pending.jpg"]'));
 refreshAssert(refreshMediaPath(null) === null && refreshMediaPath('') === null);
 refreshAssert(refreshMediaPath('https://example.org/logo.png')[0] === 'external');
 $checks++;
@@ -285,13 +301,24 @@ imagedestroy($inlineFixture);
 $inlineBytes = file_get_contents($inlineDirectory.'/public.png');
 $target->beginTransaction();
 refreshVisitMedia($target, fn ($path) => $path === null ? null : '');
-$section = ['heading' => ['us' => 'Public editorial heading'], 'body' => ['us' => 'Public article prose.'],
-    'images' => [['path' => 'admin/news/sections/public.png', 'alt' => ['us' => 'Public photo description'], 'caption' => ['us' => 'Published photographer credit']]]];
+$section = [
+    'heading' => ['us' => 'Public editorial heading'],
+    'body' => ['us' => 'Public article prose.'],
+    'images' => [
+        ['path' => 'admin/news/sections/public.png', 'alt' => ['us' => 'Public photo description'], 'caption' => ['us' => 'Published photographer credit']],
+        ['path' => 'livewire-file:synthetic-inline.jpg', 'alt' => ['us' => 'Public planned photo'], 'caption' => ['us' => 'Public planned credit']],
+    ],
+];
 refreshUpdate($target, 'news_articles', ['sections' => json_encode([$section], JSON_THROW_ON_ERROR)]);
+$expectFailure(fn () => refreshVerifySanitized($target, $adminPassword));
+refreshSanitize($target, $adminPassword);
+refreshVerifySanitized($target, $adminPassword);
 refreshAssert(refreshCopyPublicImages($target, $media.'/production', $previewShared) === 1);
 $copiedSection = json_decode($target->query('SELECT sections FROM news_articles LIMIT 1')->fetchColumn(), true, flags: JSON_THROW_ON_ERROR)[0];
 refreshAssert($copiedSection['heading'] === $section['heading'] && $copiedSection['body'] === $section['body']);
 refreshAssert($copiedSection['images'][0]['alt'] === $section['images'][0]['alt'] && $copiedSection['images'][0]['caption'] === $section['images'][0]['caption']);
+refreshAssert($copiedSection['images'][1]['path'] === null);
+refreshAssert($copiedSection['images'][1]['alt'] === $section['images'][1]['alt'] && $copiedSection['images'][1]['caption'] === $section['images'][1]['caption']);
 refreshAssert(str_starts_with($copiedSection['images'][0]['path'], '/storage/admin/preview-refresh/'));
 refreshAssert(file_get_contents($inlineDirectory.'/public.png') === $inlineBytes);
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2));
@@ -304,6 +331,13 @@ refreshRestoreMedia($previewShared, $baseline);
 refreshVerifyMedia($target, $previewShared, dirname(__DIR__, 2));
 refreshAssert(refreshManagedMediaState($previewShared) === $baseline);
 $checks++;
+// Other invalid/private paths remain untouched by this narrow sanitizer and
+// must still fail the original media boundary. Never turn it into a fallback.
+foreach (['/storage/private/customer.png', 'admin/news/sections/../../private.png'] as $invalidPath) {
+    $invalidSections = json_encode([['images' => [['path' => $invalidPath]]]], JSON_THROW_ON_ERROR);
+    refreshAssert(refreshArticleSectionsWithoutUploadHandles($invalidSections) === $invalidSections);
+    $expectFailure(fn () => refreshMediaPath($invalidPath));
+}
 mkdir($retention, 0700);
 foreach ([1, 2, 3, 4, 5] as $number) {
     file_put_contents($retention.'/preview-before-'.$number.'-1.jsonl.gz', 'synthetic-preview-backup');
