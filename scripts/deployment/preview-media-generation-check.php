@@ -23,20 +23,26 @@ function previewCheckGeneratedImage(mixed $value, string $source, string $public
             return 'valid-passive-svg';
         }
         $info = getimagesize($file);
-        if (! in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
-            return 'unsupported-raster-decoder';
-        }
+        $nativeFormat = match ($info[2]) {
+            IMAGETYPE_GIF => 'gif',
+            IMAGETYPE_BMP => 'bmp',
+            IMAGETYPE_AVIF => 'avif',
+            IMAGETYPE_WBMP => 'wbmp',
+            IMAGETYPE_ICO => 'ico',
+            default => 'other',
+        };
         $decoder = match ($info[2]) {
             IMAGETYPE_JPEG => 'imagecreatefromjpeg',
             IMAGETYPE_PNG => 'imagecreatefrompng',
             IMAGETYPE_WEBP => 'imagecreatefromwebp',
+            default => 'imagecreatefromstring',
         };
         if (! function_exists($decoder)) {
             return 'unavailable-raster-decoder';
         }
-        $decoded = @$decoder($file);
+        $decoded = @$decoder($decoder === 'imagecreatefromstring' ? file_get_contents($file) : $file);
         if ($decoded === false) {
-            return 'raster-decode-failed';
+            return $decoder === 'imagecreatefromstring' ? 'raster-decode-failed-'.$nativeFormat : 'raster-decode-failed';
         }
         imagedestroy($decoded);
         $digest = hash_file('sha256', $file);
@@ -58,7 +64,7 @@ function previewCheckGeneratedImage(mixed $value, string $source, string $public
         refreshAssert(hash_file('sha256', $file) === $digest);
         unset($GLOBALS['refreshDetail']);
 
-        return 'responsive-image-verified';
+        return $decoder === 'imagecreatefromstring' ? 'responsive-image-verified-'.$nativeFormat : 'responsive-image-verified';
     } catch (Throwable) {
         $category = $GLOBALS['refreshDetail'] ?? 'generation-check-error';
         unset($GLOBALS['refreshDetail']);
@@ -90,7 +96,7 @@ function previewCollectMediaReferences(PDO $db): array
 
 function previewCheckMediaReferences(array $references, string $source, string $public, object $generator): array
 {
-    $accepted = ['empty', 'static', 'external', 'temporary-upload-handle', 'valid-passive-svg', 'responsive-image-verified'];
+    $accepted = ['empty', 'static', 'external', 'temporary-upload-handle', 'valid-passive-svg', 'responsive-image-verified', 'responsive-image-verified-gif', 'responsive-image-verified-bmp', 'responsive-image-verified-avif', 'responsive-image-verified-wbmp', 'responsive-image-verified-ico', 'responsive-image-verified-other'];
     $allowedFields = [];
     foreach (refreshMediaFields() as $table => $fields) {
         foreach (array_keys($fields) as $column) {

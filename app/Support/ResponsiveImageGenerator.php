@@ -130,7 +130,9 @@ class ResponsiveImageGenerator
             IMAGETYPE_JPEG => imagecreatefromjpeg($source),
             IMAGETYPE_PNG => imagecreatefrompng($source),
             IMAGETYPE_WEBP => function_exists('imagecreatefromwebp') ? imagecreatefromwebp($source) : false,
-            default => false,
+            // Legacy uploads can contain a different valid raster type than
+            // their filename suggests. GD detects supported formats by bytes.
+            default => imagecreatefromstring(file_get_contents($source)),
         };
     }
 
