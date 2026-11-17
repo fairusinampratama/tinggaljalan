@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { blockGoogleMeasurement, expect, test } from './fixtures.js';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
@@ -15,6 +15,7 @@ test('inline photographs match initial HTML after React mount, including transla
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const serverContext = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 1440, height: 1000 } });
+  await blockGoogleMeasurement(serverContext);
   const server = await serverContext.newPage();
   await server.goto(story + '?lang=cn');
   const expected = await server.locator(photoSelector).evaluateAll(figures => figures.map(figure => ({

@@ -61,7 +61,7 @@ export function ConsentBanner({ t }) {
           <div className="min-w-0 flex-1">
             <h2 id="cookie-consent-title" className="text-base font-bold">{t.cookieConsentTitle ?? 'Your privacy choices'}</h2>
             <p id="cookie-consent-description" className="mt-1 text-sm font-medium leading-6 text-muted">
-              {t.cookieConsentText ?? 'We use optional analytics and advertising cookies to understand site usage and which campaigns help travelers find us.'}{' '}
+              {t.cookieConsentText ?? 'We use optional analytics and advertising cookies after you accept. Google tags load with consent denied and may send cookieless measurements before acceptance or after decline.'}{' '}
               <a href="/privacy-policy" className="inline-flex items-center gap-1 font-bold text-secondary underline decoration-secondary/40 underline-offset-2 hover:text-primary">
                 {t.cookieConsentLearnMore ?? 'Learn more'} <ExternalLink className="h-3 w-3" aria-hidden="true" />
               </a>

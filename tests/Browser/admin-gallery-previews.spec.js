@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 import { readFileSync } from 'node:fs';
 
 const prototype = JSON.parse(readFileSync('database/seeders/data/prototype.json', 'utf8'));

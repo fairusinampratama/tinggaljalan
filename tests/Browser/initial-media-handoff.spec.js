@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="1600" height="900" fill="#2f6f6d"/></svg>';
 
 for (const fail of [false, true]) {
-  test(`initial view survives ${fail ? 'failed' : 'delayed'} replacement media`, async ({ page }, testInfo) => {
+  test(`initial view survives ${fail ? 'failed' : 'delayed'} replacement media`, async ({ page, browserName }, testInfo) => {
     let release;
     const gate = new Promise(resolve => { release = resolve; });
     await page.route('**/', async route => {
@@ -30,7 +30,10 @@ for (const fail of [false, true]) {
       await expect(page.locator('.server-seo-content')).toBeVisible();
       await expect(page.locator('#home')).toHaveCount(1);
       await expect(page.locator('[data-initial-stage]')).toHaveAttribute('aria-hidden', 'true');
-      await page.screenshot({ path: testInfo.outputPath('media-pending.png') });
+      // Capture evidence in Chromium. WebKit screenshots can wait for paint
+      // while this test deliberately holds media; all engines keep the same
+      // initial/final visibility and media-readiness assertions below.
+      if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('media-pending.png') });
       release();
       await expect(page.locator('.server-seo-content')).toHaveCount(0);
       await expect(page.locator('[data-initial-stage]')).toHaveCount(0);
@@ -39,7 +42,7 @@ for (const fail of [false, true]) {
       if (!fail) {
         expect(await page.locator('nav img, #home img').evaluateAll(images => images.slice(0, 2).every(img => img.complete && img.naturalWidth > 0))).toBe(true);
       }
-      await page.screenshot({ path: testInfo.outputPath('media-ready.png') });
+      if (browserName === 'chromium') await page.screenshot({ path: testInfo.outputPath('media-ready.png') });
     } finally { release(); }
   });
 }

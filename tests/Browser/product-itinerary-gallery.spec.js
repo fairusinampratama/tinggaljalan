@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 for (const total of [1, 2, 10, 20]) {
   test(`structured timeline and ${total}-photo gallery remain readable and navigable`, async ({ page }, testInfo) => {

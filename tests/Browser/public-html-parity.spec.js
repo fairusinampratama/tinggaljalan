@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { blockGoogleMeasurement, expect, test } from './fixtures.js';
 
 const paths = ['/', '/routes', '/news', '/routes/bromo-sunrise', '/news/paket-wisata-bromo-dari-malang', '/about-us', '/privacy-policy'];
 const normalize = (text) => text.replace(/\s+/g, ' ').trim();
@@ -6,6 +6,7 @@ const normalize = (text) => text.replace(/\s+/g, ' ').trim();
 for (const path of paths) {
   test(`${path} exposes real headings before JS and removes fallback after mount`, async ({ browser, page }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
+    await blockGoogleMeasurement(context);
     const server = await context.newPage();
     await server.goto(path);
     const fallback = server.locator('.server-seo-content');
@@ -26,6 +27,7 @@ for (const path of paths) {
 
 test('article paragraphs, section order and fragment links match initial HTML', async ({ browser, page }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
+  await blockGoogleMeasurement(context);
   const server = await context.newPage();
   const path = '/news/paket-wisata-bromo-dari-malang';
   await server.goto(path);
@@ -57,6 +59,7 @@ test('blocked frontend scripts leave readable public content', async ({ page }) 
 
 test('language and filtered variants remain readable and noindex without JS', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
+  await blockGoogleMeasurement(context);
   const page = await context.newPage();
   for (const path of ['/?lang=id', '/news?lang=cn', '/routes?destination=bromo', '/news?search=missing']) {
     await page.goto(path);

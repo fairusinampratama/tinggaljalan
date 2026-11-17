@@ -1,5 +1,5 @@
 import { writeFile } from 'node:fs/promises';
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 test('records repeated cold local loading metrics', async ({ page, browserName }, testInfo) => {
   test.skip(browserName !== 'chromium', 'Network/CPU profiles use Chromium CDP.');

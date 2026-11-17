@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 const googleTagPattern = 'https://www.googletagmanager.com/gtag/js**';
 
@@ -37,19 +37,23 @@ async function visitRoutesWithInertia(page) {
 }
 
 test.describe('Google Ads consent', () => {
-  test('does not contact Google before a visitor decides', async ({ page }) => {
+  test('loads the Google library with denied defaults before a visitor decides', async ({ page }) => {
     const requests = await mockGoogleTag(page);
 
     await page.goto('/');
 
     await expect(page.getByTestId('consent-banner')).toBeVisible();
     await page.waitForTimeout(250);
-    expect(requests).toHaveLength(0);
-    await expect.poll(() => adsConfigCount(page)).toBe(0);
+    await expect.poll(() => requests.length).toBe(1);
+    await expect.poll(() => adsConfigCount(page)).toBe(1);
+    const commands = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0]).map((entry) => Array.from(entry)));
+    expect(commands[0].slice(0, 2)).toEqual(['consent', 'default']);
+    expect(commands[0][2]).toEqual({ ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied' });
+    await expect(page.locator('#tinggaljalan-gtm')).toHaveCount(0);
     await expect(page.getByRole('link', { name: /learn more/i })).toHaveAttribute('href', '/privacy-policy');
   });
 
-  test('declining persists and prevents loading after reload', async ({ page }) => {
+  test('declining persists with denied consent after reload', async ({ page }) => {
     const requests = await mockGoogleTag(page);
 
     await page.goto('/');
@@ -59,10 +63,13 @@ test.describe('Google Ads consent', () => {
     await expect.poll(() => page.evaluate(() => window.TinggalJalanConsent.status())).toBe('denied');
     await page.reload();
     await expect(page.getByTestId('consent-banner')).toHaveCount(0);
-    expect(requests).toHaveLength(0);
+    await expect.poll(() => requests.length).toBe(2);
+    const consent = await page.evaluate(() => window.dataLayer.filter((entry) => entry[0] === 'consent').map((entry) => Array.from(entry)));
+    expect(Object.values(consent.at(-1)[2])).toEqual(['denied', 'denied', 'denied', 'denied']);
+    await expect(page.locator('#tinggaljalan-gtm')).toHaveCount(0);
   });
 
-  test('accepting loads and configures the Ads tag once across Inertia navigation', async ({ page }) => {
+  test('accepting updates consent without reconfiguring Ads across Inertia navigation', async ({ page }) => {
     const requests = await mockGoogleTag(page);
 
     await page.goto('/');
@@ -117,7 +124,8 @@ test.describe('Google Ads consent', () => {
 
     await page.reload();
     await expect(page.getByTestId('consent-banner')).toHaveCount(0);
-    expect(requests).toHaveLength(1);
+    await expect.poll(() => requests.length).toBe(2);
+    await expect(page.locator('#tinggaljalan-gtm')).toHaveCount(0);
   });
 
   test('privacy policy is reachable and can reopen saved settings', async ({ page }) => {

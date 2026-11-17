@@ -13,7 +13,7 @@ requests. Set the flag false to disable GTM independently of Google Ads.
 
 The supplied unconditional noscript iframe is deliberately omitted: a JavaScript-
 disabled visitor cannot use the existing JavaScript consent banner, and loading
-that iframe would bypass the existing no-Google-request-before-acceptance behavior.
+that iframe would bypass the no-GTM-request-before-acceptance behavior.
 This is a consent-gated installation, rather than a verbatim paste of both snippets.
 
 ## Before release
@@ -30,7 +30,7 @@ that update, so consent compliance needs container-level verification.
 Use existing CI, then protected preview with an explicit review of whether live
 container requests are appropriate; do not enable real tags against synthetic
 bookings without coordinating test mode with the owner. Verify Tag Assistant:
-no requests before acceptance/after decline, one container after acceptance,
+no GTM requests before acceptance/after decline, one container after acceptance,
 remembered choice, settings/revocation, no duplicate destinations/events, and
 expected Inertia navigation behavior. SPA tracking depends on container triggers;
 container loading alone does not prove that analytics or conversions work.
@@ -38,3 +38,7 @@ container loading alone does not prove that analytics or conversions work.
 Merge and production deployment require separate owner approval. No live
 container validation, GTM publishing, or Google Ads configuration changes are
 included in this PR.
+
+The direct Analytics/Ads library now uses advanced consent mode and loads before
+acceptance with denied defaults. GTM remains separately consent-gated; do not
+interpret GTM blocking as blocking all Google requests. See `google-analytics.md`.

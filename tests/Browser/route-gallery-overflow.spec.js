@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures.js';
 
 test('seven-photo CMS gallery scrolls locally without expanding the package page', async ({ page }, testInfo) => {
   await page.route('**/routes/bromo-sunrise', async route => {

@@ -19,7 +19,7 @@ class GoogleAdsConsentTest extends TestCase
         config()->set('services.google_tag_manager.enabled', false);
     }
 
-    public function test_public_pages_include_one_consent_gated_google_ads_bootstrap(): void
+    public function test_public_pages_include_one_google_ads_loader_after_denied_defaults(): void
     {
         $this->seed();
 
@@ -30,7 +30,9 @@ class GoogleAdsConsentTest extends TestCase
             $this->assertSame(1, substr_count($html, "})(window, document, 'AW-18427027980', '', '');"));
             $this->assertStringContainsString("window.gtag('consent', 'default', consentValues('denied'))", $html);
             $this->assertStringContainsString('window.TinggalJalanConsent', $html);
-            $this->assertStringNotContainsString('<script async src="https://www.googletagmanager.com/', $html);
+            $loader = '<script async id="tinggaljalan-google-ads" src="https://www.googletagmanager.com/gtag/js?id=AW-18427027980"></script>';
+            $this->assertSame(1, substr_count($html, $loader));
+            $this->assertLessThan(strpos($html, $loader), strpos($html, "window.gtag('consent', 'default'"));
         }
     }
 
