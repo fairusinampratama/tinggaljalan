@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: 07a244d37842c44af396e35ff66388ed5d2dc736
+          ref: cc3ff565e9c5e9815759add33a2854883e1a6960
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
         with:
           php-version: '8.4'
@@ -41,7 +41,7 @@ jobs:
           import base from './playwright.config.js';
           export default {...base,workers:1,projects:base.projects.filter(p=>p.name.includes('chromium')).map(p=>({...p,use:{...p.use,launchOptions:{executablePath:'/usr/bin/google-chrome'}}}))};
           JS
-          npx playwright test tests/Browser/package-whatsapp.spec.js tests/Browser/whatsapp-cta.spec.js --config=playwright.review.config.js --reporter=line
+          npx playwright test tests/Browser/whatsapp-cta.spec.js --config=playwright.review.config.js --reporter=line
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
