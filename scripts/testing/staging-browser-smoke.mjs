@@ -1,7 +1,9 @@
-import { chromium } from '@playwright/test';
+import { chromium, errors } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { discoverReviewRoutes, isPublicDetailRoute, assertPublicDetailMetadata, reviewArticleSectionId } from './public-review-routes.mjs';
+
+import { waitForHostedHandoff } from './hosted-browser-readiness.mjs';
 
 class VerificationError extends Error {}
 
@@ -26,6 +28,8 @@ const sensitiveValues = [...Object.values(config), Buffer.from(`reviewer:${confi
 const redact = value => sensitiveValues.filter(value => typeof value === 'string' && value.length).reduce(
     (text, secret) => text.replaceAll(secret, '[redacted]'), String(value),
 );
+let stage = 'preview-protection';
+let semanticIndex;
 try {
     if (!productionReview) {
     const anonymous = await browser.newContext();
@@ -35,6 +39,7 @@ try {
     }
     await anonymous.close();
     }
+    stage = 'sitemap-discovery';
     const discovery = await browser.newContext({
         httpCredentials: productionReview ? undefined : { username: 'reviewer', password: config.review_password, origin: base },
     });
@@ -49,6 +54,7 @@ try {
         ['desktop', { width: 1440, height: 1000 }, false],
         ['mobile', { width: 390, height: 844 }, true],
     ]) {
+        stage = `visual-${name}`;
         const context = await browser.newContext({
             viewport, isMobile, deviceScaleFactor: 1,
             httpCredentials: productionReview ? undefined : { username: 'reviewer', password: config.review_password, origin: base },
@@ -126,6 +132,8 @@ try {
     const visitor = await visitorContext.newPage();
     let articleRoute;
     for (const [index, route] of [...publicRoutes].entries()) {
+        semanticIndex = index + 1;
+        stage = 'initial-http';
         const target = `${base}${route}`;
         const normal = await initialContext.request.get(target);
         // Preview crawler parity runs separately from the hosting account. A
@@ -138,6 +146,7 @@ try {
         const fallback = html => html.match(/<main\b[^>]*class="[^"]*server-seo-content[^"]*"[^>]*>[\s\S]*?<\/main>/)?.[0];
         if (!fallback(raw) || (bot && fallback(raw) !== fallback(botRaw))) throw new VerificationError(`Crawler fallback parity failed for ${route}.`);
         await writeFile(path.join(output, `initial-${index}.html`), raw, { mode: 0o600 });
+        stage = 'initial-browser';
         await initial.goto(target, { waitUntil: 'networkidle' });
         if (!await initial.locator('.server-seo-content').isVisible() || await initial.locator('h1').count() !== 1) throw new VerificationError(`No-JavaScript content failed for ${route}.`);
         await initial.screenshot({ path: path.join(output, `no-js-${index}.png`), fullPage: true });
@@ -156,6 +165,7 @@ try {
             canonical: [...html.matchAll(/<link\b[^>]*rel="canonical"[^>]*href="([^"]+)"/g)].map(match => match[1]),
             robots: [...html.matchAll(/<meta\b[^>]*name="robots"[^>]*content="([^"]+)"/g)].map(match => match[1]),
         });
+        stage = 'initial-metadata';
         const metadata = tags(raw);
         let baseline = null;
         if (isPublicDetailRoute(route)) {
@@ -174,8 +184,12 @@ try {
         }
         if (bot && JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new VerificationError(`Crawler canonical/robots parity failed for ${route}.`);
         if (!expected.links.length || expected.links.some(link => /^javascript:/i.test(link.href))) throw new VerificationError(`Crawlable fallback links failed for ${route}.`);
-        await visitor.goto(target, { waitUntil: 'networkidle' });
-        await visitor.locator('.server-seo-content').waitFor({ state: 'detached' });
+        stage = 'visitor-navigation';
+        const visitorResponse = await visitor.goto(target, { waitUntil: 'domcontentloaded' });
+        if (!visitorResponse?.ok()) throw new VerificationError(`Hydrated visitor response failed with status ${visitorResponse?.status() ?? 0}.`);
+        stage = 'visitor-handoff';
+        await waitForHostedHandoff(visitor);
+        stage = 'visitor-parity';
         const visitorMetadata = await visitor.evaluate(() => ({
             canonical: [...document.querySelectorAll('link[rel="canonical"]')].map(link => link.href),
             robots: [...document.querySelectorAll('meta[name="robots"]')].map(meta => meta.content),
@@ -208,6 +222,8 @@ try {
         observations.push({ route, metadata, baseline, crawlableLinks: expected.links.length });
         results.push(`semantic: ${route} initial HTML, no-JS, visitor H1 and no duplicate fallback passed`);
     }
+    semanticIndex = undefined;
+    stage = 'blocked-js-review';
     if (!productionReview) await writeFile(path.join(output, 'crawler-routes.json'), JSON.stringify([...publicRoutes]), { mode: 0o600 });
     if (!articleRoute) throw new VerificationError('No deployed article was available for semantic verification.');
     for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mobile', { width: 390, height: 844 }]]) {
@@ -233,7 +249,7 @@ try {
     // Retain only public route/status information; never credentials or cookies.
     const failure = error instanceof VerificationError
         ? redact(error.message)
-        : 'Hosted browser/client operation failed; sensitive request details omitted.';
+        : `Hosted browser/client ${error instanceof errors.TimeoutError ? 'timeout' : 'error'} at ${stage}${semanticIndex ? ` (semantic route index ${semanticIndex})` : ''}; sensitive request details omitted.`;
     await writeFile(path.join(output, 'failure.txt'), failure + '\n', { mode: 0o600 });
     throw new Error(failure);
 } finally {
