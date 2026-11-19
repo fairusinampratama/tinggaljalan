@@ -21,6 +21,7 @@ function GalleryButton({ direction, label, onClick, lightbox = false }) {
     <button
       type="button"
       aria-label={label}
+      data-route-gallery-edge-control={direction === 'next' && !lightbox ? '' : undefined}
       onClick={(event) => {
         event.stopPropagation();
         onClick();
@@ -249,7 +250,7 @@ export function RouteGallery({ images, alt, labels }) {
             ))}
           </div>
         ) : null}
-        <div data-route-gallery-stage className="relative touch-pan-y overflow-hidden rounded-xl border border-line bg-surface shadow-soft" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div className="relative touch-pan-y overflow-hidden rounded-xl border border-line bg-surface shadow-soft" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <button
             ref={openButtonRef}
             type="button"
@@ -274,7 +275,7 @@ export function RouteGallery({ images, alt, labels }) {
             className="group block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
           >
             <GalleryImage key={safeImages[activeIndex]} src={safeImages[activeIndex]} alt={activeAlt} sizes="(min-width: 1280px) 700px, (min-width: 768px) 60vw, 100vw" loading="eager" className="aspect-[16/10] w-full object-cover" />
-            <span className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/90 text-primary opacity-100 shadow-md transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
+            <span data-route-gallery-edge-control className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-white/90 text-primary opacity-100 shadow-md transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-visible:opacity-100">
               <Expand className="h-4 w-4" aria-hidden="true" />
             </span>
           </button>
@@ -287,7 +288,7 @@ export function RouteGallery({ images, alt, labels }) {
           ) : null}
         </div>
         {hasMultiple ? (
-          <div data-route-gallery-stage className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-contain pb-1 md:hidden">
+          <div data-route-gallery-edge-control className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-contain pb-1 md:hidden">
             {safeImages.map((image, index) => (
               <Thumbnail key={`${image}-${index}`} {...thumbnailProps(image, index, mobileThumbnailRefs)} />
             ))}

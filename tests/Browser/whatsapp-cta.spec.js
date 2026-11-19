@@ -111,7 +111,7 @@ test('route floating contact stays centered through phones and tablets while Ask
   await ready(page, '/routes/bromo-sunrise');
   const contact = page.locator('[data-whatsapp-placement="route-mobile"]');
   for (const width of [320, 390, 640, 768, 1023]) {
-    const height = width >= 768 ? 700 : 900;
+    const height = width >= 640 ? 700 : 900;
     await page.setViewportSize({ width, height });
     await expect(contact).toBeVisible();
     await expect(contact).toHaveCSS('min-height', '48px');

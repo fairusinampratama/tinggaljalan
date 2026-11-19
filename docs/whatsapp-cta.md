@@ -6,7 +6,7 @@ glyph and the existing translated Chat label. Its accessible name explicitly
 includes WhatsApp in English, Indonesian and Chinese.
 
 On route detail pages below 1024px, the original 56px floating circle sits
-halfway down the right edge. It yields while the gallery crosses its position,
+halfway down the right edge. It yields while gallery controls cross its position,
 so the gallery controls remain tappable; the separate sticky Ask action remains
 available. The desktop pill keeps its lower-right position. Persistent actions
 respect safe-area insets and yield to consent and the mobile menu. The floating

@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WhatsAppIcon } from '../ui/WhatsAppIcon';
 
 export function FloatingWhatsAppButton({ whatsappUrl, label = 'Chat', accessibleLabel = 'Chat via WhatsApp', centerOnMobile = false }) {
+  const linkRef = useRef(null);
   const [galleryInButtonPath, setGalleryInButtonPath] = useState(false);
 
   useEffect(() => {
     if (!centerOnMobile) return;
-    const galleryParts = document.querySelectorAll('[data-route-gallery-stage]');
+    const galleryParts = document.querySelectorAll('[data-route-gallery-edge-control]');
     if (!galleryParts.length) return;
 
     let observer;
@@ -14,6 +15,7 @@ export function FloatingWhatsAppButton({ whatsappUrl, label = 'Chat', accessible
       observer?.disconnect();
       // Watch the centered 56px button slot plus space for its focus outline.
       const inset = Math.max(0, (window.innerHeight - 68) / 2);
+      const left = Math.max(0, linkRef.current.getBoundingClientRect().left - 6);
       const intersections = new Set();
       observer = new IntersectionObserver(entries => {
         for (const entry of entries) {
@@ -21,7 +23,7 @@ export function FloatingWhatsAppButton({ whatsappUrl, label = 'Chat', accessible
           else intersections.delete(entry.target);
         }
         setGalleryInButtonPath(intersections.size > 0);
-      }, { rootMargin: `-${inset}px 0px -${inset}px 0px` });
+      }, { rootMargin: `-${inset}px 0px -${inset}px -${left}px` });
       galleryParts.forEach(part => observer.observe(part));
     };
     observe();
@@ -38,6 +40,7 @@ export function FloatingWhatsAppButton({ whatsappUrl, label = 'Chat', accessible
 
   return (
     <a
+      ref={linkRef}
       href={whatsappUrl}
       target="_blank"
       rel="noreferrer"
