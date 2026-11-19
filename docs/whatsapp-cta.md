@@ -5,12 +5,13 @@ WhatsApp glyph. At 640px and above it becomes a 48px-high pill with a 24px
 glyph and the existing translated Chat label. Its accessible name explicitly
 includes WhatsApp in English, Indonesian and Chinese.
 
-On route detail pages below 1024px, the floating action is hidden because the
-existing bottom contact bar already provides the WhatsApp action (minimum 48px
-high). The desktop pill remains available. The bottom bar and floating action
-respect safe-area insets and yield while the consent panel or mobile menu is
-open. Footer clearance keeps Cookie settings and Back to top above the persistent
-actions when scrolled to the bottom. No destination URL, message, booking action or link target is changed.
+On route detail pages below 1024px, the original 56px floating circle sits
+halfway down the right edge. It yields while gallery controls cross its position,
+so the gallery controls remain tappable; the separate sticky Ask action remains
+available. The desktop pill keeps its lower-right position. Persistent actions
+respect safe-area insets and yield to consent and the mobile menu. The floating
+action also yields to the full-screen gallery. Footer clearance keeps Cookie
+settings and Back to top above the sticky contact bar. No destination URL, message, booking action or link target is changed.
 
 Official unmodified digital white and green SVG glyphs were obtained from Meta's
 2026 logo pack at https://www.meta.com/brand/resources/whatsapp/whatsapp-brand/

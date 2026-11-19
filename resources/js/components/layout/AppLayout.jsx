@@ -16,7 +16,13 @@ export function AppLayout({ children }) {
       <Navbar language={language} setLanguage={setLanguage} t={t} />
       {children}
       <Footer t={t} whatsappUrl={whatsappUrl} />
-      <FloatingWhatsAppButton whatsappUrl={whatsappUrl} label={t.chat} accessibleLabel={t.chatViaWhatsapp} hasMobileContactBar={isRouteDetailPage} />
+      <FloatingWhatsAppButton
+        key={isRouteDetailPage ? pathname : 'site'}
+        whatsappUrl={whatsappUrl}
+        label={t.chat}
+        accessibleLabel={t.chatViaWhatsapp}
+        centerOnMobile={isRouteDetailPage}
+      />
       <ConsentBanner t={t} />
     </main>
   );
