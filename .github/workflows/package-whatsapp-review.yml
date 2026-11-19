@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: cc3ff565e9c5e9815759add33a2854883e1a6960
+          ref: 9a4b27be2758ea199e00bc548b732ed48a99e7fe
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
         with:
           php-version: '8.4'
