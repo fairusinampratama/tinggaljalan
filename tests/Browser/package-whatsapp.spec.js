@@ -64,7 +64,8 @@ test('upper and existing placements honor context URL overrides, base fallback a
 });
 
 test('upper action stays right aligned above the gallery with wrapping chips', async ({ page }, testInfo) => {
-  await overrideProps(page, props => {
+  for (const longCopy of [false, true]) {
+  if (longCopy) await overrideProps(page, props => {
     props.route.pickupLabel = { us: 'Hotel pickup from Malang city centre and surrounding accommodation districts' };
     props.route.destinationName = { us: 'East Java, Indonesia — mountain and waterfall experience' };
   });
@@ -83,7 +84,18 @@ test('upper action stays right aligned above the gallery with wrapping chips', a
     expect(button.y).toBeGreaterThanOrEqual(summary.y);
     expect(button.y + button.height).toBeLessThanOrEqual(summary.y + summary.height + 1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(`upper-whatsapp-${width}.png`) });
+    await page.screenshot({ path: testInfo.outputPath(`upper-whatsapp-${longCopy ? 'long-' : ''}${width}.png`) });
+  }
+  }
+});
+
+test('upper label follows the existing package language', async ({ page }) => {
+  for (const [locale, label] of [['id', 'Chat melalui WhatsApp'], ['cn', '通过 WhatsApp 咨询']]) {
+    await page.goto(`/language/${locale}`);
+    await ready(page);
+    await expect(contact(page, 'route-upper')).toHaveAccessibleName(label);
+    await expect(contact(page, 'route-upper')).toHaveText('WhatsApp');
+    await expect(contact(page, 'route-upper')).toHaveAttribute('href', await contact(page, 'route-mobile').getAttribute('href'));
   }
 });
 
