@@ -1,0 +1,55 @@
+name: Package WhatsApp focused visual review
+on:
+  push:
+    branches: [verify/package-upper-whatsapp-20261119]
+    paths: [.github/workflows/package-whatsapp-review.yml]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: a0e44f85ee5c5a7e726559737e02becc3add9f2a
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd
+          coverage: none
+          tools: composer:v2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Prepare isolated test application
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+          cp .env.example .env
+          php artisan key:generate
+          npm run test:browser:prepare
+          command -v google-chrome
+          google-chrome --version
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: frontend-81f33b5e851d8976e5d142255b2f3519382294d2
+          run-id: 44469860439
+          github-token: ${{ github.token }}
+          path: public
+      - name: Check real desktop and mobile Chromium renders and link behavior
+        run: |
+          cat > playwright.review.config.js <<'JS'
+          import base from './playwright.config.js';
+          export default {...base,workers:1,projects:base.projects.filter(p=>p.name.includes('chromium')).map(p=>({...p,use:{...p.use,launchOptions:{executablePath:'/usr/bin/google-chrome'}}}))};
+          JS
+          npx playwright test tests/Browser/package-whatsapp.spec.js tests/Browser/whatsapp-cta.spec.js --config=playwright.review.config.js --reporter=line
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: package-whatsapp-focused-review
+          path: test-results
+          if-no-files-found: warn
+          retention-days: 7
