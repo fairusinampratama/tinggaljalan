@@ -42,3 +42,54 @@ consent, then verify receipt in GA4 before publishing account-side changes.
 
 No GTM container configuration was changed in this PR; placement attributes
 alone do not establish that events are received or improve conversion rates.
+
+## Package upper contact action
+
+The shared `RouteDetailSection` places a green, visibly labelled WhatsApp link
+in the trip-detail chips section before the photo gallery. Chips wrap independently.
+The button stays at the right edge; if its width plus the chips' minimum reading
+width cannot fit, it wraps below the chips in the same section, still right aligned.
+It has a minimum 48px height. The original sidebar and sticky mobile links retain
+their labels, colors, breakpoints and availability.
+
+All three placements use `components/ui/PackageWhatsAppLink.jsx`: one anchor,
+the local brand icon, the original `_blank` / `noreferrer` behavior and placement
+attribute. URL resolution remains upstream, in `BookingContext`, with unchanged
+precedence: page `props.whatsappUrl`, shared `publicData.whatsappUrl`, site
+`whatsappBaseUrl`, then `#`. Null/undefined fall through; an explicit `#` does not.
+No component builds another phone number or message.
+
+Trace of the current package page: `RouteController::show()` supplies the package;
+`InertiaPublicData::shared()` supplies the generic consultation URL made by
+`PublicSite::whatsappUrl()`. `PublicSite::whatsappBase()` reads Site Details'
+`SiteSetting.whatsapp_number`, strips non-digits and defaults a missing/null number
+to `6281234567890`. It does not invent a country code for a saved local number.
+The current message is `Halo Tinggal Jalan, saya ingin konsultasi rute perjalanan.`;
+lines are joined with newlines and encoded with `rawurlencode`. The package model,
+form and route controller have no per-package WhatsApp number/message override.
+Package names, prices, dates and availability are not interpolated into this link.
+Booking/payment confirmation pages have their own page URL overrides; those are
+outside this change. If package-specific URLs are added upstream later, all three
+package placements will receive the same resolved URL automatically.
+
+Only active packages have a public detail page. Package closures show an alert
+but keep contact available; no date selection, stock check or login gates it.
+The mobile sticky bar remains below 1024px and the sidebar above; persistent
+actions still yield to consent/menu overlays. Staging still returns `#` for
+WhatsApp and must not open a real chat. The new inline action preserves this.
+
+Measurement: `route-upper` identifies the added action; existing `route-sidebar`
+and `route-mobile` values are unchanged. They use the existing GTM attribute
+contract documented above. No click listener or analytics event was added, so
+this change does not add a second event source. Application tests exercise actual
+icon clicks, one popup per click and zero added dataLayer events with consent both
+denied and granted (Google scripts stubbed). They cannot verify a separately
+published GTM container's event count. Agency Tag Assistant/GA4 verification is
+still needed to prove delivery, audit overlapping triggers/Enhanced Measurement,
+and configure `cta_placement` for `route-upper` if its trigger uses an allowlist.
+An attempted WhatsApp open is not proof that a message was sent or an inquiry
+received. No claim of conversion improvement is made.
+
+Tests use disposable SQLite records and synthetic response overrides for custom
+URLs, base fallback and staging `#`, never production CMS edits. CI retains the
+320/390/768/1440px layout screenshots for review separately from failure traces.

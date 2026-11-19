@@ -1,4 +1,4 @@
-import { WhatsAppIcon } from '../ui/WhatsAppIcon';
+import { PackageWhatsAppLink } from '../ui/PackageWhatsAppLink';
 import { ItineraryTimeline } from '../ui/ItineraryTimeline';
 import { RouteContentCard } from '../ui/RouteContentCard';
 import {
@@ -18,7 +18,7 @@ import {
 import { formatCurrency } from '../../utils/currency';
 import { availabilityForDate, todayIsoDate } from '../../utils/availability';
 import { getLocalized, getRegionConfig, localizeDuration, localizeList } from '../../utils/localization';
-import { cardHoverClass, iconSize, primaryButtonClass, secondaryButtonClass } from '../ui/styles';
+import { cardHoverClass, iconSize, primaryButtonClass, secondaryButtonClass, whatsappButtonClass } from '../ui/styles';
 import { RatingDisplay } from '../ui/RatingDisplay';
 import { RouteGallery } from '../ui/RouteGallery';
 import { InlineStrong } from '../ui/InlineStrong';
@@ -53,9 +53,9 @@ function DetailList({ title, items, language, icon: Icon = CheckCircle, bulletIc
 
 function MetaPill({ icon: Icon, children }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-ink shadow-sm">
-      <Icon className="h-4 w-4 text-secondary" />
-      {children}
+    <div className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-sm font-bold text-ink shadow-sm">
+      <Icon className="h-4 w-4 shrink-0 text-secondary" />
+      <span className="min-w-0 break-words">{children}</span>
     </div>
   );
 }
@@ -101,11 +101,20 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
               <span className="text-sm font-semibold text-muted">{getLocalized(selectedArticle.reviewSource, language)}</span>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              <MetaPill icon={Clock}>{localizeDuration(selectedArticle.duration, language)}</MetaPill>
-              <MetaPill icon={Car}>{getLocalized(selectedArticle.pickupLabel, language)}</MetaPill>
-              <MetaPill icon={Users}>{getLocalized(selectedArticle.groupType, language)}</MetaPill>
-              <MetaPill icon={MapPin}>{getLocalized(selectedArticle.destinationName, language)}</MetaPill>
+            <div className="mt-6 flex flex-wrap items-start gap-x-4 gap-y-3" data-testid="package-contact-summary">
+              <div className="flex min-w-0 flex-[1_1_11rem] flex-wrap gap-2" data-testid="package-detail-chips">
+                <MetaPill icon={Clock}>{localizeDuration(selectedArticle.duration, language)}</MetaPill>
+                <MetaPill icon={Car}>{getLocalized(selectedArticle.pickupLabel, language)}</MetaPill>
+                <MetaPill icon={Users}>{getLocalized(selectedArticle.groupType, language)}</MetaPill>
+                <MetaPill icon={MapPin}>{getLocalized(selectedArticle.destinationName, language)}</MetaPill>
+              </div>
+              <PackageWhatsAppLink
+                whatsappUrl={whatsappUrl}
+                label="WhatsApp"
+                accessibleLabel={t.chatViaWhatsapp}
+                placement="route-upper"
+                className={`${whatsappButtonClass} ml-auto min-h-12 shrink-0 sm:min-h-12`}
+              />
             </div>
 
             {activeClosure ? (
@@ -302,9 +311,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
                 </div>
               </div>
               <div className="mt-5 grid gap-3">
-                <a href={whatsappUrl} target="_blank" rel="noreferrer" data-whatsapp-placement="route-sidebar" aria-label={`${t.askAvailability} — WhatsApp`} className={primaryButtonClass}>
-                  <WhatsAppIcon className="h-5 w-5" /> {t.askAvailability}
-                </a>
+                <PackageWhatsAppLink whatsappUrl={whatsappUrl} label={t.askAvailability} placement="route-sidebar" className={primaryButtonClass} />
                 <button type="button" className={secondaryButtonClass} onClick={onBookRoute}>
                   {t.continueBooking} <ChevronRight className={iconSize} />
                 </button>
@@ -323,9 +330,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             </p>
             <p className="truncate text-xs font-semibold text-muted">{t.priceVariesByGroupSize}</p>
           </div>
-          <a href={whatsappUrl} target="_blank" rel="noreferrer" data-whatsapp-placement="route-mobile" aria-label={`${t.askRoute} — WhatsApp`} className={`${primaryButtonClass} min-h-12 sm:min-h-12 shrink-0`}>
-            <WhatsAppIcon className="h-5 w-5" /> {t.askRoute}
-          </a>
+          <PackageWhatsAppLink whatsappUrl={whatsappUrl} label={t.askRoute} placement="route-mobile" className={`${primaryButtonClass} min-h-12 sm:min-h-12 shrink-0`} />
         </div>
       </div>
     </>
