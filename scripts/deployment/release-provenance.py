@@ -29,6 +29,7 @@ POLICY_FILES = (
     'scripts/deployment/preview-release-state.py',
     'scripts/deployment/deploy-staging.sh',
     'scripts/testing/staging-browser-smoke.mjs',
+    'scripts/testing/hosted-browser-readiness.mjs',
     'scripts/testing/preview-http-diagnostics.py',
     'scripts/testing/verify-preview-crawler.py',
     'scripts/testing/public-review-routes.mjs',
