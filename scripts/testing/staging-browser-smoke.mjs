@@ -75,8 +75,12 @@ try {
             }
         });
         for (const [label, route] of [...priorityRoutes, ['admin-login', '/admin/login']]) {
+            stage = `visual-${name}-${label}-navigation`;
             const response = await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
-            if (!response?.ok()) throw new VerificationError('A preview page failed to render.');
+            if (!response?.ok()) {
+                throw new VerificationError(`Hosted page response failed at ${stage}: status ${response?.status() ?? 0}, redirected ${Boolean(response?.request().redirectedFrom())}.`);
+            }
+            stage = `visual-${name}-${label}-render`;
             if (!productionReview && !/noindex/i.test(response.headers()['x-robots-tag'] ?? '')) throw new VerificationError('Preview noindex header is missing.');
             await page.locator('body').waitFor();
             if (await page.locator('body').innerText() === '') throw new VerificationError('The preview rendered an empty body.');

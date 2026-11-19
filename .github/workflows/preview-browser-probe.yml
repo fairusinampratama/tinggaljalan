@@ -1,7 +1,13 @@
-name: Read-only preview News browser probe
+name: Read-only preview browser probe
 
 on:
   workflow_dispatch:
+    inputs:
+      page:
+        description: Public hub to inspect on the current protected preview
+        type: choice
+        options: [routes, news]
+        default: routes
 
 permissions:
   contents: read
@@ -26,5 +32,6 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Compare application handoff with network idle on the current preview
         env:
+          PREVIEW_PROBE_PAGE: ${{ inputs.page }}
           STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
         run: node scripts/testing/probe-preview-news.mjs
