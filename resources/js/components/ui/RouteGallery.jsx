@@ -192,6 +192,7 @@ export function RouteGallery({ images, alt, labels }) {
     <div
       className="fixed inset-0 z-[100] flex bg-primary/95 p-3 backdrop-blur-md sm:p-6"
       role="dialog"
+      data-route-gallery-lightbox
       aria-modal="true"
       aria-label={labels.dialog}
       onMouseDown={(event) => {
@@ -248,7 +249,7 @@ export function RouteGallery({ images, alt, labels }) {
             ))}
           </div>
         ) : null}
-        <div className="relative touch-pan-y overflow-hidden rounded-xl border border-line bg-surface shadow-soft" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+        <div data-route-gallery-stage className="relative touch-pan-y overflow-hidden rounded-xl border border-line bg-surface shadow-soft" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <button
             ref={openButtonRef}
             type="button"
@@ -286,7 +287,7 @@ export function RouteGallery({ images, alt, labels }) {
           ) : null}
         </div>
         {hasMultiple ? (
-          <div className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-contain pb-1 md:hidden">
+          <div data-route-gallery-stage className="flex min-w-0 max-w-full gap-2 overflow-x-auto overscroll-contain pb-1 md:hidden">
             {safeImages.map((image, index) => (
               <Thumbnail key={`${image}-${index}`} {...thumbnailProps(image, index, mobileThumbnailRefs)} />
             ))}

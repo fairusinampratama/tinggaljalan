@@ -56,20 +56,23 @@ test('floating WhatsApp has a clear name, responsive dimensions, safe focus and 
   await insideViewport(page, floating(page));
 });
 
-test('route mobile bar is the single persistent contact action and yields to overlays', async ({ page }, testInfo) => {
+test('route floating and sticky contact actions share a destination and yield to overlays', async ({ page }, testInfo) => {
   await ready(page, '/routes/bromo-sunrise');
   const mobile = page.locator('[data-whatsapp-placement="route-mobile"]');
   const desktop = page.locator('[data-whatsapp-placement="route-sidebar"]');
   const isSmall = page.viewportSize().width < 1024;
   await expect(mobile).toHaveAttribute('href', await desktop.getAttribute('href'));
+  await expect(floating(page)).toHaveAttribute('href', await mobile.getAttribute('href'));
   if (isSmall) {
-    await expect(floating(page)).toBeHidden();
+    await expect(floating(page)).toBeVisible();
     await expect(mobile).toBeVisible();
     expect((await mobile.boundingBox()).height).toBeGreaterThanOrEqual(48);
     await insideViewport(page, mobile);
     await page.getByRole('button', { name: 'Open menu' }).click();
+    await expect(floating(page)).toBeHidden();
     await expect(mobile).toBeHidden();
     await page.getByRole('button', { name: 'Close menu' }).click();
+    await expect(floating(page)).toBeVisible();
     await expect(mobile).toBeVisible();
   } else {
     await expect(mobile).toBeHidden();
@@ -104,15 +107,55 @@ test('placement metadata alone emits no custom events or sensitive fields', asyn
 });
 
 
-test('route contact keeps a 48px tap target through tablet breakpoints', async ({ page }) => {
+test('route floating contact stays centered through phones and tablets while Ask remains available', async ({ page }, testInfo) => {
   await ready(page, '/routes/bromo-sunrise');
   const contact = page.locator('[data-whatsapp-placement="route-mobile"]');
-  for (const width of [320, 640, 768, 1023]) {
-    await page.setViewportSize({ width, height: 900 });
+  for (const width of [320, 390, 640, 768, 1023]) {
+    const height = width >= 768 ? 700 : 900;
+    await page.setViewportSize({ width, height });
     await expect(contact).toBeVisible();
     await expect(contact).toHaveCSS('min-height', '48px');
     expect((await contact.boundingBox()).height).toBeGreaterThanOrEqual(48);
-    await expect(floating(page)).toBeHidden();
+    const button = floating(page);
+    await expect(button).toBeVisible();
+    const box = await button.boundingBox();
+    expect(box.width).toBe(56);
+    expect(box.height).toBe(56);
+    expect(box.y + box.height / 2).toBeCloseTo(height / 2, 0);
+    expect(width - box.x - box.width).toBeCloseTo(16, 0);
     await insideViewport(page, contact);
+    if (width === 320 || width === 390 || width === 768) {
+      await page.screenshot({ path: testInfo.outputPath(`route-whatsapp-${width}.png`) });
+    }
   }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(contact).toBeHidden();
+  const desktop = await floating(page).boundingBox();
+  expect(900 - desktop.y - desktop.height).toBeCloseTo(16, 0);
+  await page.screenshot({ path: testInfo.outputPath('route-whatsapp-1440.png') });
+});
+
+test('centered contact yields where it would cover gallery controls and returns after scrolling', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await ready(page, '/routes/bromo-sunrise');
+  const button = floating(page);
+  const mobile = page.locator('[data-whatsapp-placement="route-mobile"]');
+  const gallery = page.getByRole('button', { name: 'Open full-screen gallery', exact: true });
+  await expect(button).toBeVisible();
+  await gallery.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await expect(button).toBeHidden();
+  await expect(mobile).toBeVisible();
+  await page.getByRole('button', { name: 'Next photo', exact: true }).click();
+  await page.screenshot({ path: testInfo.outputPath('route-whatsapp-gallery-clear.png') });
+  await gallery.click();
+  await expect(page.getByRole('dialog', { name: 'Trip photo gallery' })).toBeVisible();
+  await expect(button).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Trip photo gallery' })).toHaveCount(0);
+  await page.getByRole('heading', { name: 'Highlights', exact: true }).evaluate(el => {
+    window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - 160, behavior: 'instant' });
+  });
+  await expect(button).toBeVisible();
+  await expect(mobile).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('route-whatsapp-scrolled.png') });
 });

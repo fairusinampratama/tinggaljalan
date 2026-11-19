@@ -203,6 +203,7 @@ html[data-initial-fragment] #app { overflow-anchor: none; }
 
 /* Persistent contact actions yield to privacy choices and the small-screen menu.
    visibility also removes them from keyboard navigation while covered. */
+body:has([data-route-gallery-lightbox]) .floating-whatsapp,
 main:has([data-testid="consent-banner"]) .floating-whatsapp,
 main:has([data-testid="consent-banner"]) [data-mobile-contact-bar] {
     visibility: hidden;
