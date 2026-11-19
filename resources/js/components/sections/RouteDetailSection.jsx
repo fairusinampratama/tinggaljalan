@@ -102,7 +102,7 @@ export function RouteDetailSection({ t, selectedArticle, whatsappUrl, onBookRout
             </div>
 
             <div className="mt-6 flex flex-wrap items-start gap-x-4 gap-y-3" data-testid="package-contact-summary">
-              <div className="flex min-w-0 flex-[1_1_11rem] flex-wrap gap-2" data-testid="package-detail-chips">
+              <div className="flex min-w-0 basis-full flex-wrap gap-2 md:flex-[1_1_11rem]" data-testid="package-detail-chips">
                 <MetaPill icon={Clock}>{localizeDuration(selectedArticle.duration, language)}</MetaPill>
                 <MetaPill icon={Car}>{getLocalized(selectedArticle.pickupLabel, language)}</MetaPill>
                 <MetaPill icon={Users}>{getLocalized(selectedArticle.groupType, language)}</MetaPill>

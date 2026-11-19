@@ -65,27 +65,32 @@ test('upper and existing placements honor context URL overrides, base fallback a
 
 test('upper action stays right aligned above the gallery with wrapping chips', async ({ page }, testInfo) => {
   for (const longCopy of [false, true]) {
-  if (longCopy) await overrideProps(page, props => {
-    props.route.pickupLabel = { us: 'Hotel pickup from Malang city centre and surrounding accommodation districts' };
-    props.route.destinationName = { us: 'East Java, Indonesia — mountain and waterfall experience' };
-  });
-  await ready(page);
-  for (const width of [320, 390, 768, 1440]) {
-    await page.setViewportSize({ width, height: width < 768 ? 900 : 1000 });
-    const summary = await page.getByTestId('package-contact-summary').boundingBox();
-    const chips = await page.getByTestId('package-detail-chips').boundingBox();
-    const button = await contact(page, 'route-upper').boundingBox();
-    const photo = await page.getByRole('button', { name: 'Open full-screen gallery', exact: true }).boundingBox();
-    expect(button.x + button.width).toBeCloseTo(summary.x + summary.width, 0);
-    expect(button.y + button.height).toBeLessThan(photo.y);
-    expect(button.height).toBeGreaterThanOrEqual(48);
-    // Either alongside the chips, or below them in the same section; never overlap.
-    expect(button.x >= chips.x + chips.width - 1 || button.y >= chips.y + chips.height - 1).toBe(true);
-    expect(button.y).toBeGreaterThanOrEqual(summary.y);
-    expect(button.y + button.height).toBeLessThanOrEqual(summary.y + summary.height + 1);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
-    await page.screenshot({ path: testInfo.outputPath(`upper-whatsapp-${longCopy ? 'long-' : ''}${width}.png`) });
-  }
+    if (longCopy) await overrideProps(page, props => {
+      props.route.pickupLabel = { us: 'Hotel pickup from Malang city centre and surrounding accommodation districts' };
+      props.route.destinationName = { us: 'East Java, Indonesia — mountain and waterfall experience' };
+    });
+    await ready(page);
+    for (const width of [320, 390, 768, 1440]) {
+      await page.setViewportSize({ width, height: width < 768 ? 900 : 1000 });
+      const summary = await page.getByTestId('package-contact-summary').boundingBox();
+      const chips = await page.getByTestId('package-detail-chips').boundingBox();
+      const button = await contact(page, 'route-upper').boundingBox();
+      const photo = await page.getByRole('button', { name: 'Open full-screen gallery', exact: true }).boundingBox();
+      expect(button.x + button.width).toBeCloseTo(summary.x + summary.width, 0);
+      expect(button.y + button.height).toBeLessThan(photo.y);
+      expect(button.height).toBeGreaterThanOrEqual(48);
+      if (width < 768) {
+        expect(chips.width).toBeCloseTo(summary.width, 0);
+        expect(button.y).toBeGreaterThanOrEqual(chips.y + chips.height);
+      } else {
+        expect(button.y).toBeCloseTo(chips.y, 0);
+        expect(button.x).toBeGreaterThanOrEqual(chips.x + chips.width - 1);
+      }
+      expect(button.y).toBeGreaterThanOrEqual(summary.y);
+      expect(button.y + button.height).toBeLessThanOrEqual(summary.y + summary.height + 1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+      await page.screenshot({ path: testInfo.outputPath(`upper-whatsapp-${longCopy ? 'long-' : ''}${width}.png`) });
+    }
   }
 });
 

@@ -46,9 +46,9 @@ alone do not establish that events are received or improve conversion rates.
 ## Package upper contact action
 
 The shared `RouteDetailSection` places a green, visibly labelled WhatsApp link
-in the trip-detail chips section before the photo gallery. Chips wrap independently.
-The button stays at the right edge; if its width plus the chips' minimum reading
-width cannot fit, it wraps below the chips in the same section, still right aligned.
+in the trip-detail chips section before the photo gallery. Below 768px, the chips get a full-width row and the
+button sits on its own right-aligned row below them. At 768px and above, the
+button sits to the right of the wrapping chips when space allows.
 It has a minimum 48px height. The original sidebar and sticky mobile links retain
 their labels, colors, breakpoints and availability.
 
