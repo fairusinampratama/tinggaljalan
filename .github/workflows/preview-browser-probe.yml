@@ -30,6 +30,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test tests/deployment/test_preview_startup_diagnostics.mjs
+      - run: node --test tests/deployment/test_hosted_rate_limit.mjs
       - run: npx playwright install --with-deps chromium
       - name: Compare application handoff with network idle on the current preview
         env:

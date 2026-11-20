@@ -75,6 +75,17 @@ class ReleaseControlTest(unittest.TestCase):
         self.assertEqual(preview['jobs']['select']['if'], "github.ref == 'refs/heads/main'")
         self.assertEqual(preview['jobs']['candidate']['uses'], './.github/workflows/ci-deploy.yml')
         self.assertEqual(preview['jobs']['candidate']['with']['build_candidate'], 'true')
+        self.assertIn('readiness', preview['jobs']['candidate']['needs'])
+        readiness = preview['jobs']['readiness']
+        self.assertEqual(readiness['if'], "github.ref == 'refs/heads/main'")
+        self.assertEqual(readiness['needs'], 'recover')
+        self.assertEqual(readiness['environment'], {'name': 'staging', 'deployment': 'false'})
+        readiness_commands = '\n'.join(step.get('run', '') for step in readiness['steps'])
+        self.assertIn('PREVIEW_PROBE_PAGE=routes', readiness_commands)
+        self.assertIn('PREVIEW_PROBE_PAGE=news', readiness_commands)
+        self.assertNotIn('continue-on-error', str(readiness))
+        self.assertNotIn('secrets.STAGING_SSH', str(readiness))
+        self.assertNotIn('secrets.PROD_', str(readiness))
         self.assertNotIn('functional_checks', str(preview['on']))
         publication = preview['jobs']['preview']
         commands = '\n'.join(step.get('run', '') for step in publication['steps'])

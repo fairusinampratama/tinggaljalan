@@ -4,6 +4,7 @@ import path from 'node:path';
 import { discoverReviewRoutes, isPublicDetailRoute, assertPublicDetailMetadata, reviewArticleSectionId } from './public-review-routes.mjs';
 
 import { waitForHostedHandoff } from './hosted-browser-readiness.mjs';
+import { navigateHostedPreview } from './hosted-rate-limit.mjs';
 
 class VerificationError extends Error {}
 
@@ -24,6 +25,7 @@ const priorityRoutes = [
 ];
 const publicRoutes = new Set([...priorityRoutes.map(([, route]) => route), '/?lang=id', '/news?lang=cn', '/routes?destination=bromo']);
 const observations = [];
+const rateLimitRetries = [];
 const sensitiveValues = [...Object.values(config), Buffer.from(`reviewer:${config.review_password}`).toString('base64')];
 const redact = value => sensitiveValues.filter(value => typeof value === 'string' && value.length).reduce(
     (text, secret) => text.replaceAll(secret, '[redacted]'), String(value),
@@ -74,9 +76,26 @@ try {
                 failedAssets.push({ path: url.pathname, status: response.status() });
             }
         });
+        const navigate = async (target, expectApp = true) => {
+            if (productionReview) return page.goto(target, { waitUntil: 'networkidle' });
+            const errorOffset = errors.length, assetOffset = failedAssets.length;
+            return navigateHostedPreview(page, target, {
+                ready: async () => {
+                    if (expectApp) await waitForHostedHandoff(page);
+                    await page.waitForLoadState('networkidle');
+                },
+                onRetry: retry => {
+                    rateLimitRetries.push({ viewport: name, stage, ...retry });
+                    // Retain the retry as evidence; only the failed GET attempt's
+                    // observations are discarded. All checks run on the new page.
+                    errors.splice(errorOffset);
+                    failedAssets.splice(assetOffset);
+                },
+            });
+        };
         for (const [label, route] of [...priorityRoutes, ['admin-login', '/admin/login']]) {
             stage = `visual-${name}-${label}-navigation`;
-            const response = await page.goto(`${base}${route}`, { waitUntil: 'networkidle' });
+            const response = await navigate(`${base}${route}`, label !== 'admin-login');
             if (!response?.ok()) {
                 throw new VerificationError(`Hosted page response failed at ${stage}: status ${response?.status() ?? 0}, redirected ${Boolean(response?.request().redirectedFrom())}.`);
             }
@@ -117,7 +136,7 @@ try {
                     const href = await detail.getAttribute('href');
                     if (!href?.startsWith(`/${label}/`)) throw new VerificationError('Unexpected preview detail target.');
                     target = `${base}${href}`;
-                    await page.goto(target, { waitUntil: 'networkidle' });
+                    await navigate(target);
                 }
                 const detailResponse = await context.request.get(target);
                 if (!detailResponse?.ok()) throw new VerificationError('Preview detail page failed.');
@@ -189,7 +208,9 @@ try {
         if (bot && JSON.stringify(tags(botRaw)) !== JSON.stringify(metadata)) throw new VerificationError(`Crawler canonical/robots parity failed for ${route}.`);
         if (!expected.links.length || expected.links.some(link => /^javascript:/i.test(link.href))) throw new VerificationError(`Crawlable fallback links failed for ${route}.`);
         stage = 'visitor-navigation';
-        const visitorResponse = await visitor.goto(target, { waitUntil: 'domcontentloaded' });
+        const visitorResponse = productionReview
+            ? await visitor.goto(target, { waitUntil: 'domcontentloaded' })
+            : await navigateHostedPreview(visitor, target, { onRetry: retry => rateLimitRetries.push({ stage, semanticIndex, ...retry }) });
         if (!visitorResponse?.ok()) throw new VerificationError(`Hydrated visitor response failed with status ${visitorResponse?.status() ?? 0}.`);
         stage = 'visitor-handoff';
         await waitForHostedHandoff(visitor);
@@ -257,6 +278,7 @@ try {
     await writeFile(path.join(output, 'failure.txt'), failure + '\n', { mode: 0o600 });
     throw new Error(failure);
 } finally {
+    await writeFile(path.join(output, 'rate-limit-retries.json'), JSON.stringify(rateLimitRetries), { mode: 0o600 });
     await writeFile(path.join(output, 'completed-checks.txt'), results.join('\n') + '\n', { mode: 0o600 });
     await writeFile(path.join(output, 'observations.json'), JSON.stringify(observations, null, 2), { mode: 0o600 });
     await browser.close();
