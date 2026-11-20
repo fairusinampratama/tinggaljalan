@@ -20,4 +20,6 @@ The Prepare workflow checks the **currently deployed** preview Routes and News h
 
 Node regressions cover one transient 429, persistent document throttling, Retry-After, long-cooldown refusal, foreign-origin rejection, listener cleanup and no retry for unrelated failures. An intercepted real-browser regression requires a module's first 429 to leave the server fallback present, then a new document with HTTP 200 and a successful handoff before acceptance. No real hosting request or application submission is made by that fixture.
 
+The simulated module response uses an explicit JavaScript content type. Without it, Firefox discards the intercepted response before exposing its status (trace status -1), so it is not an observable HTTP 429. The helper correctly refuses to retry that unknown failure. Unknown-status failures remain covered by the negative regressions.
+
 The controller mitigation must pass CI before merge, then the protected read-only probe should be exercised on main. A passing live attempt without a 429 does not prove recovery occurred. A rate-limit retry plus a successful final handoff proves recovery for that occurrence, not removal of Hostinger's rate limit. Provider-side attribution requires response/request identifiers or hosting logs and remains separate follow-up if throttling persists.

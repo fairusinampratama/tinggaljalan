@@ -9,7 +9,7 @@ test('a rate-limited module requires a fresh successful document before acceptan
         if (route.request().resourceType() === 'script') {
             moduleRequests++;
             await route.fulfill(moduleRequests === 1
-                ? { status: 429, headers: { 'Retry-After': '0' }, body: 'limited' }
+                ? { status: 429, contentType: 'text/javascript', headers: { 'Retry-After': '0' }, body: '// limited' }
                 : { contentType: 'text/javascript', body: "document.querySelector('.server-seo-content').remove(); document.querySelector('#app').innerHTML = '<h1>News ready</h1>';" });
         } else {
             documentRequests++;

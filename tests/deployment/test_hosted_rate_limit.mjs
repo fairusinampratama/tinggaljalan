@@ -41,8 +41,8 @@ test('persistent document throttling fails closed after three GET attempts', asy
     assert.equal(page.listenerCount('response'), 0);
 });
 
-test('500, 403, render failures, and third-party 429 never trigger retries', async () => {
-    for (const [status, origin] of [[500, target], [403, target], [200, target], [429, 'https://other.invalid/private']]) {
+test('unobservable status, 500, 403, render failures, and third-party 429 never trigger retries', async () => {
+    for (const [status, origin] of [[-1, target], [0, target], [500, target], [403, target], [200, target], [429, 'https://other.invalid/private']]) {
         const page = fixture([status], { origin });
         await assert.rejects(navigateHostedPreview(page, target, { wait: async () => assert.fail('unexpected retry'), ready: async () => { throw new Error('render failure'); } }));
         assert.equal(page.calls, 1);
