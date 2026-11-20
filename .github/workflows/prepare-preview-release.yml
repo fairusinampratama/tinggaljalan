@@ -99,9 +99,35 @@ jobs:
           fi
           rm -rf -- "$RUNNER_TEMP/preview-access"
 
+  readiness:
+    name: Check current preview before building
+    if: github.ref == 'refs/heads/main'
+    needs: recover
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: staging
+      deployment: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Require both current public hubs to start before the full build
+        env:
+          STAGING_REVIEW_PASSWORD: ${{ secrets.STAGING_REVIEW_PASSWORD }}
+        run: |
+          PREVIEW_PROBE_PAGE=routes node scripts/testing/probe-preview-news.mjs
+          PREVIEW_PROBE_PAGE=news node scripts/testing/probe-preview-news.mjs
+
   candidate:
     name: Build and test candidate once
-    needs: [select, recover]
+    needs: [select, recover, readiness]
     uses: ./.github/workflows/ci-deploy.yml
     with:
       source_sha: ${{ needs.select.outputs.source_sha }}
