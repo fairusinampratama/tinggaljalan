@@ -1,5 +1,6 @@
 import { chromium, errors, request } from '@playwright/test';
 import { waitForHostedHandoff } from './hosted-browser-readiness.mjs';
+import { attachStartupDiagnostics } from './preview-startup-diagnostics.mjs';
 
 const base = 'https://preview.tinggaljalan.com';
 const password = process.env.STAGING_REVIEW_PASSWORD;
@@ -30,6 +31,7 @@ try {
         httpCredentials: credentials,
     });
     const page = await context.newPage();
+    const startupDiagnostics = attachStartupDiagnostics(page);
     result.stage = 'navigation';
     const response = await page.goto(base + route, { waitUntil: 'domcontentloaded', timeout: 30_000 });
     result.status = response?.status() ?? 0;
@@ -46,6 +48,18 @@ try {
     const category = status => status.status === 'fulfilled' ? 'passed' : status.reason instanceof errors.TimeoutError ? 'timeout' : 'error';
     result.handoff = category(handoff);
     result.networkIdle = category(idle);
+    result.startup = startupDiagnostics();
+    result.document = await page.evaluate(() => {
+        let payload;
+        try { payload = JSON.parse(document.querySelector('script[data-page="app"]')?.textContent ?? 'null'); } catch { /* Report shape only. */ }
+        return {
+            serverFallback: !!document.querySelector('.server-seo-content'),
+            initialStage: !!document.querySelector('[data-initial-stage]'),
+            appChildren: document.querySelector('#app')?.childElementCount ?? 0,
+            initialPage: !!payload,
+            translations: !!payload?.props?.translations?.searchTitle,
+        };
+    });
     if (handoff.status !== 'fulfilled') process.exitCode = 1;
 } catch (error) {
     result.failure = error instanceof errors.TimeoutError ? 'timeout' : 'error';

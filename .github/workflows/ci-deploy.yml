@@ -172,6 +172,7 @@ jobs:
           python3 tests/deployment/test_staging_secrets.py
           python3 tests/deployment/test_staging_deploy.py
           node --test tests/deployment/test_public_review_routes.mjs
+          node --test tests/deployment/test_preview_startup_diagnostics.mjs
           node --check scripts/testing/staging-browser-smoke.mjs
           bash -n scripts/deployment/deploy-staging.sh
 
