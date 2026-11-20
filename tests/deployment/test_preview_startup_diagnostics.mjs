@@ -13,7 +13,7 @@ test('startup evidence classifies failures without exposing messages, URLs or cr
     page.emit('requestfailed', { resourceType: () => 'script', url: () => secret });
     page.emit('response', { request: () => ({ resourceType: () => 'script' }), status: () => 401, url: () => secret });
     assert.deepEqual(evidence(), {
-        'asset:script:unauthorized': 1,
+        'asset:script:401': 1,
         'console:missing-initial-translations': 1,
         'pageerror:invalid-render-data': 1,
         'pageerror:module-loading': 1,
@@ -31,5 +31,5 @@ test('successful assets and repeated failures produce bounded fixed counters', (
     for (let index = 0; index < 100; index++) page.emit('pageerror', new Error('unknown-' + index));
     page.emit('response', { request: () => ({ resourceType: () => 'script' }), status: () => 200 });
     page.emit('response', { request: () => ({ resourceType: () => 'fetch' }), status: () => 500 });
-    assert.deepEqual(evidence(), { 'asset:script:ok': 1, 'pageerror:other': 100 });
+    assert.deepEqual(evidence(), { 'asset:script:200': 1, 'pageerror:other': 100 });
 });

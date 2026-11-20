@@ -30,7 +30,7 @@ export function attachStartupDiagnostics(page) {
         const type = response.request().resourceType();
         if (['script', 'stylesheet'].includes(type)) {
             const status = response.status();
-            record('asset:' + type + ':' + (status >= 200 && status < 300 ? 'ok' : status === 304 ? 'cached' : status === 401 ? 'unauthorized' : status === 403 ? 'forbidden' : status === 404 ? 'missing' : 'other'));
+            record('asset:' + type + ':' + (Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'unknown'));
         }
     });
     return () => Object.fromEntries([...counts].sort());
